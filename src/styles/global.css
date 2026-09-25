@@ -1,0 +1,8 @@
+@import './tokens.css';
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--navy);color:var(--pale);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 30px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

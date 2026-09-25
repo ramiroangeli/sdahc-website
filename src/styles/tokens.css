@@ -1,0 +1,11 @@
+:root{
+  /* colour */
+  --navy:#00162B; --navy2:#06336B; --slate:#3C5468; --muted:#6B8197;
+  --pale:#B9CBE0; --blue:#0476D9; --paper:#F6F1EC; --white:#FFFFFF;
+  --amber:#C97A0A; --mapfill:#1E3A57; --maphover:#2E6FB0;
+  /* type */
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'Source Sans 3',system-ui,-apple-system,sans-serif;
+  --cond:'Barlow Condensed','Arial Narrow',sans-serif;
+  --geo:'Space Grotesk',system-ui,sans-serif;
+}

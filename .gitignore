@@ -22,3 +22,7 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# WordPress migration backups (not part of the Astro project)
+backup(cpanel)_230926/
+backup_15072026/
