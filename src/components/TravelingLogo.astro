@@ -1,0 +1,11 @@
+---
+import logoWhite from '../assets/logo-white.png';
+import logoNavy from '../assets/logo-navy.png';
+---
+<div id="brandlogo"><img class="lw" src={logoWhite.src} alt="SDA Home Choices logo"><img class="ln" src={logoNavy.src} alt=""></div>
+<style>
+#brandlogo{position:fixed;top:0;left:0;width:300px;z-index:55;pointer-events:none;opacity:0;will-change:transform;transform-origin:center;filter:drop-shadow(0 10px 34px rgba(0,10,25,.5))}
+#brandlogo .lw{display:block;width:100%;height:auto}
+#brandlogo .ln{position:absolute;top:0;left:0;width:100%;height:auto;opacity:0}
+@media(max-width:860px){#brandlogo{width:220px}}
+</style>

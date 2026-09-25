@@ -1,0 +1,18 @@
+---
+---
+<section class="statband"><div class="statgrid">
+ <div class="s rv"><div class="n" data-calc="1" data-target="1" data-dec="1" data-pre="$" data-suf="B+">$0B+</div><div class="k">Transacted &amp; advised across the sector</div></div>
+ <div class="s rv d2"><div class="n" data-calc="1" data-target="25" data-suf="+">0</div><div class="k">Years of specialist commercial experience</div></div>
+ <div class="s rv d2"><div class="n" data-calc="1" data-target="8">0</div><div class="k">States &amp; territories covered</div></div>
+ <div class="s rv d3"><div class="n" data-calc="1" data-target="100" data-suf="%">0</div><div class="k">SDA-specialist, we do nothing else</div></div>
+</div></section>
+<style>
+.statband{}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:1180px;margin:0 auto;padding:70px 30px}
+.statgrid .s{padding:34px 26px;border:1px solid rgba(185,203,224,.16);border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));box-shadow:0 18px 44px rgba(0,10,25,.4);transition:transform .25s,border-color .25s}
+.statgrid .s:hover{transform:translateY(-5px);border-color:rgba(4,118,217,.5)}
+.statgrid .n{font-family:var(--cond);font-weight:600;font-size:clamp(44px,6vw,80px);line-height:.9;color:#fff;font-variant-numeric:tabular-nums}
+.statgrid .k{font-size:14px;color:var(--muted);margin-top:12px;max-width:20ch}
+@media(max-width:860px){.statgrid{grid-template-columns:1fr 1fr}.statgrid .s:nth-child(3){border-left:0}}
+@media(max-width:520px){.statgrid{grid-template-columns:1fr}}
+</style>

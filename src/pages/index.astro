@@ -1,11 +1,102 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import TravelingLogo from '../components/TravelingLogo.astro';
+import Hero from '../components/Hero.astro';
+import Intro from '../components/Intro.astro';
+import StatBand from '../components/StatBand.astro';
+import MarqueeDivider from '../components/MarqueeDivider.astro';
+import Services from '../components/Services.astro';
+import ResearchMap from '../components/ResearchMap.astro';
+import Cta from '../components/Cta.astro';
 ---
-<BaseLayout title="SDA Home Choices: SDA portfolio advisory">
-  <section style="padding:180px 0 140px;text-align:center">
-    <div class="wrap">
-      <h1 style="font-family:var(--serif);color:#fff;font-size:clamp(30px,5vw,54px);margin:0">Scaffold ready</h1>
-      <p style="color:var(--pale);margin-top:16px">Design system, base layout, nav and footer are in place.</p>
-    </div>
-  </section>
+<BaseLayout title="SDA Home Choices: SDA portfolio advisory across Australia" description="Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation across Australia.">
+  <TravelingLogo />
+  <Hero />
+  <Intro />
+  <StatBand />
+  <MarqueeDivider />
+  <Services />
+  <ResearchMap />
+  <Cta />
 </BaseLayout>
+
+<script>
+import DATA from '../data/sda-states.json';
+
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const logo=document.getElementById('brandlogo'),reveal=document.getElementById('reveal'),heromap=document.getElementById('heromap');
+const ln=document.querySelector('#brandlogo .ln');
+const herowrap=document.getElementById('hero'),m2=document.getElementById('m2');
+const groups=[...document.querySelectorAll('#heromap .hs')];
+const stage=document.querySelector('.stage'),glow=document.getElementById('heroGlow');
+stage.addEventListener('mousemove',ev=>{const r=stage.getBoundingClientRect();glow.style.setProperty('--mx',(ev.clientX-r.left)+'px');glow.style.setProperty('--my',(ev.clientY-r.top)+'px');glow.style.opacity=1;});
+stage.addEventListener('mouseleave',()=>{glow.style.opacity=0;});
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}function lerp(a,b,t){return a+(b-a)*t}
+const DESC_S=0.28, DOCK_S=0.15;               // descend size, docked size (tunable)
+function frame(){
+ const r=herowrap.getBoundingClientRect(), total=herowrap.offsetHeight-innerHeight;
+ const p=clamp(-r.top/total,0,1);
+ // map explosion (v2 mechanic)
+ const dis=clamp(p/0.6,0,1), e=dis*dis*(3-2*dis);
+ groups.forEach(g=>{const dx=+g.dataset.dx*e,dy=+g.dataset.dy*e,rot=+g.dataset.rot*e;
+   g.setAttribute('transform','translate('+dx+' '+dy+') rotate('+rot+' '+g.dataset.cx+' '+g.dataset.cy+')');
+   g.style.opacity=(1-0.85*e).toFixed(3);});
+ heromap.style.transform='translate(-50%,-50%) scale('+(1+0.25*e)+')';heromap.style.opacity=(1-0.7*e).toFixed(3);
+ // brand statement emerges
+ const br=clamp((p-0.4)/0.45,0,1),be=br*br*(3-2*br);
+ reveal.style.opacity=be.toFixed(3);reveal.style.transform='scale('+lerp(.94,1,be)+')';
+ // logo: centre -> descend+shrink -> fly to section-2 top-right -> anchor there (scrolls with it)
+ const y=scrollY, hE=herowrap.offsetHeight-innerHeight, T=innerHeight*0.6;
+ let cx,cy,s,nm;
+ if(y<=hE){const t=clamp(y/hE,0,1);cx=innerWidth/2;cy=lerp(innerHeight*0.5,innerHeight*0.72,t);s=lerp(1,DESC_S,t);nm=0;}
+ else{const rr=m2.getBoundingClientRect();
+   if(y<=hE+T){const u=clamp((y-hE)/T,0,1);cx=lerp(innerWidth/2,rr.left,u);cy=lerp(innerHeight*0.72,rr.top,u);s=lerp(DESC_S,DOCK_S,u);nm=u;}
+   else{cx=rr.left;cy=rr.top;s=DOCK_S;nm=1;}}
+ logo.style.opacity=1;ln.style.opacity=nm;
+ logo.style.transform='translate('+cx+'px,'+cy+'px) translate(-50%,-50%) scale('+s+')';
+}
+if(!reduce){addEventListener('scroll',()=>requestAnimationFrame(frame),{passive:true});addEventListener('resize',frame);frame();}
+else{reveal.style.opacity=1;heromap.style.opacity=.3;const rr=m2.getBoundingClientRect();
+  logo.style.opacity=1;ln.style.opacity=1;logo.style.transform='translate('+rr.left+'px,'+rr.top+'px) translate(-50%,-50%) scale('+DOCK_S+')';}
+
+/* count-up + reveals */
+function countUp(el){const t=+el.dataset.target,dec=+(el.dataset.dec||0),pre=el.dataset.pre||'',suf=el.dataset.suf||'';
+ if(reduce){el.textContent=pre+t.toLocaleString('en-AU',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf;return;}
+ const t0=performance.now();(function tk(n){const k=clamp((n-t0)/1100,0,1),z=1-Math.pow(1-k,3);
+  el.textContent=pre+(t*z).toLocaleString('en-AU',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf;if(k<1)requestAnimationFrame(tk);})(t0);}
+function calcAnim(el){var t=+el.dataset.target,dec=+(el.dataset.dec||0),pre=el.dataset.pre||'',suf=el.dataset.suf||'';
+ var fmt=function(v){return pre+v.toLocaleString('en-AU',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf;};
+ if(reduce){el.textContent=fmt(t);return;}
+ var dur=1250,t0=performance.now();
+ (function tk(n){var k=clamp((n-t0)/dur,0,1);
+   if(k<0.72){var rnd=dec?(Math.random()*Math.max(t*1.6,1)):Math.floor(Math.random()*Math.max(t,1)*1.4);el.textContent=fmt(dec?+rnd.toFixed(dec):Math.round(rnd));}
+   else{var z=(k-0.72)/0.28,e=1-Math.pow(1-z,3);el.textContent=fmt(dec?+(t*e).toFixed(dec):Math.round(t*e));}
+   if(k<1)requestAnimationFrame(tk);else el.textContent=fmt(t);})(t0);}
+function runNum(n){(n.dataset.calc?calcAnim:countUp)(n);}
+const io=new IntersectionObserver((es)=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');
+ x.target.querySelectorAll&&x.target.querySelectorAll('[data-target]').forEach(nn=>{if(!nn._d){nn._d=1;runNum(nn);}});
+ if(x.target.matches&&x.target.matches('[data-target]')&&!x.target._d){x.target._d=1;runNum(x.target);}io.unobserve(x.target);}}),{threshold:.35});
+document.querySelectorAll('.rv,[data-target]').forEach(e=>io.observe(e));
+
+/* functional map */
+const abbrs=Object.keys(DATA);
+const NAT={name:'Australia',d:abbrs.reduce((s,a)=>s+DATA[a].d,0),p:abbrs.reduce((s,a)=>s+DATA[a].p,0),r:abbrs.reduce((s,a)=>s+DATA[a].r,0)};
+function G(i){return document.getElementById(i)}const el={d:G('n-d'),p:G('n-p'),r:G('n-r'),name:G('p-name'),kick:G('p-kick'),go:G('p-go')};
+function fmt(x){return x.toLocaleString('en-AU')}let locked='AU',raf;
+function nums(o,an){const tg={d:o.d,p:o.p,r:o.r};if(!an||reduce){for(const k in tg)el[k].textContent=fmt(tg[k]);return;}
+ cancelAnimationFrame(raf);const t0=performance.now();(function tk(n){const k=clamp((n-t0)/520,0,1),z=1-Math.pow(1-k,3);
+  for(const q in tg)el[q].textContent=fmt(Math.round(tg[q]*z));if(k<1)raf=requestAnimationFrame(tk);})(t0);}
+function paint(s){document.querySelectorAll('.st').forEach(x=>x.classList.toggle('sel',x.dataset.s===s));
+ document.querySelectorAll('.lbl').forEach(l=>l.classList.toggle('on',l.dataset.lbl===s));
+ document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.dataset.s===s));
+ const dot=document.querySelector('.actdot');if(dot)dot.classList.toggle('sel',s==='ACT');}
+function render(s,an){const o=s==='AU'?NAT:DATA[s];el.name.textContent=o.name;el.kick.textContent=s==='AU'?'National overview':'State & territory';
+ el.go.textContent=s==='AU'?'View the research →':('View the '+s+' market report →');
+ el.go.href=s==='AU'?'/research/':('/research/sda-market-'+s.toLowerCase()+'/');nums(o,an);paint(s);}
+document.querySelectorAll('.st,.actdot').forEach(x=>{const s=x.dataset.s;
+ x.addEventListener('mouseenter',()=>render(s,false));x.addEventListener('mouseleave',()=>render(locked,false));
+ x.addEventListener('click',()=>{locked=s;render(s,true);});x.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();locked=s;render(s,true);}});});
+document.querySelectorAll('.chip').forEach(c=>{const s=c.dataset.s;
+ c.addEventListener('mouseenter',()=>render(s,false));c.addEventListener('mouseleave',()=>render(locked,false));c.addEventListener('click',()=>{locked=s;render(s,true);});});
+render('AU',false);
+</script>

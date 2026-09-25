@@ -1,0 +1,10 @@
+{
+  "NSW": { "name": "New South Wales", "d": 1180, "p": 1520, "r": 96 },
+  "VIC": { "name": "Victoria", "d": 980, "p": 1240, "r": 82 },
+  "QLD": { "name": "Queensland", "d": 1340, "p": 1710, "r": 104 },
+  "SA": { "name": "South Australia", "d": 520, "p": 690, "r": 47 },
+  "WA": { "name": "Western Australia", "d": 610, "p": 800, "r": 55 },
+  "TAS": { "name": "Tasmania", "d": 150, "p": 190, "r": 18 },
+  "NT": { "name": "Northern Territory", "d": 130, "p": 165, "r": 14 },
+  "ACT": { "name": "Australian Capital Territory", "d": 110, "p": 140, "r": 12 }
+}
