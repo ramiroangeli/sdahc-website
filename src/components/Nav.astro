@@ -1,7 +1,9 @@
 ---
+import { Image } from 'astro:assets';
+import logoIcon from '../assets/logo-icon-white.png';
 ---
 <header><nav class="nav">
-  <span class="mark"><span class="sq">S</span>SDA&nbsp;Home&nbsp;Choices</span>
+  <span class="mark"><Image src={logoIcon} alt="SDA Home Choices" class="mkicon" />SDA&nbsp;Home&nbsp;Choices</span>
   <div class="nls">
     <a class="l" href="/our-services-and-expertise/">Services</a>
     <a class="l" href="/research/">Research</a>
@@ -14,7 +16,7 @@
 header{position:fixed;top:0;left:0;right:0;z-index:60;backdrop-filter:blur(10px);background:linear-gradient(rgba(0,22,43,.85),rgba(0,22,43,.35));border-bottom:1px solid rgba(185,203,224,.10)}
 .nav{display:flex;align-items:center;gap:26px;height:62px;max-width:1180px;margin:0 auto;padding:0 30px}
 .mark{font-family:var(--geo);font-weight:600;letter-spacing:.30em;font-size:14px;text-transform:uppercase;color:#fff;margin-right:auto}
-.mark .sq{display:inline-block;width:20px;height:20px;border:2px solid var(--blue);color:var(--blue);text-align:center;line-height:16px;font-size:12px;margin-right:12px;vertical-align:-4px}
+.mark .mkicon{height:26px;width:auto;margin-right:12px;vertical-align:middle}
 .nls{display:flex;gap:22px;align-items:center}
 .nav a.l{font-family:var(--geo);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--pale);text-decoration:none;opacity:.8}
 .nav a.l:hover{opacity:1;color:#fff}
