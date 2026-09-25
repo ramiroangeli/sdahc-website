@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<BaseLayout title="Our Services and Expertise - SDA Home Choices" description="From individual dwellings to institutional portfolios, we advise across the full lifecycle of an SDA asset, and we do nothing else.">
+  <PageHeader
+    eyebrow="SDA portfolio advisory"
+    title="Our Services and Expertise"
+    standfirst="From individual dwellings to institutional portfolios, we advise across the full lifecycle of an SDA asset, and we do nothing else."
+  />
+  <section class="section"><div class="wrap">
+    <div class="svcs">
+      <div class="svc a1"><h3><a href="/sda-property-and-portfolio-sales/">SDA Property and Portfolio Sales</a></h3><p>We specialise in the divestment of completed SDA properties, tenanted or untenanted, and provide expert support in vendor due diligence.</p><a href="/sda-property-and-portfolio-sales/">Learn more →</a></div>
+      <div class="svc a2"><h3><a href="/sda-strategic-divestment-advisory/">SDA Strategic Divestment Advisory</a></h3><p>We provide strategic divestment advice and receivership support, helping clients navigate the complexities of SDA divestment, assess asset viability, and implement tailored exit or recovery strategies.</p><a href="/sda-strategic-divestment-advisory/">Learn more →</a></div>
+      <div class="svc a3"><h3><a href="/buying-and-selling-sda-property-portfolios/">Buying and Selling SDA Property Portfolios</a></h3><p>We facilitate transactions, managing all aspects of SDA portfolio sales, from coordinating specialist valuations and exit strategy planning to complex off-market sales negotiations, connecting investors with opportunities.</p><a href="/buying-and-selling-sda-property-portfolios/">Learn more →</a></div>
+    </div>
+  </div></section>
+</BaseLayout>
+<style>
+.svcs{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.svc{position:relative;overflow:hidden;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:8px;padding:38px 30px;transition:transform .25s,background .25s,border-color .25s}
+.svc::before{content:"";position:absolute;left:0;top:0;height:3px;width:100%;background:var(--acc);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.svc:hover{transform:translateY(-5px);border-color:var(--acc);background:var(--acc-bg)}
+.svc:hover::before{transform:scaleX(1)}
+.svc.a1{--acc:var(--blue);--acc-bg:rgba(4,118,217,.09)}
+.svc.a2{--acc:var(--teal);--acc-bg:rgba(47,160,168,.10)}
+.svc.a3{--acc:var(--amber);--acc-bg:rgba(201,122,10,.10)}
+.svc h3{font-family:var(--serif);font-weight:600;font-size:24px;color:#fff;margin:0 0 12px;line-height:1.15}
+.svc h3 a{color:#fff;text-decoration:none}
+.svc:hover h3{color:var(--acc)}
+.svc:hover a{color:var(--acc)}
+.svc p{font-size:15.5px;color:var(--pale);margin:0 0 20px}
+.svc a{font-family:var(--geo);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);text-decoration:none}
+@media(max-width:860px){.svcs{grid-template-columns:1fr}}
+</style>

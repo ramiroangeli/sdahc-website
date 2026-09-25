@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<BaseLayout title="Australian SDA Statistics - SDA Home Choices" description="Australia had 13,779 enrolled Specialist Disability Accommodation dwellings as at 31 March 2026 (NDIA, Q3 2025-26; analysis: SDAHC Research). Updated each quarter as new NDIA data is released.">
+  <PageHeader
+    eyebrow="SDAHC Research"
+    title="Australian SDA Statistics"
+  />
+  <section class="section"><div class="prose">
+    <p>Australia had 13,779 enrolled Specialist Disability Accommodation dwellings as at 31 March 2026 (NDIA, Q3 2025-26; analysis: SDAHC Research). This page is maintained by SDAHC Research as a reference source for SDA market figures, with every number dated and defined. It is updated each quarter as new NDIA data is released.</p>
+
+    <h2>Key SDA figures at a glance</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Figure</th><th>As at</th></tr></thead>
+      <tbody>
+        <tr><td>Enrolled SDA dwellings (national)</td><td>13,779</td><td>31 March 2026</td></tr>
+        <tr><td>Growth since Q4 2022-23</td><td>+74%</td><td>Q3 2025-26</td></tr>
+        <tr><td>New dwellings enrolled per week</td><td>13</td><td>Q3 2025-26</td></tr>
+        <tr><td>Participants living in SDA</td><td>16,263</td><td>Q3 2025-26</td></tr>
+        <tr><td>Participants with SDA funding</td><td>25,633</td><td>Q3 2025-26</td></tr>
+        <tr><td>Participants not utilising SDA funding</td><td>9,370</td><td>Q3 2025-26</td></tr>
+        <tr><td>Active SDA providers</td><td>563</td><td>Q1 2025-26</td></tr>
+        <tr><td>High Physical Support share of supply</td><td>49%</td><td>Q3 2025-26</td></tr>
+        <tr><td>Annualised SDA funding in participant plans</td><td>~$653 million</td><td>Q3 2025-26</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Dwellings, places and participants are not the same thing</h2>
+    <p>Published SDA figures are frequently inconsistent because three distinct measures are reported interchangeably. Comparing a dwelling count against a place count, or a funded participant against a resident participant, produces figures that appear to contradict each other when they are simply measuring different things.</p>
+    <p>The gap between the last two matters commercially. As at Q3 2025-26, 25,633 participants held SDA funding but only 16,263 were living in SDA, leaving 9,370 participants with approved funding they were not using. From Q4 2024-25 the NDIA began reporting this cohort separately as "eligible, not yet using SDA", which means participant figures before and after that change are not directly comparable.</p>
+    <table>
+      <thead><tr><th>Term</th><th>What it counts</th></tr></thead>
+      <tbody>
+        <tr><td>Enrolled dwelling</td><td>A physical property enrolled with the NDIA as Specialist Disability Accommodation. One dwelling typically contains more than one resident place.</td></tr>
+        <tr><td>Resident place</td><td>An individual participant position within an enrolled dwelling. Place counts are therefore higher than dwelling counts.</td></tr>
+        <tr><td>Participant with SDA funding</td><td>A person whose NDIS plan includes approved SDA funding. Approval does not mean the person is currently living in an SDA dwelling.</td></tr>
+        <tr><td>Participant living in SDA</td><td>A person actually residing in an enrolled SDA dwelling.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Enrolled SDA dwellings by state and territory</h2>
+    <table>
+      <thead><tr><th>State or territory</th><th>Enrolled dwellings</th><th>Share of national</th></tr></thead>
+      <tbody>
+        <tr><td><a href="/research/sda-market-vic/">Victoria</a></td><td>4,013</td><td>29%</td></tr>
+        <tr><td><a href="/research/sda-market-nsw/">New South Wales</a></td><td>3,387</td><td>25%</td></tr>
+        <tr><td><a href="/research/sda-market-qld/">Queensland</a></td><td>2,875</td><td>21%</td></tr>
+        <tr><td><a href="/research/sda-market-sa/">South Australia</a></td><td>1,802</td><td>13%</td></tr>
+        <tr><td><a href="/research/sda-market-wa/">Western Australia</a></td><td>1,178</td><td>9%</td></tr>
+        <tr><td><a href="/research/sda-market-act/">Australian Capital Territory</a></td><td>211</td><td>2%</td></tr>
+        <tr><td><a href="/research/sda-market-tas/">Tasmania</a></td><td>176</td><td>1%</td></tr>
+        <tr><td><a href="/research/sda-market-nt/">Northern Territory</a></td><td>137</td><td>1%</td></tr>
+        <tr><td><strong>National total</strong></td><td><strong>13,779</strong></td><td><strong>100%</strong></td></tr>
+      </tbody>
+    </table>
+    <p>Note: Percentages are calculated on 13,779 enrolled dwellings and may not sum to 100% due to rounding.</p>
+    <p>State-level analysis, including regional distribution, design category profile, supply pipeline and SIL ecosystem depth, is published separately for each jurisdiction:</p>
+    <ul>
+      <li><a href="/research/sda-market-vic/">Victoria</a></li>
+      <li><a href="/research/sda-market-nsw/">New South Wales</a></li>
+      <li><a href="/research/sda-market-qld/">Queensland</a></li>
+      <li><a href="/research/sda-market-sa/">South Australia</a></li>
+      <li><a href="/research/sda-market-wa/">Western Australia</a></li>
+      <li><a href="/research/sda-market-act/">Australian Capital Territory</a></li>
+      <li><a href="/research/sda-market-tas/">Tasmania</a></li>
+      <li><a href="/research/sda-market-nt/">Northern Territory</a></li>
+    </ul>
+
+    <h2>How these figures are sourced and updated</h2>
+    <p>All dwelling, participant and funding figures on this page are drawn from NDIS Supplement P, Specialist Disability Accommodation, the NDIA's quarterly public dataset. The most recent period used is Q3 2025-26, with data as at 31 March 2026. Historical comparisons use Q4 2022-23 as the baseline, being the earliest period with consistent Supplement P coverage for these measures.</p>
+    <p>This page is reviewed and updated by SDAHC Research each quarter as the NDIA publishes new data. Figures are reproduced for analytical purposes; readers should refer to original NDIA publications for definitive figures. Full source list and methodology are documented on our <a href="/research/research-methodology/">methodology page</a>.</p>
+
+    <h2>Citing these figures</h2>
+    <blockquote>SDAHC Research, &ldquo;Australian SDA Statistics&rdquo;, SDA Home Choices, Brisbane, 2026.</blockquote>
+    <p>Individual figures and brief quotations may be reproduced with attribution to SDAHC Research. Commercial interpretation of these figures, including observed transaction yields, the gap between enrolled and actual income, and sale prices relative to enrolled value, is published in the SDA Market Report 2026.</p>
+    <p><a class="btn b1" href="/research/sda-market-report-2026/">Get the SDA Market Report 2026</a></p>
+  </div></section>
+</BaseLayout>

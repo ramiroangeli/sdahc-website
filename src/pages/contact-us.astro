@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<BaseLayout title="Contact Us - SDA Home Choices" description="Get in touch with Steve Dawson at SDA Home Choices to discuss a sale, acquisition or strategic review.">
+  <PageHeader
+    eyebrow="Get in touch"
+    title="Contact Us"
+  />
+  <section class="section"><div class="wrap">
+    <div class="contact-details">
+      <p class="cd-name">Steve Dawson</p>
+      <p><a href="tel:+61408550441">+61 408 550 441</a></p>
+      <p><a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a></p>
+    </div>
+  </div></section>
+  <section class="section">
+    <!-- submit handler added in Prompt 4 -->
+    <form class="form">
+      <div>
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" />
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" />
+      </div>
+      <div>
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone" />
+      </div>
+      <div>
+        <label for="message">Message</label>
+        <textarea id="message" name="message"></textarea>
+      </div>
+      <button type="submit" class="btn b1">Submit</button>
+    </form>
+  </section>
+</BaseLayout>
+<style>
+.contact-details{max-width:620px;margin:0 auto;padding:0 30px;color:var(--pale)}
+.contact-details p{margin:0 0 8px}
+.contact-details a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.cd-name{font-family:var(--geo);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.form button{justify-self:start}
+</style>

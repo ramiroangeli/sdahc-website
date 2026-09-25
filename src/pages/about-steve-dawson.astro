@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { Image } from 'astro:assets';
+import steveDawson from '../assets/steve-dawson.jpg';
+---
+<BaseLayout title="About Steve Dawson - SDA Home Choices" description="With over 25 years of experience in commercial real estate advisory and a track record of over $1 billion in transactions, Steve has built a reputation for delivering results at the highest levels.">
+  <PageHeader
+    eyebrow="About"
+    title="About Steve Dawson"
+  />
+  <section class="section"><div class="wrap about-grid">
+    <Image src={steveDawson} alt="Portrait of Steve Dawson, founder of SDA Home Choices" class="portrait" width={400} height={400} />
+    <div class="prose about-prose">
+      <p>With over 25 years of experience in commercial real estate advisory and a track record of over $1 billion in transactions, Steve has built a reputation for delivering results at the highest levels. He has been a trusted advisor to listed companies across Australia, Singapore, and the USA.</p>
+      <p>Steve's thrives with complexity and enjoys the SDA sector. Driven by a personal connection to the disability community, Steve shifted his focus from Management Rights to SDA to provide meaningful impact. Steve has worked with most of the major SDA funds vested in the SDA property sector.</p>
+    </div>
+  </div></section>
+</BaseLayout>
+<style>
+.about-grid{display:grid;grid-template-columns:280px 1fr;gap:48px;align-items:start}
+.portrait{width:100%;height:auto;border-radius:8px;box-shadow:0 24px 60px rgba(0,10,25,.45)}
+.about-prose{padding:0;max-width:none}
+@media(max-width:700px){.about-grid{grid-template-columns:1fr}.portrait{max-width:240px}}
+</style>
