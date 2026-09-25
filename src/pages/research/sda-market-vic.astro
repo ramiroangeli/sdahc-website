@@ -1,0 +1,75 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import AustraliaMap from '../../components/AustraliaMap.astro';
+---
+<BaseLayout title="SDA Market: Victoria - SDA Home Choices" description="Victoria is the largest SDA market in Australia by enrolled dwellings and by annualised funding committed, anchored by Melbourne’s deep, multi-participant High Physical Support and Robust stock.">
+  <PageHeader
+    eyebrow="SDAHC Research"
+    title="SDA Market: Victoria"
+    standfirst="Victoria is the largest SDA market in Australia by enrolled dwellings and by annualised funding committed, anchored by Melbourne’s deep, multi-participant High Physical Support and Robust stock."
+  />
+  <section class="section"><div class="wrap">
+    <AustraliaMap state="VIC" />
+  </div></section>
+  <section class="section"><div class="prose">
+    <h2>Key figures</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Figure</th></tr></thead>
+      <tbody>
+      <tr><td>Enrolled dwellings</td><td>4,013</td></tr>
+      <tr><td>Participants in SDA</td><td>5,489</td></tr>
+      <tr><td>SDA funding committed</td><td>$185.3M</td></tr>
+      <tr><td>Active providers</td><td>187</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Enrolled dwellings by SA4 region</h2>
+    <table>
+      <thead><tr><th>Region</th><th>Enrolled dwellings</th></tr></thead>
+      <tbody>
+      <tr><td>Melbourne – West</td><td>750</td></tr>
+      <tr><td>Melbourne – South East</td><td>534</td></tr>
+      <tr><td>Melbourne – North East</td><td>402</td></tr>
+      <tr><td>Melbourne – Inner</td><td>302</td></tr>
+      <tr><td>Geelong</td><td>286</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Design category breakdown</h2>
+    <table>
+      <thead><tr><th>Design category</th><th>Dwellings</th><th>Share</th></tr></thead>
+      <tbody>
+      <tr><td>High Physical Support</td><td>1,829</td><td>46%</td></tr>
+      <tr><td>Robust</td><td>814</td><td>20%</td></tr>
+      <tr><td>Improved Liveability</td><td>644</td><td>16%</td></tr>
+      <tr><td>Fully Accessible</td><td>430</td><td>11%</td></tr>
+      <tr><td>Basic</td><td>285</td><td>7%</td></tr>
+      </tbody>
+    </table>
+    <p>Victoria’s combined HPS (46%) and Robust (20%) share of 66% is the highest complexity profile of any state. This reflects institutional SDA development in Melbourne’s inner and middle rings, where participant density and SIL depth made complex-need accommodation commercially viable at scale. Basic (7%) and IL (16%) together represent only 23%, reducing Victoria’s exposure to VFM-driven downgrades relative to NSW and SA. The same HPS concentration carries VFM policy risk if the NDIA tightens HPS eligibility.</p>
+
+    <h2>Supply and pipeline</h2>
+    <p>Victoria leads nationally on enrolled dwellings (4,013) and annualised SDA funding ($185.3M). With 5,489 active participants, the participant-to-dwelling ratio confirms high effective utilisation. Melbourne’s urban density supports a multi-participant model, particularly for HPS and Robust stock. The Victorian market is not over-supplied; it is efficiently utilised.</p>
+
+    <h2>SIL depth and asset-level performance</h2>
+    <p>187 active SDA providers make Victoria the second-deepest provider market nationally. Melbourne’s ecosystem is strongest in the inner north, west and south-east corridors, where competing SIL providers compress matching timelines and vacancy periods for established assets. SIL provider quality varies; assets aligned with mid-tier or smaller providers carry meaningful counterparty risk.</p>
+
+    <h2>Market view</h2>
+    <p>Victoria is the most active state for institutional SDA transactions. Institutional platforms, superannuation-aligned vehicles and specialist disability funds have all completed acquisitions in Victoria. In SDAHC Research’s market observation, cap rates for stabilised HPS portfolios in Melbourne are in the 7.5–8.5% equivalent yield range, competitive with other infrastructure-adjacent asset classes. New enrolments continue and institutional capital appetite remains strong. The primary forward risk is that any VFM methodology change affecting HPS eligibility would disproportionately affect Victoria.</p>
+
+    <p>Source: SDAHC Research, SDA Market Report 2026. Figures reflect the most recent available NDIS data as at Q3 2025-26.</p>
+    <p><a class="btn b1" href="/research/sda-market-report-2026/">Get the full report</a></p>
+
+    <h2>SDA market in other states</h2>
+    <ul>
+      <li><a href="/research/sda-market-qld/">Queensland</a></li>
+      <li><a href="/research/sda-market-nsw/">New South Wales</a></li>
+      <li><a href="/research/sda-market-wa/">Western Australia</a></li>
+      <li><a href="/research/sda-market-sa/">South Australia</a></li>
+      <li><a href="/research/sda-market-tas/">Tasmania</a></li>
+      <li><a href="/research/sda-market-act/">Australian Capital Territory</a></li>
+      <li><a href="/research/sda-market-nt/">Northern Territory</a></li>
+    </ul>
+  </div></section>
+</BaseLayout>

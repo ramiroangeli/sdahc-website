@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import AustraliaMap from '../../components/AustraliaMap.astro';
+---
+<BaseLayout title="SDA Market: Queensland - SDA Home Choices" description="Queensland is the second-largest new-build SDA market in Australia. This page summarises enrolled dwelling numbers, participant demand, funding committed, and regional distribution across the state, drawn from SDAHC’s SDA Market Report 2026, which combines public NDIS data with proprietary transaction analysis.">
+  <PageHeader
+    eyebrow="SDAHC Research"
+    title="SDA Market: Queensland"
+    standfirst="Queensland is the second-largest new-build SDA market in Australia. This page summarises enrolled dwelling numbers, participant demand, funding committed, and regional distribution across the state, drawn from SDAHC’s SDA Market Report 2026, which combines public NDIS data with proprietary transaction analysis."
+  />
+  <section class="section"><div class="wrap">
+    <AustraliaMap state="QLD" />
+  </div></section>
+  <section class="section"><div class="prose">
+    <h2>Key figures</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Figure</th></tr></thead>
+      <tbody>
+      <tr><td>Enrolled dwellings</td><td>2,875</td></tr>
+      <tr><td>Participants in SDA</td><td>2,765</td></tr>
+      <tr><td>SDA funding committed</td><td>$152.3M annualised</td></tr>
+      <tr><td>Active providers</td><td>110</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Enrolled dwellings by SA4 region</h2>
+    <table>
+      <thead><tr><th>Region</th><th>Enrolled dwellings</th></tr></thead>
+      <tbody>
+      <tr><td>Logan – Beaudesert</td><td>333</td></tr>
+      <tr><td>Ipswich</td><td>318</td></tr>
+      <tr><td>Gold Coast</td><td>282</td></tr>
+      <tr><td>Moreton Bay – North</td><td>223</td></tr>
+      <tr><td>Wide Bay</td><td>217</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Design category breakdown</h2>
+    <table>
+      <thead><tr><th>Design category</th><th>Dwellings</th><th>Share</th></tr></thead>
+      <tbody>
+      <tr><td>High Physical Support</td><td>1757</td><td>61%</td></tr>
+      <tr><td>Robust</td><td>437</td><td>15%</td></tr>
+      <tr><td>Improved Liveability</td><td>317</td><td>11%</td></tr>
+      <tr><td>Fully Accessible</td><td>242</td><td>8%</td></tr>
+      <tr><td>Basic</td><td>113</td><td>4%</td></tr>
+      </tbody>
+    </table>
+    <p>High Physical Support dominates at 61%, the highest HPS concentration among the three eastern states. This reflects institutional development in the Gold Coast, Brisbane and Sunshine Coast corridors during the 2020-22 development wave. The Robust segment (15%) supports participants with complex behavioural needs. Basic and Improved Liveability together represent 15%, a lower share than NSW or SA, which reduces Queensland’s exposure to VFM-driven design category downgrades.</p>
+
+    <h2>Supply and pipeline</h2>
+    <p>Queensland has recorded 4,341 enrolled new-build SDA places over the sector’s first ten years, the second-highest of any state nationally, behind Victoria. A key driver has been Queensland’s comparatively easier planning environment, including Community Residence pathways that have helped fast-track approvals in some cases.</p>
+    <p>A further 1,541 new places are identified in the three-year development pipeline. If delivered, that would represent roughly 35% additional new-build supply relative to Queensland’s first decade of enrolled new-build places.</p>
+
+    <h2>SIL depth and asset-level performance</h2>
+    <p>Queensland’s SDA market should be assessed at an asset and location level rather than by provider volume alone. Brisbane and the Gold Coast generally offer deeper SIL coverage, stronger participant access, and more established buyer confidence.</p>
+    <p>Regional Queensland markets, including Toowoomba, Sunshine Coast North, and Far North Queensland, require more careful assessment. In these areas, SIL depth, participant demand, provider capability, asset quality, and alternative-use value should all be considered before assuming metropolitan-style absorption or pricing.</p>
+
+    <h2>Market view</h2>
+    <p>Well-located Queensland assets with proven income, appropriate design, and sustainable provider arrangements continue to attract investor interest. Assets in thinner or less proven locations require more conservative underwriting, particularly where tenant demand or SIL support arrangements are not already demonstrated.</p>
+
+    <p>Source: SDAHC Research, SDA Market Report 2026. Figures reflect the most recent available NDIS data as at Q3 2025-26. See our <a href="/research/research-methodology/">methodology and data sources</a>.</p>
+    <p><a class="btn b1" href="/research/sda-market-report-2026/">Get the full report</a></p>
+
+    <h2>SDA market in other states</h2>
+    <ul>
+      <li><a href="/research/sda-market-nsw/">New South Wales</a></li>
+      <li><a href="/research/sda-market-vic/">Victoria</a></li>
+      <li><a href="/research/sda-market-wa/">Western Australia</a></li>
+      <li><a href="/research/sda-market-sa/">South Australia</a></li>
+      <li><a href="/research/sda-market-tas/">Tasmania</a></li>
+      <li><a href="/research/sda-market-act/">Australian Capital Territory</a></li>
+      <li><a href="/research/sda-market-nt/">Northern Territory</a></li>
+    </ul>
+  </div></section>
+</BaseLayout>

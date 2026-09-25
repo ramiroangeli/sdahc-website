@@ -1,0 +1,81 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+---
+<BaseLayout title="SDA Market Report 2026 - SDA Home Choices" description="The definitive market intelligence report for investors in Australia's Specialist Disability Accommodation sector. 76 pages of state-by-state analysis, real transaction data, and proprietary risk scoring, free to download.">
+  <PageHeader
+    eyebrow="SDAHC Research"
+    title="SDA Market Report 2026"
+    standfirst="The definitive market intelligence report for investors in Australia's Specialist Disability Accommodation sector. 76 pages of state-by-state analysis, real transaction data, and proprietary risk scoring, free to download."
+  />
+  <section class="section"><div class="prose">
+    <h2>What's inside</h2>
+    <ul>
+      <li>State-by-state analysis across all eight Australian jurisdictions</li>
+      <li>New-build delivery, pipeline, and supply-versus-demand benchmarks</li>
+      <li>Real SDA transaction data from 2019 to 2026, observed yields and price-to-enrolled-value ratios</li>
+      <li>Value-for-money analysis and management model comparison</li>
+      <li>SDAHC's proprietary Market Assessment Framework: demand, vacancy exposure, SIL ecosystem, transaction liquidity, and alternative-use floor</li>
+    </ul>
+
+    <h2>Download the report</h2>
+    <p>Enter your details below to receive the full 76-page report. We publish independent SDA market intelligence, your details help us understand who relies on our research.</p>
+  </div></section>
+  <section class="section">
+    <!-- gate submit + report delivery added in Prompt 4 -->
+    <form class="form">
+      <div class="row2">
+        <div>
+          <label for="first_name">First Name</label>
+          <input type="text" id="first_name" name="first_name" />
+        </div>
+        <div>
+          <label for="last_name">Last Name</label>
+          <input type="text" id="last_name" name="last_name" />
+        </div>
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" />
+      </div>
+      <div>
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" name="phone" />
+      </div>
+      <div class="row2">
+        <div>
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="">- Role -</option>
+            <option value="Investor">Investor</option>
+            <option value="SDA Provider">SDA Provider</option>
+            <option value="Property Owner">Property Owner</option>
+            <option value="SIL Provider">SIL Provider</option>
+            <option value="Financier">Financier</option>
+            <option value="Administrator">Administrator</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="state">State</label>
+          <select id="state" name="state">
+            <option value="">- State -</option>
+            <option value="QLD">QLD</option>
+            <option value="NSW">NSW</option>
+            <option value="VIC">VIC</option>
+            <option value="WA">WA</option>
+            <option value="SA">SA</option>
+            <option value="TAS">TAS</option>
+            <option value="ACT">ACT</option>
+            <option value="NT">NT</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label for="comments">Comments</label>
+        <textarea id="comments" name="comments"></textarea>
+      </div>
+      <button type="submit" class="btn b1">Submit Form</button>
+    </form>
+  </section>
+</BaseLayout>

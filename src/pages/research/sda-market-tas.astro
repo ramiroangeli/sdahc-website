@@ -1,0 +1,73 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import AustraliaMap from '../../components/AustraliaMap.astro';
+---
+<BaseLayout title="SDA Market: Tasmania - SDA Home Choices" description="Tasmania is the smallest state-based SDA market in Australia, concentrated almost entirely around Hobart, and carries the highest relative risk rating in SDAHC Research’s market framework.">
+  <PageHeader
+    eyebrow="SDAHC Research"
+    title="SDA Market: Tasmania"
+    standfirst="Tasmania is the smallest state-based SDA market in Australia, concentrated almost entirely around Hobart, and carries the highest relative risk rating in SDAHC Research’s market framework."
+  />
+  <section class="section"><div class="wrap">
+    <AustraliaMap state="TAS" />
+  </div></section>
+  <section class="section"><div class="prose">
+    <h2>Key figures</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Figure</th></tr></thead>
+      <tbody>
+      <tr><td>Enrolled dwellings</td><td>176</td></tr>
+      <tr><td>Participants in SDA</td><td>130</td></tr>
+      <tr><td>SDA funding committed</td><td>$7.9M</td></tr>
+      <tr><td>Active providers</td><td>17</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Enrolled dwellings by SA4 region</h2>
+    <table>
+      <thead><tr><th>Region</th><th>Enrolled dwellings</th></tr></thead>
+      <tbody>
+      <tr><td>Hobart</td><td>80</td></tr>
+      <tr><td>Launceston and North East</td><td>58</td></tr>
+      <tr><td>West and North West</td><td>38</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Design category breakdown</h2>
+    <table>
+      <thead><tr><th>Design category</th><th>Dwellings</th><th>Share</th></tr></thead>
+      <tbody>
+      <tr><td>High Physical Support</td><td>91</td><td>52%</td></tr>
+      <tr><td>Improved Liveability</td><td>34</td><td>19%</td></tr>
+      <tr><td>Fully Accessible</td><td>25</td><td>14%</td></tr>
+      <tr><td>Robust</td><td>20</td><td>11%</td></tr>
+      <tr><td>Basic</td><td>4</td><td>2%</td></tr>
+      </tbody>
+    </table>
+    <p>High Physical Support (52%) and Fully Accessible (14%) together represent two-thirds of enrolled stock. The FA proportion is elevated relative to most mainland states, which may reflect the age profile of Tasmania’s eligible population. Improved Liveability (19%) provides a meaningful intermediate segment. Robust (11%) is limited. Basic (2%) is minimal, reducing VFM exposure but also constraining participant choice.</p>
+
+    <h2>Supply and pipeline</h2>
+    <p>Tasmania’s SDA market is small by national standards (176 enrolled dwellings, 130 active participants), but is not in structural oversupply. The gap between enrolled and placed participants reflects normal matching lag in a thin market rather than a systematic vacancy problem. In a market this small, individual tenancy changes can materially shift the headline numbers. The $7.9M annualised funding puts Tasmania among the lowest-funded markets nationally.</p>
+
+    <h2>SIL depth and asset-level performance</h2>
+    <p>With only 17 active SDA providers, Tasmania has one of the thinnest provider ecosystems nationally. Virtually all provider activity is concentrated in Hobart. Launceston has emerging SIL presence; regional Tasmania has effectively no specialist SDA/SIL provision. Assets outside greater Hobart face elevated SIL-matching risk, in SDAHC Research’s assessment, a single provider exit could render an asset effectively untenantable in the medium term.</p>
+
+    <h2>Market view</h2>
+    <p>Tasmania carries the highest relative risk rating in SDAHC Research’s market framework. Small market size, thin SIL provider depth, limited transaction evidence and weaker alternative-use value support than mainland capital cities create a compounding risk profile. No institutional capital transactions have been observed in Tasmania by SDAHC Research. The market outlook is stable at current levels, with no meaningful institutional growth trajectory expected in the near to medium term.</p>
+
+    <p>Source: SDAHC Research, SDA Market Report 2026. Figures reflect the most recent available NDIS data as at Q3 2025-26. See our <a href="/research/research-methodology/">methodology and data sources</a>.</p>
+    <p><a class="btn b1" href="/research/sda-market-report-2026/">Get the full report</a></p>
+
+    <h2>SDA market in other states</h2>
+    <ul>
+      <li><a href="/research/sda-market-qld/">Queensland</a></li>
+      <li><a href="/research/sda-market-nsw/">New South Wales</a></li>
+      <li><a href="/research/sda-market-vic/">Victoria</a></li>
+      <li><a href="/research/sda-market-wa/">Western Australia</a></li>
+      <li><a href="/research/sda-market-sa/">South Australia</a></li>
+      <li><a href="/research/sda-market-act/">Australian Capital Territory</a></li>
+      <li><a href="/research/sda-market-nt/">Northern Territory</a></li>
+    </ul>
+  </div></section>
+</BaseLayout>

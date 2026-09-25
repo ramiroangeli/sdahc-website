@@ -1,0 +1,75 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import AustraliaMap from '../../components/AustraliaMap.astro';
+---
+<BaseLayout title="SDA Market: New South Wales - SDA Home Choices" description="New South Wales is the SDA market’s demand leader, home to more active participants than any other state and the deepest provider ecosystem in the country, even though Victoria holds a narrow edge on enrolled dwellings and total funding committed.">
+  <PageHeader
+    eyebrow="SDAHC Research"
+    title="SDA Market: New South Wales"
+    standfirst="New South Wales is the SDA market’s demand leader, home to more active participants than any other state and the deepest provider ecosystem in the country, even though Victoria holds a narrow edge on enrolled dwellings and total funding committed."
+  />
+  <section class="section"><div class="wrap">
+    <AustraliaMap state="NSW" />
+  </div></section>
+  <section class="section"><div class="prose">
+    <h2>Key figures</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Figure</th></tr></thead>
+      <tbody>
+      <tr><td>Enrolled dwellings</td><td>3,387</td></tr>
+      <tr><td>Participants in SDA</td><td>5,137</td></tr>
+      <tr><td>SDA funding committed</td><td>$176.6M</td></tr>
+      <tr><td>Active providers</td><td>202</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Enrolled dwellings by SA4 region</h2>
+    <table>
+      <thead><tr><th>Region</th><th>Enrolled dwellings</th></tr></thead>
+      <tbody>
+      <tr><td>Sydney – Parramatta</td><td>358</td></tr>
+      <tr><td>Sydney – Outer West and Blue Mountains</td><td>315</td></tr>
+      <tr><td>Newcastle and Lake Macquarie</td><td>237</td></tr>
+      <tr><td>Sydney – South West</td><td>209</td></tr>
+      <tr><td>Central Coast</td><td>202</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Design category breakdown</h2>
+    <table>
+      <thead><tr><th>Design category</th><th>Dwellings</th><th>Share</th></tr></thead>
+      <tbody>
+      <tr><td>High Physical Support</td><td>1,362</td><td>40%</td></tr>
+      <tr><td>Basic</td><td>997</td><td>29%</td></tr>
+      <tr><td>Improved Liveability</td><td>532</td><td>16%</td></tr>
+      <tr><td>Fully Accessible</td><td>242</td><td>7%</td></tr>
+      <tr><td>Robust</td><td>240</td><td>7%</td></tr>
+      </tbody>
+    </table>
+    <p>NSW has the highest Basic dwelling proportion nationally at 29%, a legacy of early SDA rollout, when simpler design categories were enrolled before the market shifted toward HPS. Basic dwellings attract lower price limits, are most exposed to VFM review, and carry the weakest alternative-use value relative to their SDA income. HPS at 40% remains below Queensland and Victoria’s concentrations. Improved Liveability (16%) carries moderate VFM exposure.</p>
+
+    <h2>Supply and pipeline</h2>
+    <p>New South Wales presents a distinctive supply/demand profile: 5,137 active participants against 3,387 enrolled dwellings. This ratio, 1.5 participants per dwelling, is the highest of any state, reflecting Sydney’s multi-participant HPS and Robust stock. This does not represent undersupply; it confirms full utilisation, with limited vacancy drag at the system level.</p>
+
+    <h2>SIL depth and asset-level performance</h2>
+    <p>New South Wales has the deepest provider ecosystem nationally, with 202 active SDA providers. Depth is concentrated in Sydney, particularly Western Sydney, Newcastle and the Hunter, underpinning relatively low SIL-matching risk on established assets. Smaller regional markets (Riverina, Far West, New England) have significantly thinner coverage and should be assessed with elevated vacancy risk assumptions.</p>
+
+    <h2>Market view</h2>
+    <p>NSW attracts the widest institutional buyer interest of any Australian state, driven by SIL depth, portfolio scale and Sydney’s residential land values providing strong alternative-use floors. In SDAHC Research’s market observation, cap rates for stabilised HPS portfolios in Sydney’s established corridors are among the tightest observed nationally. New enrolments continue and institutional capital remains active. The primary risk is the Basic/IL legacy stock, which will face increasingly unfavourable comparative pricing as the HPS standard becomes the institutional benchmark, in SDAHC Research’s assessment.</p>
+
+    <p>Source: SDAHC Research, SDA Market Report 2026. Figures reflect the most recent available NDIS data as at Q3 2025-26. See our <a href="/research/research-methodology/">methodology and data sources</a>.</p>
+    <p><a class="btn b1" href="/research/sda-market-report-2026/">Get the full report</a></p>
+
+    <h2>SDA market in other states</h2>
+    <ul>
+      <li><a href="/research/sda-market-qld/">Queensland</a></li>
+      <li><a href="/research/sda-market-vic/">Victoria</a></li>
+      <li><a href="/research/sda-market-wa/">Western Australia</a></li>
+      <li><a href="/research/sda-market-sa/">South Australia</a></li>
+      <li><a href="/research/sda-market-tas/">Tasmania</a></li>
+      <li><a href="/research/sda-market-act/">Australian Capital Territory</a></li>
+      <li><a href="/research/sda-market-nt/">Northern Territory</a></li>
+    </ul>
+  </div></section>
+</BaseLayout>

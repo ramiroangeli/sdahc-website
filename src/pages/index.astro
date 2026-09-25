@@ -21,8 +21,6 @@ import Cta from '../components/Cta.astro';
 </BaseLayout>
 
 <script>
-import DATA from '../data/sda-states.json';
-
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const logo=document.getElementById('brandlogo'),reveal=document.getElementById('reveal'),heromap=document.getElementById('heromap');
 const ln=document.querySelector('#brandlogo .ln');
@@ -77,26 +75,4 @@ const io=new IntersectionObserver((es)=>es.forEach(x=>{if(x.isIntersecting){x.ta
  x.target.querySelectorAll&&x.target.querySelectorAll('[data-target]').forEach(nn=>{if(!nn._d){nn._d=1;runNum(nn);}});
  if(x.target.matches&&x.target.matches('[data-target]')&&!x.target._d){x.target._d=1;runNum(x.target);}io.unobserve(x.target);}}),{threshold:.35});
 document.querySelectorAll('.rv,[data-target]').forEach(e=>io.observe(e));
-
-/* functional map */
-const abbrs=Object.keys(DATA);
-const NAT={name:'Australia',d:abbrs.reduce((s,a)=>s+DATA[a].d,0),p:abbrs.reduce((s,a)=>s+DATA[a].p,0),r:abbrs.reduce((s,a)=>s+DATA[a].r,0)};
-function G(i){return document.getElementById(i)}const el={d:G('n-d'),p:G('n-p'),r:G('n-r'),name:G('p-name'),kick:G('p-kick'),go:G('p-go')};
-function fmt(x){return x.toLocaleString('en-AU')}let locked='AU',raf;
-function nums(o,an){const tg={d:o.d,p:o.p,r:o.r};if(!an||reduce){for(const k in tg)el[k].textContent=fmt(tg[k]);return;}
- cancelAnimationFrame(raf);const t0=performance.now();(function tk(n){const k=clamp((n-t0)/520,0,1),z=1-Math.pow(1-k,3);
-  for(const q in tg)el[q].textContent=fmt(Math.round(tg[q]*z));if(k<1)raf=requestAnimationFrame(tk);})(t0);}
-function paint(s){document.querySelectorAll('.st').forEach(x=>x.classList.toggle('sel',x.dataset.s===s));
- document.querySelectorAll('.lbl').forEach(l=>l.classList.toggle('on',l.dataset.lbl===s));
- document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.dataset.s===s));
- const dot=document.querySelector('.actdot');if(dot)dot.classList.toggle('sel',s==='ACT');}
-function render(s,an){const o=s==='AU'?NAT:DATA[s];el.name.textContent=o.name;el.kick.textContent=s==='AU'?'National overview':'State & territory';
- el.go.textContent=s==='AU'?'View the research →':('View the '+s+' market report →');
- el.go.href=s==='AU'?'/research/':('/research/sda-market-'+s.toLowerCase()+'/');nums(o,an);paint(s);}
-document.querySelectorAll('.st,.actdot').forEach(x=>{const s=x.dataset.s;
- x.addEventListener('mouseenter',()=>render(s,false));x.addEventListener('mouseleave',()=>render(locked,false));
- x.addEventListener('click',()=>{locked=s;render(s,true);});x.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();locked=s;render(s,true);}});});
-document.querySelectorAll('.chip').forEach(c=>{const s=c.dataset.s;
- c.addEventListener('mouseenter',()=>render(s,false));c.addEventListener('mouseleave',()=>render(locked,false));c.addEventListener('click',()=>{locked=s;render(s,true);});});
-render('AU',false);
 </script>

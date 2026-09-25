@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import AustraliaMap from '../../components/AustraliaMap.astro';
+---
+<BaseLayout title="SDA Market: Northern Territory - SDA Home Choices" description="The Northern Territory is Australia’s smallest and most structurally distinct SDA market, concentrated in Darwin, with the highest combined share of high-support design categories nationally, and currently below the risk-adjusted return threshold for commercial capital.">
+  <PageHeader
+    eyebrow="SDAHC Research"
+    title="SDA Market: Northern Territory"
+    standfirst="The Northern Territory is Australia’s smallest and most structurally distinct SDA market, concentrated in Darwin, with the highest combined share of high-support design categories nationally, and currently below the risk-adjusted return threshold for commercial capital."
+  />
+  <section class="section"><div class="wrap">
+    <AustraliaMap state="NT" />
+  </div></section>
+  <section class="section"><div class="prose">
+    <h2>Key figures</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Figure</th></tr></thead>
+      <tbody>
+      <tr><td>Enrolled dwellings</td><td>137</td></tr>
+      <tr><td>Participants in SDA</td><td>113</td></tr>
+      <tr><td>SDA funding committed</td><td>$7.5M</td></tr>
+      <tr><td>Active providers</td><td>14</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Enrolled dwellings by SA4 region</h2>
+    <table>
+      <thead><tr><th>Region</th><th>Enrolled dwellings</th></tr></thead>
+      <tbody>
+      <tr><td>Darwin</td><td>111</td></tr>
+      <tr><td>Northern Territory – Outback</td><td>26</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Design category breakdown</h2>
+    <table>
+      <thead><tr><th>Design category</th><th>Dwellings</th><th>Share</th></tr></thead>
+      <tbody>
+      <tr><td>High Physical Support</td><td>78</td><td>57%</td></tr>
+      <tr><td>Robust</td><td>26</td><td>19%</td></tr>
+      <tr><td>Fully Accessible</td><td>17</td><td>12%</td></tr>
+      <tr><td>Basic</td><td>5</td><td>4%</td></tr>
+      <tr><td>Improved Liveability</td><td>5</td><td>4%</td></tr>
+      </tbody>
+    </table>
+    <p>High Physical Support (57%) and Robust (19%) together account for 76% of NT stock, the highest combined complex-need proportion of any jurisdiction. This reflects the NT’s distinctive participant cohort, where the intersection of disability, geographic remoteness and limited mainstream housing infrastructure across many remote NT communities concentrates demand at the high-support end of the design category spectrum. Fully Accessible (12%) adds further complexity-weighted stock. Basic (4%) and IL (4%) are negligible, the NT effectively has no lower-complexity SDA market.</p>
+
+    <h2>Supply and pipeline</h2>
+    <p>The Northern Territory is Australia’s smallest SDA market: 137 enrolled dwellings and 113 active participants. As with Tasmania and the ACT, individual tenancy changes materially shift headline ratios. The $7.5M annualised funding is consistent with enrolled stock, but geographic dispersion, from Darwin to regional and remote communities, creates operational complexity the funding quantum alone does not capture.</p>
+
+    <h2>SIL depth and asset-level performance</h2>
+    <p>14 active SDA providers operate across the NT, but meaningful provider presence is almost entirely confined to Darwin. Remote and very remote NT communities, which represent a significant share of the territory’s disability population, have no structured SDA provider ecosystem. The cost structure of remote SDA provision, combined with NDIA’s Value for Money framework, makes viable SDA development outside Darwin not commercially viable under current NDIS pricing settings. This is not a market failure; it is a policy gap.</p>
+
+    <h2>Market view</h2>
+    <p>SDA investment in the NT is structurally incompatible with standard financial return expectations. Alternative-use values in Darwin are among the weakest of any Australian capital city, eliminating the downside floor that supports pricing in east-coast markets. Provider depth is insufficient to ensure SIL continuity. No institutional capital transactions have been observed by SDAHC Research in the NT. For impact investors or government-backed programs, the NT represents a genuine unmet need. For commercial SDA investors, the territory does not currently meet the risk-adjusted return threshold for new capital deployment.</p>
+
+    <p>Source: SDAHC Research, SDA Market Report 2026. Figures reflect the most recent available NDIS data as at Q3 2025-26. See our <a href="/research/research-methodology/">methodology and data sources</a>.</p>
+    <p><a class="btn b1" href="/research/sda-market-report-2026/">Get the full report</a></p>
+
+    <h2>SDA market in other states</h2>
+    <ul>
+      <li><a href="/research/sda-market-qld/">Queensland</a></li>
+      <li><a href="/research/sda-market-nsw/">New South Wales</a></li>
+      <li><a href="/research/sda-market-vic/">Victoria</a></li>
+      <li><a href="/research/sda-market-wa/">Western Australia</a></li>
+      <li><a href="/research/sda-market-sa/">South Australia</a></li>
+      <li><a href="/research/sda-market-tas/">Tasmania</a></li>
+      <li><a href="/research/sda-market-act/">Australian Capital Territory</a></li>
+    </ul>
+  </div></section>
+</BaseLayout>
