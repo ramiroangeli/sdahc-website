@@ -7,7 +7,24 @@ import PageHeader from '../components/PageHeader.astro';
     title="Thank you"
   />
   <section class="section"><div class="prose">
-    <p>Thank you for reaching out! We've received your request, and our team will be in touch shortly. We look forward to working with you!</p>
+    <p id="msg-default">Thank you for reaching out! We've received your request, and our team will be in touch shortly. We look forward to working with you!</p>
+    <p id="msg-report" style="display:none">Your download is starting. If it doesn't begin automatically, <a href="/sda-market-report-2026.pdf" id="report-link">download the SDA Market Report 2026 (PDF)</a>.</p>
     <p><a href="/">Back to the homepage</a></p>
   </div></section>
 </BaseLayout>
+
+<script>
+  if (new URLSearchParams(window.location.search).get('report') === '1') {
+    document.getElementById('msg-default').style.display = 'none';
+    document.getElementById('msg-report').style.display = '';
+    const link = document.getElementById('report-link');
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = link.href;
+      a.download = 'SDA-Market-Report-2026.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }, 600);
+  }
+</script>

@@ -26,3 +26,4 @@ pnpm-debug.log*
 # WordPress migration backups (not part of the Astro project)
 backup(cpanel)_230926/
 backup_15072026/
+.vercel

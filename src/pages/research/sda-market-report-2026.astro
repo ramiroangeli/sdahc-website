@@ -22,8 +22,8 @@ import PageHeader from '../../components/PageHeader.astro';
     <p>Enter your details below to receive the full 76-page report. We publish independent SDA market intelligence, your details help us understand who relies on our research.</p>
   </div></section>
   <section class="section">
-    <!-- gate submit + report delivery added in Prompt 4 -->
-    <form class="form">
+    <form class="form" data-endpoint="/api/report/" data-success="/thank-you/?report=1">
+      <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
       <div class="row2">
         <div>
           <label for="first_name">First Name</label>
@@ -76,6 +76,23 @@ import PageHeader from '../../components/PageHeader.astro';
         <textarea id="comments" name="comments"></textarea>
       </div>
       <button type="submit" class="btn b1">Submit Form</button>
+      <p class="form-status" role="status"></p>
     </form>
   </section>
 </BaseLayout>
+
+<script>
+  const form = document.querySelector('form[data-endpoint]');
+  if (form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const status = form.querySelector('.form-status');
+    btn.disabled = true; status.textContent = 'Sending...';
+    try {
+      const res = await fetch(form.dataset.endpoint, { method: 'POST', body: new FormData(form) });
+      const out = await res.json();
+      if (out.ok) { window.location.href = form.dataset.success; }
+      else { status.textContent = out.error || 'Something went wrong.'; btn.disabled = false; }
+    } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
+  });
+</script>

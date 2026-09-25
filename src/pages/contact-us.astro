@@ -15,8 +15,8 @@ import PageHeader from '../components/PageHeader.astro';
     </div>
   </div></section>
   <section class="section">
-    <!-- submit handler added in Prompt 4 -->
-    <form class="form">
+    <form class="form" data-endpoint="/api/contact/" data-success="/thank-you/">
+      <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
       <div>
         <label for="name">Name</label>
         <input type="text" id="name" name="name" />
@@ -34,9 +34,26 @@ import PageHeader from '../components/PageHeader.astro';
         <textarea id="message" name="message"></textarea>
       </div>
       <button type="submit" class="btn b1">Submit</button>
+      <p class="form-status" role="status"></p>
     </form>
   </section>
 </BaseLayout>
+
+<script>
+  const form = document.querySelector('form[data-endpoint]');
+  if (form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const status = form.querySelector('.form-status');
+    btn.disabled = true; status.textContent = 'Sending...';
+    try {
+      const res = await fetch(form.dataset.endpoint, { method: 'POST', body: new FormData(form) });
+      const out = await res.json();
+      if (out.ok) { window.location.href = form.dataset.success; }
+      else { status.textContent = out.error || 'Something went wrong.'; btn.disabled = false; }
+    } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
+  });
+</script>
 <style>
 .contact-details{max-width:620px;margin:0 auto;padding:0 30px;color:var(--pale)}
 .contact-details p{margin:0 0 8px}
