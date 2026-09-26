@@ -27,20 +27,25 @@ import PageHeader from '../../components/PageHeader.astro';
       <div class="row2">
         <div>
           <label for="first_name">First Name</label>
-          <input type="text" id="first_name" name="first_name" />
+          <input type="text" id="first_name" name="first_name" required />
         </div>
         <div>
           <label for="last_name">Last Name</label>
-          <input type="text" id="last_name" name="last_name" />
+          <input type="text" id="last_name" name="last_name" required />
         </div>
       </div>
       <div>
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" />
+        <input type="email" id="email" name="email" required />
       </div>
       <div>
         <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" name="phone" />
+        <div class="phone-row">
+          <select id="phone_country" name="phone_country">
+            <option value="+61" selected>Australia (+61)</option>
+          </select>
+          <input type="tel" id="phone" name="phone" placeholder="4XX XXX XXX" required />
+        </div>
       </div>
       <div class="row2">
         <div>
@@ -82,11 +87,28 @@ import PageHeader from '../../components/PageHeader.astro';
 </BaseLayout>
 
 <script>
+  function normalizeAuPhone(raw) {
+    let n = raw.replace(/[\s\-()]/g, '');
+    if (n.startsWith('0')) n = n.slice(1);
+    return n;
+  }
   const form = document.querySelector('form[data-endpoint]');
   if (form) form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = form.querySelector('button[type="submit"]');
     const status = form.querySelector('.form-status');
+    const firstName = form.querySelector('#first_name').value.trim();
+    const lastName = form.querySelector('#last_name').value.trim();
+    const email = form.querySelector('#email').value.trim();
+    const phone = form.querySelector('#phone').value.trim();
+    if (!firstName || !lastName || !email) {
+      status.textContent = 'Please complete all required fields.';
+      return;
+    }
+    if (!/^[23478]\d{8}$/.test(normalizeAuPhone(phone))) {
+      status.textContent = 'Please enter a valid Australian phone number.';
+      return;
+    }
     btn.disabled = true; status.textContent = 'Sending...';
     try {
       const res = await fetch(form.dataset.endpoint, { method: 'POST', body: new FormData(form) });
@@ -96,3 +118,8 @@ import PageHeader from '../../components/PageHeader.astro';
     } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
   });
 </script>
+<style>
+.phone-row{display:flex;gap:10px}
+.phone-row select{flex:0 0 auto;width:auto;min-width:150px}
+.phone-row input{flex:1 1 auto}
+</style>

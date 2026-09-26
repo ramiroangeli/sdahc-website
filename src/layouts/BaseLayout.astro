@@ -2,14 +2,13 @@
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import Analytics from '@vercel/analytics/astro';
 
 interface Props { title: string; description?: string; }
 const { title, description = 'Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation in Australia.' } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL('/og-default.png', Astro.site).href;
-const host = Astro.url.hostname;
-const noindex = host.startsWith('beta.') || host.endsWith('.vercel.app');
 const org = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -17,7 +16,8 @@ const org = {
   "url": Astro.site?.href,
   "logo": new URL('/favicon-512.png', Astro.site).href,
   "description": "Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation in Australia.",
-  "areaServed": "AU"
+  "areaServed": "AU",
+  "sameAs": ["https://www.linkedin.com/company/sda-home-choices/"]
 };
 const website = {
   "@context": "https://schema.org",
@@ -34,7 +34,6 @@ const website = {
   <title>{title}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
-  {noindex && <meta name="robots" content="noindex, nofollow" />}
   <!-- favicons -->
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -64,5 +63,6 @@ const website = {
   <Nav />
   <slot />
   <Footer />
+  <Analytics />
 </body>
 </html>

@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    { "source": "/report2026", "destination": "/research/sda-market-report-2026/?utm_source=print&utm_medium=qr&utm_campaign=report_2026", "permanent": true },
+    { "source": "/report2026-li", "destination": "/research/sda-market-report-2026/?utm_source=linkedin&utm_medium=social&utm_campaign=report_2026", "permanent": true },
+    { "source": "/sda-market-report-2026", "destination": "/research/sda-market-report-2026/", "permanent": true },
+    { "source": "/ndis-sda-mergers-and-acquisitions", "destination": "/sda-property-and-portfolio-sales/", "permanent": true }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "beta.sdahomechoices.com.au" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    }
+  ]
+}
