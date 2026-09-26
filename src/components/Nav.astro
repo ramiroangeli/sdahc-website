@@ -5,7 +5,7 @@ import logoIcon from '../assets/logo-icon-white.png';
 <header>
   <nav class="nav">
     <a class="mark" href="/" aria-label="SDA Home Choices home">
-      <Image src={logoIcon} alt="SDA Home Choices" class="mkicon" />SDA&nbsp;Home&nbsp;Choices
+      <Image src={logoIcon} alt="SDA Home Choices" class="mkicon" /><span class="wordmark">SDA&nbsp;Home&nbsp;Choices</span>
     </a>
     <div class="nls">
       <a class="l" href="/our-services-and-expertise/">Services</a>
@@ -52,6 +52,8 @@ header{position:fixed;top:0;left:0;right:0;z-index:60;backdrop-filter:blur(10px)
 @media(max-width:860px){
   .nls{display:none}
   .menu-toggle{display:inline-flex}
+  .mark .wordmark{display:none}
+  .mark .mkicon{margin-right:0}
 }
 @media(min-width:861px){
   .mobile-menu{display:none !important}
