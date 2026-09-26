@@ -2,25 +2,72 @@
 import { Image } from 'astro:assets';
 import logoIcon from '../assets/logo-icon-white.png';
 ---
-<header><nav class="nav">
-  <span class="mark"><Image src={logoIcon} alt="SDA Home Choices" class="mkicon" />SDA&nbsp;Home&nbsp;Choices</span>
-  <div class="nls">
-    <a class="l" href="/our-services-and-expertise/">Services</a>
-    <a class="l" href="/research/">Research</a>
-    <a class="l" href="/about-steve-dawson/">About</a>
-    <a class="l" href="/contact-us/">Contact</a>
+<header>
+  <nav class="nav">
+    <a class="mark" href="/" aria-label="SDA Home Choices home">
+      <Image src={logoIcon} alt="SDA Home Choices" class="mkicon" />SDA&nbsp;Home&nbsp;Choices
+    </a>
+    <div class="nls">
+      <a class="l" href="/our-services-and-expertise/">Services</a>
+      <a class="l" href="/research/">Research</a>
+      <a class="l" href="/about-steve-dawson/">About</a>
+      <a class="l" href="/contact-us/">Contact</a>
+    </div>
+    <div class="nav-right">
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+      <a class="rep" href="/research/sda-market-report-2026/">Get the report</a>
+    </div>
+  </nav>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/our-services-and-expertise/">Services</a>
+    <a href="/research/">Research</a>
+    <a href="/about-steve-dawson/">About</a>
+    <a href="/contact-us/">Contact</a>
   </div>
-  <a class="rep" href="/research/sda-market-report-2026/">Get the report</a>
-</nav></header>
+</header>
 <style>
 header{position:fixed;top:0;left:0;right:0;z-index:60;backdrop-filter:blur(10px);background:linear-gradient(rgba(0,22,43,.85),rgba(0,22,43,.35));border-bottom:1px solid rgba(185,203,224,.10)}
 .nav{display:flex;align-items:center;gap:26px;height:62px;max-width:1180px;margin:0 auto;padding:0 30px}
-.mark{font-family:var(--geo);font-weight:600;letter-spacing:.30em;font-size:14px;text-transform:uppercase;color:#fff;margin-right:auto}
-.mark .mkicon{height:26px;width:auto;margin-right:12px;vertical-align:middle}
+.mark{display:inline-flex;align-items:center;font-family:var(--geo);font-weight:600;letter-spacing:.30em;font-size:14px;text-transform:uppercase;color:#fff;margin-right:auto;text-decoration:none}
+.mark .mkicon{height:26px;width:auto;margin-right:12px}
 .nls{display:flex;gap:22px;align-items:center}
 .nav a.l{font-family:var(--geo);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--pale);text-decoration:none;opacity:.8}
 .nav a.l:hover{opacity:1;color:#fff}
-.nav .rep{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--blue);padding:9px 15px;text-decoration:none}
+.nav-right{display:flex;align-items:center;gap:14px}
+.nav .rep{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--blue);padding:9px 15px;text-decoration:none;white-space:nowrap}
 .nav .rep:hover{background:#0866bd}
-@media(max-width:860px){.nls{display:none}}
+/* hamburger: hidden on desktop */
+.menu-toggle{display:none;flex-direction:column;justify-content:center;gap:5px;width:40px;height:40px;padding:0;background:transparent;border:0;cursor:pointer}
+.menu-toggle span{display:block;width:22px;height:2px;background:#fff;transition:transform .25s,opacity .25s}
+.menu-toggle.is-open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.menu-toggle.is-open span:nth-child(2){opacity:0}
+.menu-toggle.is-open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+/* mobile dropdown panel: hidden until opened, and always hidden on desktop */
+.mobile-menu{display:none;flex-direction:column;background:var(--navy);border-bottom:1px solid rgba(185,203,224,.12);padding:8px 30px 20px}
+.mobile-menu.open{display:flex}
+.mobile-menu a{font-family:var(--geo);font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--pale);text-decoration:none;padding:14px 0;border-top:1px solid rgba(185,203,224,.10)}
+.mobile-menu a:hover{color:#fff}
+@media(max-width:860px){
+  .nls{display:none}
+  .menu-toggle{display:inline-flex}
+}
+@media(min-width:861px){
+  .mobile-menu{display:none !important}
+}
 </style>
+<script>
+  const toggle = document.querySelector('.menu-toggle');
+  const menu = document.getElementById('mobile-menu');
+  if (toggle && menu) {
+    const setOpen = (open) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.classList.toggle('is-open', open);
+      menu.classList.toggle('open', open);
+    };
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+    menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+  }
+</script>
