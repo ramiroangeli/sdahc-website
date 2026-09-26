@@ -5,6 +5,26 @@ import Footer from '../components/Footer.astro';
 
 interface Props { title: string; description?: string; }
 const { title, description = 'Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation in Australia.' } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL('/og-default.png', Astro.site).href;
+const host = Astro.url.hostname;
+const noindex = host.startsWith('beta.') || host.endsWith('.vercel.app');
+const org = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "SDA Home Choices",
+  "url": Astro.site?.href,
+  "logo": new URL('/favicon-512.png', Astro.site).href,
+  "description": "Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation in Australia.",
+  "areaServed": "AU"
+};
+const website = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "SDA Home Choices",
+  "url": Astro.site?.href
+};
 ---
 <!DOCTYPE html>
 <html lang="en-AU">
@@ -13,7 +33,29 @@ const { title, description = 'Independent commercial advisory for the sale, acqu
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>{title}</title>
   <meta name="description" content={description} />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <!-- favicons -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#00162B" />
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="SDA Home Choices" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:locale" content="en_AU" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
+  <script type="application/ld+json" set:html={JSON.stringify(org)} />
+  <script type="application/ld+json" set:html={JSON.stringify(website)} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Sans+3:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />

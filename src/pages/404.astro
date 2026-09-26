@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+---
+<BaseLayout title="Page Not Found | SDA Home Choices" description="The page you're looking for could not be found. Return to the homepage or browse our services and research.">
+  <PageHeader
+    eyebrow="404"
+    title="Page not found"
+    standfirst="The page you're looking for doesn't exist or may have moved."
+  />
+  <section class="section"><div class="prose">
+    <p>Check the address, or try one of these instead:</p>
+    <ul>
+      <li><a href="/">Homepage</a></li>
+      <li><a href="/our-services-and-expertise/">Services</a></li>
+      <li><a href="/research/">Research</a></li>
+      <li><a href="/contact-us/">Contact us</a></li>
+    </ul>
+  </div></section>
+</BaseLayout>

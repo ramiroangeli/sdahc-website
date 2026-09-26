@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sdahomechoices.com.au/sitemap-index.xml
