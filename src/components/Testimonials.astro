@@ -1,0 +1,153 @@
+---
+const testimonials = [
+  {
+    initials: 'GB',
+    accent: 'a1',
+    name: 'Greg Barry',
+    role: 'Founder and Principal Consultant, SDA Services',
+    quote: "I have known Steve Dawson and done business with him for over 20 years. His knowledge of all the commercial aspects of SDA investments and assets is without peer in the sector. Steve knows the complex commercial dynamics of this maturing space and how to independently optimise investment outcomes by intricately structuring and supporting transactions which bring together quality products and people.",
+  },
+  {
+    initials: 'RM',
+    accent: 'a2',
+    name: 'Richard Martin',
+    role: 'Executive Director, Apollo SDA',
+    quote: "I met Steve Dawson in 2020 when I was beginning my SDA journey. Over this period, Steve has immersed himself within the sector, becoming a highly respected collaborator and advisor to SDA leaders within the NDIS sector. His mix of both corporate and niche relationships allows him to deliver exceptional service and a depth of SDA knowledge that is both insightful and well-rounded. Over the years, he has helped me and my fellow director, Justin, to both acquire and divest of Specialist Disability Accommodation assets. In addition, Steve has assisted us in securing additional development and acquisition capital from experienced sophisticated capital partners. He has added both significant value to our organisation and the clients we have been fortunate to mutually assist in our sector.",
+  },
+  {
+    initials: 'DC',
+    accent: 'a3',
+    name: 'David Curd',
+    role: 'CEO, MS Queensland',
+    quote: "MS Queensland pioneered the development of contemporary new build Specialist Disability Accommodation in Queensland specifically for people living with neurological conditions who wished to live independently with access to quality support. As the NDIS evolved along with its policy, we chose to divest the freehold property portfolio and focus on expanding our core role as a provider of supports and services. After extensive industry research, we appointed Steve at SDA Home Choices to advise our Board and Executive and conduct a targeted sales campaign to extract maximum value for our stakeholders. We learned that the sale of this asset class is both complex and niche and requires a skilled professional with impeccable integrity, market respect and engagement consistency. Steve undertook this role with exceptional professionalism delivering exceptional results.",
+  },
+];
+---
+<section class="testimonials" id="testimonials"><div class="wrap">
+  <p class="eyebrow rv">What clients say</p>
+  <h2 class="sec-h rv d2">Trusted across the sector.</h2>
+
+  <div class="testi-panel rv d2">
+    <div class="testi-tabs" role="tablist" aria-label="Client testimonials">
+      {testimonials.map((t, i) => (
+        <button
+          class={`testi-tab ${t.accent}`}
+          role="tab"
+          id={`testi-tab-${i}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          aria-controls="testi-panel"
+          tabindex={i === 0 ? '0' : '-1'}
+          data-idx={i}
+        >
+          <span class="mono" aria-hidden="true">{t.initials}</span>
+          <span class="tab-info">
+            <span class="tab-name">{t.name}</span>
+            <span class="tab-org">{t.role}</span>
+          </span>
+        </button>
+      ))}
+    </div>
+
+    <div class="testi-stage">
+      <button class="testi-arrow testi-prev" aria-label="Previous testimonial">&larr;</button>
+      <div class="testi-quote" id="testi-panel" role="tabpanel" aria-labelledby="testi-tab-0" aria-live="polite">
+        <blockquote>{testimonials[0].quote}</blockquote>
+        <p class="testi-attrib"><strong>{testimonials[0].name}</strong>, {testimonials[0].role}</p>
+      </div>
+      <button class="testi-arrow testi-next" aria-label="Next testimonial">&rarr;</button>
+    </div>
+  </div>
+</div></section>
+
+<script define:vars={{ testimonials }}>
+  const tabs = [...document.querySelectorAll('.testi-tab')];
+  const panel = document.getElementById('testi-panel');
+  const prevBtn = document.querySelector('.testi-prev');
+  const nextBtn = document.querySelector('.testi-next');
+  const stage = document.querySelector('.testi-stage');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let active = 0;
+  let timer = null;
+
+  function render(idx, focusTab) {
+    active = idx;
+    const t = testimonials[idx];
+    tabs.forEach((tab, i) => {
+      const sel = i === idx;
+      tab.setAttribute('aria-selected', String(sel));
+      tab.tabIndex = sel ? 0 : -1;
+    });
+    panel.setAttribute('aria-labelledby', `testi-tab-${idx}`);
+    const bq = document.createElement('blockquote');
+    bq.textContent = t.quote;
+    const attrib = document.createElement('p');
+    attrib.className = 'testi-attrib';
+    const strong = document.createElement('strong');
+    strong.textContent = t.name;
+    attrib.append(strong, document.createTextNode(', ' + t.role));
+    panel.replaceChildren(bq, attrib);
+    if (focusTab) tabs[idx].focus();
+  }
+
+  function goTo(idx, focusTab) {
+    const n = testimonials.length;
+    render(((idx % n) + n) % n, focusTab);
+  }
+
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => goTo(i, false));
+    tab.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(i + 1, true); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(i - 1, true); }
+      else if (e.key === 'Home') { e.preventDefault(); goTo(0, true); }
+      else if (e.key === 'End') { e.preventDefault(); goTo(testimonials.length - 1, true); }
+    });
+  });
+  prevBtn.addEventListener('click', () => goTo(active - 1, false));
+  nextBtn.addEventListener('click', () => goTo(active + 1, false));
+
+  function stopAuto() { if (timer) { clearInterval(timer); timer = null; } }
+  function startAuto() {
+    if (reduce) return;
+    stopAuto();
+    timer = setInterval(() => goTo(active + 1, false), 7000);
+  }
+  stage.addEventListener('mouseenter', stopAuto);
+  stage.addEventListener('mouseleave', startAuto);
+  stage.addEventListener('focusin', stopAuto);
+  stage.addEventListener('focusout', startAuto);
+  startAuto();
+</script>
+
+<style>
+.testimonials{padding:104px 0;background:radial-gradient(1000px 520px at 50% 100%,rgba(4,118,217,.10),transparent 60%),var(--navy)}
+.testi-panel{margin-top:52px;display:grid;grid-template-columns:.85fr 1.15fr;gap:36px;align-items:stretch}
+.testi-tabs{display:flex;flex-direction:column;gap:10px}
+.testi-tab{display:flex;align-items:center;gap:14px;text-align:left;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:8px;padding:14px 16px;cursor:pointer;transition:transform .25s,background .25s,border-color .25s;font-family:var(--sans)}
+.testi-tab:hover{transform:translateY(-3px);background:var(--acc-bg)}
+.testi-tab:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.testi-tab[aria-selected="true"]{border-color:var(--acc);background:var(--acc-bg);box-shadow:0 10px 30px rgba(4,118,217,.18)}
+.testi-tab.a1{--acc:var(--blue);--acc-bg:rgba(4,118,217,.09)}
+.testi-tab.a2{--acc:var(--teal);--acc-bg:rgba(47,160,168,.10)}
+.testi-tab.a3{--acc:var(--amber);--acc-bg:rgba(201,122,10,.10)}
+.mono{flex:0 0 auto;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--acc),var(--navy2));color:#fff;font-family:var(--geo);font-weight:700;font-size:15px;letter-spacing:.02em}
+.tab-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tab-name{font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.04em;color:#fff}
+.tab-org{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.testi-stage{position:relative;display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:8px;padding:38px 30px}
+.testi-quote{flex:1 1 auto;min-width:0}
+.testi-quote blockquote{margin:0;font-family:var(--serif);font-style:italic;color:#fff;font-size:clamp(17px,2vw,20px);line-height:1.5}
+.testi-attrib{margin:20px 0 0;font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.testi-attrib strong{color:var(--pale);font-weight:600}
+.testi-arrow{flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:transparent;border:1px solid rgba(185,203,224,.3);color:var(--pale);cursor:pointer;font-size:16px;line-height:1;transition:.18s}
+.testi-arrow:hover{border-color:var(--blue);color:#fff;background:rgba(4,118,217,.12)}
+.testi-arrow:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:860px){
+  .testi-panel{grid-template-columns:1fr}
+  .testi-stage{padding:28px 20px}
+}
+@media(prefers-reduced-motion:reduce){
+  .testi-tab{transition:none}
+  .testi-tab:hover{transform:none}
+}
+</style>

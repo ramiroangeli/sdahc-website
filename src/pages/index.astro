@@ -7,6 +7,7 @@ import StatBand from '../components/StatBand.astro';
 import MarqueeDivider from '../components/MarqueeDivider.astro';
 import Services from '../components/Services.astro';
 import ResearchMap from '../components/ResearchMap.astro';
+import Testimonials from '../components/Testimonials.astro';
 import Cta from '../components/Cta.astro';
 ---
 <BaseLayout title="SDA Home Choices: SDA portfolio advisory across Australia" description="Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation across Australia.">
@@ -17,6 +18,7 @@ import Cta from '../components/Cta.astro';
   <MarqueeDivider />
   <Services />
   <ResearchMap />
+  <Testimonials />
   <Cta />
 </BaseLayout>
 
@@ -24,6 +26,7 @@ import Cta from '../components/Cta.astro';
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const logo=document.getElementById('brandlogo'),reveal=document.getElementById('reveal'),heromap=document.getElementById('heromap');
 const ln=document.querySelector('#brandlogo .ln');
+const tagWrap=document.getElementById('taglineWrap'),tagLeft=document.querySelector('.tag-left'),tagRight=document.querySelector('.tag-right');
 const herowrap=document.getElementById('hero'),m2=document.getElementById('m2');
 const groups=[...document.querySelectorAll('#heromap .hs')];
 const stage=document.querySelector('.stage'),glow=document.getElementById('heroGlow');
@@ -40,6 +43,11 @@ function frame(){
    g.setAttribute('transform','translate('+dx+' '+dy+') rotate('+rot+' '+g.dataset.cx+' '+g.dataset.cy+')');
    g.style.opacity=(1-0.85*e).toFixed(3);});
  heromap.style.transform='translate(-50%,-50%) scale('+(1+0.25*e)+')';heromap.style.opacity=(1-0.7*e).toFixed(3);
+ // opening tagline splits apart and fades early, well clear before the brand statement
+ const tg=clamp(p/0.2,0,1),tge=tg*tg*(3-2*tg);
+ tagWrap.style.opacity=(1-tge).toFixed(3);
+ tagLeft.style.transform='translateX('+(-tge*36)+'px)';
+ tagRight.style.transform='translateX('+(tge*36)+'px)';
  // brand statement emerges
  const br=clamp((p-0.4)/0.45,0,1),be=br*br*(3-2*br);
  reveal.style.opacity=be.toFixed(3);reveal.style.transform='scale('+lerp(.94,1,be)+')';
