@@ -190,6 +190,14 @@ import PageHeader from '../../components/PageHeader.astro';
 .cover-title{margin:20px 0 0;font-family:var(--geo);font-size:14px;font-weight:600;letter-spacing:.03em;color:#fff;max-width:24ch}
 .cover-caption{margin:6px 0 0;font-family:var(--geo);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 
+@media(prefers-reduced-motion:no-preference){
+  .cover-btn,.cover-card{transition:scale .25s ease,filter .25s ease}
+  .cover-btn:focus-visible{scale:1.05;filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--navy) 35%,transparent))}
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .cover-btn:hover,.cover-card:hover{scale:1.05;filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--navy) 35%,transparent))}
+}
+
 .cover-slot[data-key="sda2026"] .cover-img{animation:floatA 6s ease-in-out infinite}
 .cover-slot[data-key="special"] .cover-img{animation:floatB 7s ease-in-out infinite;animation-delay:.35s}
 .cover-slot[data-key="providers"] .cover-img{animation:floatC 6.5s ease-in-out infinite;animation-delay:.7s}
