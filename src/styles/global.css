@@ -69,8 +69,8 @@ a{color:inherit}
 
 /* page-header lead CTA (primary button + soft secondary link, directly under a PageHeader standfirst) */
 .pagehead-cta{padding:0 0 56px;background:var(--navy)}
-.pagehead-cta .lead-secondary{margin:18px 0 0;color:var(--muted);font-size:15px}
-.pagehead-cta .lead-secondary a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.lead-secondary{margin:18px 0 0;color:var(--muted);font-size:15px}
+.lead-secondary a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
 
 /* FAQ accordion, native details/summary */
 .faq{margin:0 0 18px;border-top:1px solid rgba(185,203,224,.16)}
