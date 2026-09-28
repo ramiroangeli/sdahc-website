@@ -19,88 +19,119 @@ import PageHeader from '../../components/PageHeader.astro';
     </ul>
 
     <h2>Download the report</h2>
-    <p>Enter your details below to receive the full 76-page report. We publish independent SDA market intelligence, your details help us understand who relies on our research.</p>
+    <p>Select the SDA Report 2026 below to enter your details and receive the full 76-page report. We publish independent SDA market intelligence, your details help us understand who relies on our research.</p>
   </div></section>
+
   <section class="section">
-    <form class="form" data-endpoint="/api/report/" data-success="/thank-you/?report=1">
-      <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
-      <div class="row2">
-        <div>
-          <label for="first_name">First Name</label>
-          <input type="text" id="first_name" name="first_name" required />
+    <div class="showcase" id="showcase" data-state="grid">
+      <div class="covers" id="covers">
+        <div class="cover-slot" data-key="sda2026">
+          <button type="button" class="cover-btn" id="sdaCoverBtn" aria-label="Open the SDA Report 2026 download form">
+            <img src="/report-sda-2026.png" alt="SDA Report 2026 cover" class="cover-img" width="1122" height="1402" loading="lazy" />
+          </button>
+          <p class="cover-title">SDA Report 2026</p>
         </div>
-        <div>
-          <label for="last_name">Last Name</label>
-          <input type="text" id="last_name" name="last_name" required />
+        <div class="cover-slot coming-soon" data-key="special">
+          <div class="cover-card" aria-disabled="true" title="Coming soon">
+            <img src="/report-special-situations.png" alt="SDA Administration and Special Situations Report cover" class="cover-img" width="1122" height="1402" loading="lazy" />
+          </div>
+          <p class="cover-title">SDA Administration &amp; Special Situations Report</p>
+          <p class="cover-caption">Coming soon</p>
+        </div>
+        <div class="cover-slot coming-soon" data-key="providers">
+          <div class="cover-card" aria-disabled="true" title="Coming soon">
+            <img src="/report-providers.png" alt="SDA Providers Report cover" class="cover-img" width="1122" height="1402" loading="lazy" />
+          </div>
+          <p class="cover-title">SDA Providers Report</p>
+          <p class="cover-caption">Coming soon</p>
+        </div>
+
+        <div class="feature-form" id="featureForm">
+          <button type="button" class="back-btn" id="backBtn">&larr; Back to all reports</button>
+          <h2 class="feature-heading" id="featureHeading" tabindex="-1">Request the SDA Report 2026</h2>
+          <form class="form" data-endpoint="/api/report/" data-success="/thank-you/?report=1">
+          <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+          <div class="row2">
+            <div>
+              <label for="first_name">First Name</label>
+              <input type="text" id="first_name" name="first_name" required />
+            </div>
+            <div>
+              <label for="last_name">Last Name</label>
+              <input type="text" id="last_name" name="last_name" required />
+            </div>
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+          <div>
+            <label for="phone">Phone Number</label>
+            <div class="phone-row">
+              <select id="phone_country" name="phone_country">
+                <option value="+61" selected>Australia (+61)</option>
+              </select>
+              <input type="tel" id="phone" name="phone" placeholder="4XX XXX XXX" required />
+            </div>
+          </div>
+          <div class="row2">
+            <div>
+              <label for="role">Role</label>
+              <select id="role" name="role">
+                <option value="">- Role -</option>
+                <option value="Investor">Investor</option>
+                <option value="SDA Provider">SDA Provider</option>
+                <option value="Property Owner">Property Owner</option>
+                <option value="SIL Provider">SIL Provider</option>
+                <option value="Financier">Financier</option>
+                <option value="Administrator">Administrator</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="state">State</label>
+              <select id="state" name="state">
+                <option value="">- State -</option>
+                <option value="QLD">QLD</option>
+                <option value="NSW">NSW</option>
+                <option value="VIC">VIC</option>
+                <option value="WA">WA</option>
+                <option value="SA">SA</option>
+                <option value="TAS">TAS</option>
+                <option value="ACT">ACT</option>
+                <option value="NT">NT</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="comments">Comments</label>
+            <textarea id="comments" name="comments"></textarea>
+          </div>
+          <button type="submit" class="btn b1">Submit Form</button>
+          <p class="form-status" role="status"></p>
+        </form>
         </div>
       </div>
-      <div>
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required />
-      </div>
-      <div>
-        <label for="phone">Phone Number</label>
-        <div class="phone-row">
-          <select id="phone_country" name="phone_country">
-            <option value="+61" selected>Australia (+61)</option>
-          </select>
-          <input type="tel" id="phone" name="phone" placeholder="4XX XXX XXX" required />
-        </div>
-      </div>
-      <div class="row2">
-        <div>
-          <label for="role">Role</label>
-          <select id="role" name="role">
-            <option value="">- Role -</option>
-            <option value="Investor">Investor</option>
-            <option value="SDA Provider">SDA Provider</option>
-            <option value="Property Owner">Property Owner</option>
-            <option value="SIL Provider">SIL Provider</option>
-            <option value="Financier">Financier</option>
-            <option value="Administrator">Administrator</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label for="state">State</label>
-          <select id="state" name="state">
-            <option value="">- State -</option>
-            <option value="QLD">QLD</option>
-            <option value="NSW">NSW</option>
-            <option value="VIC">VIC</option>
-            <option value="WA">WA</option>
-            <option value="SA">SA</option>
-            <option value="TAS">TAS</option>
-            <option value="ACT">ACT</option>
-            <option value="NT">NT</option>
-          </select>
-        </div>
-      </div>
-      <div>
-        <label for="comments">Comments</label>
-        <textarea id="comments" name="comments"></textarea>
-      </div>
-      <button type="submit" class="btn b1">Submit Form</button>
-      <p class="form-status" role="status"></p>
-    </form>
+    </div>
   </section>
 </BaseLayout>
 
 <script>
-  function normalizeAuPhone(raw) {
+  function normalizeAuPhone(raw: string) {
     let n = raw.replace(/[\s\-()]/g, '');
     if (n.startsWith('0')) n = n.slice(1);
     return n;
   }
-  const form = document.querySelector('form[data-endpoint]');
+  const form = document.querySelector<HTMLFormElement>('form[data-endpoint]');
   if (form) form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = form.querySelector('button[type="submit"]');
-    const status = form.querySelector('.form-status');
-    const firstName = form.querySelector('#first_name').value.trim();
-    const lastName = form.querySelector('#last_name').value.trim();
-    const email = form.querySelector('#email').value.trim();
-    const phone = form.querySelector('#phone').value.trim();
+    const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const status = form.querySelector<HTMLElement>('.form-status');
+    const firstName = form.querySelector<HTMLInputElement>('#first_name')!.value.trim();
+    const lastName = form.querySelector<HTMLInputElement>('#last_name')!.value.trim();
+    const email = form.querySelector<HTMLInputElement>('#email')!.value.trim();
+    const phone = form.querySelector<HTMLInputElement>('#phone')!.value.trim();
+    if (!btn || !status) return;
     if (!firstName || !lastName || !email) {
       status.textContent = 'Please complete all required fields.';
       return;
@@ -111,15 +142,102 @@ import PageHeader from '../../components/PageHeader.astro';
     }
     btn.disabled = true; status.textContent = 'Sending...';
     try {
-      const res = await fetch(form.dataset.endpoint, { method: 'POST', body: new FormData(form) });
+      const res = await fetch(form.dataset.endpoint!, { method: 'POST', body: new FormData(form) });
       const out = await res.json();
-      if (out.ok) { window.location.href = form.dataset.success; }
+      if (out.ok) { window.location.href = form.dataset.success!; }
       else { status.textContent = out.error || 'Something went wrong.'; btn.disabled = false; }
     } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
   });
+
+  const showcase = document.getElementById('showcase');
+  const sdaBtn = document.getElementById('sdaCoverBtn');
+  const backBtn = document.getElementById('backBtn');
+  const featureForm = document.getElementById('featureForm');
+  const featureHeading = document.getElementById('featureHeading');
+  const comingSoonCards = document.querySelectorAll<HTMLElement>('.cover-card');
+
+  if (showcase && sdaBtn && backBtn && featureForm && featureHeading) {
+    const openForm = () => {
+      showcase.dataset.state = 'selected';
+      featureForm.removeAttribute('inert');
+      featureHeading.focus();
+    };
+    const closeForm = () => {
+      showcase.dataset.state = 'grid';
+      featureForm.setAttribute('inert', '');
+      sdaBtn.focus();
+    };
+    featureForm.setAttribute('inert', '');
+    sdaBtn.addEventListener('click', openForm);
+    backBtn.addEventListener('click', closeForm);
+  }
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) {
+    comingSoonCards.forEach((card) => {
+      card.addEventListener('click', () => {
+        card.classList.remove('shake');
+        void card.offsetWidth;
+        card.classList.add('shake');
+      });
+    });
+  }
 </script>
+
 <style>
 .phone-row{display:flex;gap:10px}
 .phone-row select{flex:0 0 auto;width:auto;min-width:150px}
 .phone-row input{flex:1 1 auto}
+
+.showcase{margin-top:12px}
+.covers{display:flex;gap:36px;align-items:flex-end;flex-wrap:wrap}
+.cover-slot{flex:1 1 0;min-width:180px;max-width:300px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:flex .5s ease,opacity .5s ease,transform .5s ease,max-width .5s ease}
+.cover-btn,.cover-card{display:block;width:100%;background:transparent;border:0;padding:0;margin:0}
+.cover-btn{cursor:pointer}
+.cover-card{cursor:not-allowed}
+.cover-btn:focus-visible{outline:2px solid #fff;outline-offset:6px;border-radius:4px}
+.cover-img{width:100%;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 22px 44px rgba(0,10,25,.55))}
+.cover-title{margin:20px 0 0;font-family:var(--geo);font-size:14px;font-weight:600;letter-spacing:.03em;color:#fff;max-width:24ch}
+.cover-caption{margin:6px 0 0;font-family:var(--geo);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+.cover-slot[data-key="sda2026"] .cover-img{animation:floatA 6s ease-in-out infinite}
+.cover-slot[data-key="special"] .cover-img{animation:floatB 7s ease-in-out infinite;animation-delay:.35s}
+.cover-slot[data-key="providers"] .cover-img{animation:floatC 6.5s ease-in-out infinite;animation-delay:.7s}
+@keyframes floatA{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(-3deg)}}
+@keyframes floatB{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-10px) rotate(0deg)}}
+@keyframes floatC{0%,100%{transform:translateY(0) rotate(3deg)}50%{transform:translateY(-14px) rotate(3deg)}}
+
+.shake{animation:shake .4s ease}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+
+.feature-form{flex:0 0 0;width:0;max-width:0;opacity:0;overflow:hidden;transition:opacity .35s ease,max-width .5s ease;padding:0}
+.feature-form[inert]{visibility:hidden}
+.back-btn{background:transparent;border:0;color:var(--pale);font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:0;margin:0 0 22px;text-decoration:underline;text-underline-offset:3px}
+.back-btn:hover{color:#fff}
+.back-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.feature-heading{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(20px,2.4vw,26px);margin:0 0 24px}
+.feature-heading:focus-visible{outline:none}
+
+.showcase[data-state="selected"] .covers{align-items:flex-start}
+.showcase[data-state="selected"] .cover-slot.coming-soon{flex:0 0 0;max-width:0;opacity:0;transform:translateY(60px);pointer-events:none;margin:0}
+.showcase[data-state="selected"] .cover-slot[data-key="sda2026"]{flex:0 0 220px;max-width:220px}
+.showcase[data-state="selected"] .cover-slot[data-key="sda2026"] .cover-img{animation:none;transform:scale(1.05)}
+.showcase[data-state="selected"] .feature-form{flex:1 1 420px;width:auto;max-width:640px;opacity:1;padding:8px 0 0 8px}
+
+@media(max-width:860px){
+  .covers{flex-direction:column;align-items:center}
+  .cover-slot{max-width:220px}
+  .showcase[data-state="selected"] .covers{flex-direction:column;gap:0}
+  .showcase[data-state="selected"] .cover-slot.coming-soon{max-height:0;transform:translateY(0)}
+  .showcase[data-state="selected"] .cover-slot[data-key="sda2026"]{max-width:180px;margin-bottom:0}
+  .showcase[data-state="selected"] .feature-form{max-width:100%;padding:32px 0 0 0}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .cover-slot[data-key="sda2026"] .cover-img,
+  .cover-slot[data-key="special"] .cover-img,
+  .cover-slot[data-key="providers"] .cover-img{animation:none}
+  .cover-slot,.feature-form{transition:none}
+  .shake{animation:none}
+}
 </style>
