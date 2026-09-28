@@ -1,28 +1,30 @@
 ---
+import { Image } from 'astro:assets';
+
 const testimonials = [
   {
-    initials: 'GB',
     accent: 'a1',
-    name: 'Greg Barry',
-    org: 'SDA Services',
-    role: 'Founder and Principal Consultant, SDA Services',
-    quote: "I have known Steve Dawson and done business with him for over 20 years. His knowledge of all the commercial aspects of SDA investments and assets is without peer in the sector. Steve knows the complex commercial dynamics of this maturing space and how to independently optimise investment outcomes by intricately structuring and supporting transactions which bring together quality products and people.",
+    logo: '/ms_queensland_logo.jpeg',
+    company: 'MS Queensland',
+    person: 'David Curd',
+    role: 'CEO, MS Queensland',
+    quote: "MS Queensland pioneered the development of contemporary new build Specialist Disability Accommodation in Queensland specifically for people living with neurological conditions who wished to live independently with access to quality support. As the NDIS evolved along with its policy, we chose to divest the freehold property portfolio and focus on expanding our core role as a provider of supports and services. After extensive industry research, we appointed Steve at SDA Home Choices to advise our Board and Executive and conduct a targeted sales campaign to extract maximum value for our stakeholders. We learned that the sale of this asset class is both complex and niche and requires a skilled professional with impeccable integrity, market respect and engagement consistency. Steve undertook this role with exceptional professionalism delivering exceptional results.",
   },
   {
-    initials: 'RM',
     accent: 'a2',
-    name: 'Richard Martin',
-    org: 'Apollo SDA',
-    role: 'Executive Director, Apollo SDA',
+    logo: '/guardian_living_australia_logo.jpeg',
+    company: 'Guardian Living',
+    person: 'Richard Martin',
+    role: 'Executive Director, Guardian Living',
     quote: "I met Steve Dawson in 2020 when I was beginning my SDA journey. Over this period, Steve has immersed himself within the sector, becoming a highly respected collaborator and advisor to SDA leaders within the NDIS sector. His mix of both corporate and niche relationships allows him to deliver exceptional service and a depth of SDA knowledge that is both insightful and well-rounded. Over the years, he has helped me and my fellow director, Justin, to both acquire and divest of Specialist Disability Accommodation assets. In addition, Steve has assisted us in securing additional development and acquisition capital from experienced sophisticated capital partners. He has added both significant value to our organisation and the clients we have been fortunate to mutually assist in our sector.",
   },
   {
-    initials: 'DC',
     accent: 'a3',
-    name: 'David Curd',
-    org: 'MS Queensland',
-    role: 'CEO, MS Queensland',
-    quote: "MS Queensland pioneered the development of contemporary new build Specialist Disability Accommodation in Queensland specifically for people living with neurological conditions who wished to live independently with access to quality support. As the NDIS evolved along with its policy, we chose to divest the freehold property portfolio and focus on expanding our core role as a provider of supports and services. After extensive industry research, we appointed Steve at SDA Home Choices to advise our Board and Executive and conduct a targeted sales campaign to extract maximum value for our stakeholders. We learned that the sale of this asset class is both complex and niche and requires a skilled professional with impeccable integrity, market respect and engagement consistency. Steve undertook this role with exceptional professionalism delivering exceptional results.",
+    logo: '/sda_services_pty_ltd_logo.jpeg',
+    company: 'SDA Services',
+    person: 'Greg Barry',
+    role: 'Founder and Principal Consultant, SDA Services',
+    quote: "I have known Steve Dawson and done business with him for over 20 years. His knowledge of all the commercial aspects of SDA investments and assets is without peer in the sector. Steve knows the complex commercial dynamics of this maturing space and how to independently optimise investment outcomes by intricately structuring and supporting transactions which bring together quality products and people.",
   },
 ];
 ---
@@ -39,11 +41,13 @@ const testimonials = [
         aria-expanded={i === 0 ? 'true' : 'false'}
         aria-controls={`testi-body-${i}`}
       >
-        <span class="mono" aria-hidden="true">{t.initials}</span>
-        <span class="strip-label" aria-hidden="true">{t.org} / {t.name}</span>
+        <span class="strip-logo">
+          <Image src={t.logo} width={200} height={200} alt={t.company} />
+        </span>
+        <span class="strip-label" aria-hidden="true">{t.company}</span>
         <span class="strip-body" id={`testi-body-${i}`} aria-live="polite">
           <blockquote>&quot;{t.quote}&quot;</blockquote>
-          <p class="testi-attrib"><strong>{t.name}</strong>, {t.role}</p>
+          <p class="testi-attrib"><strong>{t.person}</strong>, {t.role}</p>
         </span>
       </button>
     ))}
@@ -84,35 +88,36 @@ const testimonials = [
 
 <style>
 .testimonials{padding:104px 0;background:radial-gradient(1000px 520px at 50% 100%,rgba(4,118,217,.10),transparent 60%),var(--navy)}
-.testi-accordion{margin-top:52px;display:flex;gap:14px;height:340px;align-items:stretch}
+.testi-accordion{margin-top:52px;display:flex;gap:14px;height:440px;align-items:stretch}
 .testi-strip{position:relative;flex:1 1 0%;min-width:0;display:block;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:10px;padding:0;cursor:pointer;overflow:hidden;transition:flex-grow .3s ease,background .3s ease,border-color .3s ease;font-family:var(--sans);text-align:left}
 .testi-strip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);opacity:.55;transition:opacity .3s ease}
-.testi-strip.a1{--acc:var(--blue);--acc-bg:rgba(4,118,217,.12)}
-.testi-strip.a2{--acc:var(--teal);--acc-bg:rgba(47,160,168,.12)}
-.testi-strip.a3{--acc:var(--amber);--acc-bg:rgba(201,122,10,.12)}
+.testi-strip.a1{--acc:var(--accent-msq);--acc-bg:rgba(228,48,36,.12)}
+.testi-strip.a2{--acc:var(--accent-guardian);--acc-bg:rgba(0,139,173,.12)}
+.testi-strip.a3{--acc:var(--accent-sdaservices);--acc-bg:rgba(144,144,48,.12)}
 .testi-strip[aria-expanded="true"]{flex-grow:8;background:linear-gradient(135deg,var(--acc-bg),transparent 70%);border-color:var(--acc)}
 .testi-strip[aria-expanded="true"]::before{opacity:1}
 .testi-strip:focus-visible{outline:2px solid #fff;outline-offset:-2px}
-.mono{position:absolute;top:20px;left:20px;z-index:2;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--acc),var(--navy2));color:#fff;font-family:var(--geo);font-weight:700;font-size:13px}
+.strip-logo{position:absolute;top:18px;left:18px;z-index:2;width:44px;height:44px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;padding:6px;box-shadow:0 4px 14px rgba(0,10,25,.35)}
+.strip-logo img{width:100%;height:100%;object-fit:contain;display:block}
 .strip-label{position:absolute;left:50%;top:50%;white-space:nowrap;transform:translate(-50%,-50%) rotate(-90deg);transform-origin:center;font-family:var(--geo);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--pale);transition:opacity .2s ease;opacity:1}
 .testi-strip[aria-expanded="true"] .strip-label{opacity:0}
-.strip-body{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:32px 34px 32px 74px;opacity:0;transition:opacity .25s ease .05s}
-.testi-strip[aria-expanded="true"] .strip-body{opacity:1}
-.strip-body blockquote{margin:0;font-family:var(--serif);font-style:italic;color:#fff;font-size:clamp(15px,1.7vw,19px);line-height:1.5}
-.testi-attrib{margin:18px 0 0;font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.strip-body{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:32px 36px 32px 88px;opacity:0;transform:translateY(6px);transition:opacity .3s ease,transform .3s ease}
+.testi-strip[aria-expanded="true"] .strip-body{opacity:1;transform:translateY(0)}
+.strip-body blockquote{margin:0;font-family:var(--sans);font-style:normal;color:var(--pale);font-size:clamp(14px,1.4vw,16px);line-height:1.55;max-width:64ch}
+.testi-attrib{margin:16px 0 0;font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .testi-attrib strong{color:var(--pale);font-weight:600}
-@media(max-width:1080px){.strip-body blockquote{font-size:15px}.strip-body{padding:26px 24px 26px 66px}}
+@media(max-width:1080px){.strip-body blockquote{font-size:14px}.strip-body{padding:26px 24px 26px 78px}}
 @media(max-width:760px){
   .testi-accordion{flex-direction:column;height:auto}
   .testi-strip{flex:none!important;width:100%}
-  .mono{position:static;margin-bottom:14px}
+  .strip-logo{position:static;margin:22px 0 0 22px}
   .strip-label{display:none}
-  .strip-body{position:static;opacity:1!important;padding:24px 22px;display:block}
+  .strip-body{position:static;opacity:1!important;transform:none!important;padding:16px 22px 24px;display:block}
   .strip-body blockquote{white-space:normal}
   .testi-attrib{white-space:normal}
 }
 @media(prefers-reduced-motion:reduce){
   .testi-strip{transition:none}
-  .strip-label,.strip-body{transition:none}
+  .strip-label,.strip-logo,.strip-body{transition:none}
 }
 </style>

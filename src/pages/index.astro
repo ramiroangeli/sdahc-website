@@ -43,14 +43,6 @@ function frame(){
    g.setAttribute('transform','translate('+dx+' '+dy+') rotate('+rot+' '+g.dataset.cx+' '+g.dataset.cy+')');
    g.style.opacity=(1-0.85*e).toFixed(3);});
  heromap.style.transform='translate(-50%,-50%) scale('+(1+0.25*e)+')';heromap.style.opacity=(1-0.7*e).toFixed(3);
- // opening tagline splits apart and fades early, well clear before the brand statement
- const tg=clamp(p/0.2,0,1),tge=tg*tg*(3-2*tg);
- tagWrap.style.opacity=(1-tge).toFixed(3);
- tagLeft.style.transform='translateX('+(-tge*36)+'px)';
- tagRight.style.transform='translateX('+(tge*36)+'px)';
- // brand statement emerges
- const br=clamp((p-0.4)/0.45,0,1),be=br*br*(3-2*br);
- reveal.style.opacity=be.toFixed(3);reveal.style.transform='scale('+lerp(.94,1,be)+')';
  // logo: centre -> descend+shrink -> fly to section-2 top-right -> anchor there (scrolls with it)
  const y=scrollY, hE=herowrap.offsetHeight-innerHeight, T=innerHeight*0.6;
  let cx,cy,s,nm;
@@ -60,6 +52,18 @@ function frame(){
    else{cx=rr.left;cy=rr.top;s=DOCK_S;nm=1;}}
  logo.style.opacity=1;ln.style.opacity=nm;
  logo.style.transform='translate('+cx+'px,'+cy+'px) translate(-50%,-50%) scale('+s+')';
+ // opening tagline splits apart and fades early, well clear before the brand statement
+ // anchored a fixed gap below the logo's own actual rendered edge, so it tracks the
+ // real geometry (immune to viewport-percentage/zoom mismatches) instead of a guessed offset
+ const logoRect=logo.getBoundingClientRect();
+ tagWrap.style.top=(logoRect.bottom+22)+'px';
+ const tg=clamp(p/0.2,0,1),tge=tg*tg*(3-2*tg);
+ tagWrap.style.opacity=(1-tge).toFixed(3);
+ tagLeft.style.transform='translateX('+(-tge*36)+'px)';
+ tagRight.style.transform='translateX('+(tge*36)+'px)';
+ // brand statement emerges
+ const br=clamp((p-0.4)/0.45,0,1),be=br*br*(3-2*br);
+ reveal.style.opacity=be.toFixed(3);reveal.style.transform='scale('+lerp(.94,1,be)+')';
 }
 if(!reduce){addEventListener('scroll',()=>requestAnimationFrame(frame),{passive:true});addEventListener('resize',frame);frame();}
 else{reveal.style.opacity=1;heromap.style.opacity=.3;const rr=m2.getBoundingClientRect();
