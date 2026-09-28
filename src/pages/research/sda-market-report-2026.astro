@@ -2,28 +2,16 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
 ---
-<BaseLayout title="SDA Market Report 2026 | SDA Home Choices" description="The definitive market intelligence report for investors in Australia's Specialist Disability Accommodation sector.">
+<BaseLayout title="SDA Market Reports | SDA Home Choices" description="SDAHC Research produces commercial intelligence for Australia's Specialist Disability Accommodation sector, helping investors, providers and boards make better-informed decisions.">
   <PageHeader
     eyebrow="SDAHC Research"
-    title="SDA Market Report 2026"
-    standfirst="The definitive market intelligence report for investors in Australia's Specialist Disability Accommodation sector. 76 pages of state-by-state analysis, real transaction data, and proprietary risk scoring, free to download."
+    title="SDA Market Reports"
+    standfirst="SDAHC Research produces commercial intelligence for Australia's Specialist Disability Accommodation sector. Combining proprietary transaction evidence, NDIS data and sector insight, our reports help investors, providers and boards make better-informed decisions."
   />
-  <section class="section"><div class="prose">
-    <h2>What's inside</h2>
-    <ul>
-      <li>State-by-state analysis across all eight Australian jurisdictions</li>
-      <li>New-build delivery, pipeline, and supply-versus-demand benchmarks</li>
-      <li>Real SDA transaction data from 2019 to 2026, observed yields and price-to-enrolled-value ratios</li>
-      <li>Value-for-money analysis and management model comparison</li>
-      <li>SDAHC's proprietary Market Assessment Framework: demand, vacancy exposure, SIL ecosystem, transaction liquidity, and alternative-use floor</li>
-    </ul>
-
-    <h2>Download the report</h2>
-    <p>Select the SDA Report 2026 below to enter your details and receive the full 76-page report. We publish independent SDA market intelligence, your details help us understand who relies on our research.</p>
-  </div></section>
 
   <section class="section">
-    <div class="showcase" id="showcase" data-state="grid">
+    <div class="showcase wrap" id="showcase" data-state="grid">
+      <p class="showcase-prompt">Select a report to download</p>
       <div class="covers" id="covers">
         <div class="cover-slot" data-key="sda2026">
           <button type="button" class="cover-btn" id="sdaCoverBtn" aria-label="Open the SDA Report 2026 download form">
@@ -190,7 +178,9 @@ import PageHeader from '../../components/PageHeader.astro';
 .phone-row input{flex:1 1 auto}
 
 .showcase{margin-top:12px}
-.covers{display:flex;gap:36px;align-items:flex-end;flex-wrap:wrap}
+.showcase-prompt{margin:0 0 40px;text-align:center;font-family:var(--geo);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.showcase[data-state="selected"] .showcase-prompt{display:none}
+.covers{display:flex;justify-content:space-evenly;gap:36px;align-items:flex-end;flex-wrap:wrap}
 .cover-slot{flex:1 1 0;min-width:180px;max-width:300px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:flex .5s ease,opacity .5s ease,transform .5s ease,max-width .5s ease}
 .cover-btn,.cover-card{display:block;width:100%;background:transparent;border:0;padding:0;margin:0}
 .cover-btn{cursor:pointer}
@@ -212,6 +202,7 @@ import PageHeader from '../../components/PageHeader.astro';
 
 .feature-form{flex:0 0 0;width:0;max-width:0;opacity:0;overflow:hidden;transition:opacity .35s ease,max-width .5s ease;padding:0}
 .feature-form[inert]{visibility:hidden}
+.showcase[data-state="grid"] .feature-form{position:absolute}
 .back-btn{background:transparent;border:0;color:var(--pale);font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:0;margin:0 0 22px;text-decoration:underline;text-underline-offset:3px}
 .back-btn:hover{color:#fff}
 .back-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
