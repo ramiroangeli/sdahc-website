@@ -15,7 +15,7 @@
 #heroGlow{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .35s;mix-blend-mode:screen;background:radial-gradient(340px circle at var(--mx,50%) var(--my,42%),rgba(4,118,217,.30),rgba(4,118,217,0) 62%)}
 #heromap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);aspect-ratio:898/816;width:min(72vh,720px);height:auto;overflow:visible;filter:drop-shadow(0 0 40px rgba(4,118,217,.18))}
 #heromap .hs path{fill:var(--mapfill);stroke:var(--blue);stroke-width:1.1}
-.tagline-wrap{position:absolute;left:0;right:0;top:70%;z-index:2;display:flex;justify-content:center;padding:0 16px;pointer-events:none}
+.tagline-wrap{position:fixed;left:0;right:0;top:70%;z-index:2;display:flex;justify-content:center;padding:0 16px;pointer-events:none}
 .tagline{position:relative;display:inline-block;font-family:var(--geo);font-weight:500;font-size:clamp(10px,2.4vw,15px);letter-spacing:.18em;text-transform:uppercase;color:var(--pale);white-space:nowrap;max-width:100%}
 @media(max-width:480px){.tagline{letter-spacing:.09em}}
 .tag-left{position:absolute;inset:0;clip-path:inset(0 50% 0 0);will-change:transform,opacity}
