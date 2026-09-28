@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { Image } from 'astro:assets';
+import steveDawson from '../assets/steve-dawson.jpg';
+---
+<BaseLayout title="About | SDA Home Choices" description="SDA Home Choices is an independent advisory and transactions firm working exclusively in Specialist Disability Accommodation across Australia.">
+  <PageHeader
+    eyebrow="About SDA Home Choices"
+    title="The specialist behind SDA transactions in Australia."
+    standfirst="SDA Home Choices is an independent advisory and transactions firm working exclusively in Specialist Disability Accommodation. We help investors, providers, boards, lenders and family offices buy, sell and reposition SDA assets with commercial clarity the sector has rarely had."
+  />
+  <section class="section"><div class="prose">
+    <h2>What we do</h2>
+    <p>We advise on the sale, acquisition and strategic review of SDA properties and portfolios, from individual dwellings to institutional holdings. Our work spans vendor due diligence, buyer representation, and independent commercial assessment of whether to hold, improve, reposition or sell.</p>
+
+    <h2>Why specialist</h2>
+    <p>SDA is a niche, maturing market where headline funding and fully occupied forecasts can obscure real performance. We focus on the operating evidence that actually drives occupancy, income sustainability and capital value, and we do nothing else.</p>
+
+    <h2>Backed by research</h2>
+    <p>Our transaction work is supported by dedicated SDA research, including the SDA Market Report 2026, combining public NDIS data with proprietary transaction evidence across every Australian jurisdiction.</p>
+
+    <div class="actions"><a class="btn b1" href="/contact-us/">Talk to our team</a></div>
+    <p class="lead-secondary">Or <a href="/our-services-and-expertise/">explore our services</a>.</p>
+  </div></section>
+
+  <section class="section"><div class="wrap about-grid">
+    <Image src={steveDawson} alt="Portrait of Steve Dawson, Managing Director of SDA Home Choices" class="portrait" width={400} height={400} />
+    <div class="prose about-prose">
+      <h2>Steve Dawson, Managing Director</h2>
+      <p>Steve Dawson has over 25 years of commercial real estate experience and 9 years in Specialist Disability Accommodation. He is a trusted board advisor to organisations such as Multiple Sclerosis Queensland, has sold SDA properties for multiple organisations, and has built a reputation for achieving results with discretion. Steve is passionate about the sector and works collaboratively with all stakeholders, including the major SDA funds invested in the space.</p>
+    </div>
+  </div></section>
+</BaseLayout>
+<style>
+.about-grid{display:grid;grid-template-columns:280px 1fr;gap:48px;align-items:start}
+.portrait{width:100%;height:auto;border-radius:8px;box-shadow:0 24px 60px rgba(0,10,25,.45)}
+.about-prose{padding:0;max-width:none}
+.about-prose h2{margin-top:0}
+@media(max-width:700px){.about-grid{grid-template-columns:1fr}.portrait{max-width:240px}}
+</style>
