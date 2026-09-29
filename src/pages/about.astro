@@ -11,30 +11,36 @@ import steveDawson from '../assets/steve-dawson.jpg';
     standfirst="SDA Home Choices is an independent advisory and transactions firm working exclusively in Specialist Disability Accommodation. We help investors, providers, boards, lenders and family offices buy, sell and reposition SDA assets with commercial clarity the sector has rarely had."
   />
 
-  <section class="section about-paper"><div class="prose">
-    <h2>What we do</h2>
-    <p>We advise on the sale, acquisition and strategic review of SDA properties and portfolios, from individual dwellings to institutional holdings. Our work spans vendor due diligence, buyer representation, and independent commercial assessment of whether to hold, improve, reposition or sell.</p>
-  </div></section>
+  <section class="section about-flow">
+    <div class="wrap about-trio">
+      <div class="trio-item trio-1">
+        <span class="trio-no">01</span>
+        <h2>What we do</h2>
+        <p>We advise on the sale, acquisition and strategic review of SDA properties and portfolios, from individual dwellings to institutional holdings. Our work spans vendor due diligence, buyer representation, and independent commercial assessment of whether to hold, improve, reposition or sell.</p>
+      </div>
+      <div class="trio-item trio-2">
+        <h2>Why specialist</h2>
+        <p>SDA is a niche, maturing market where headline funding and fully occupied forecasts can obscure real performance. We focus on the operating evidence that actually drives occupancy, income sustainability and capital value, and we do nothing else.</p>
+      </div>
+      <div class="trio-item trio-3">
+        <span class="trio-no">03</span>
+        <h2>Backed by research</h2>
+        <p>Our transaction work is supported by dedicated SDA research, including the SDA Market Report 2026, combining public NDIS data with proprietary transaction evidence across every Australian jurisdiction.</p>
+      </div>
+    </div>
 
-  <section class="section about-band-navy"><div class="prose">
-    <h2>Why specialist</h2>
-    <p>SDA is a niche, maturing market where headline funding and fully occupied forecasts can obscure real performance. We focus on the operating evidence that actually drives occupancy, income sustainability and capital value, and we do nothing else.</p>
-  </div></section>
+    <div class="wrap about-trio-actions">
+      <div class="actions"><a class="btn b1" href="/contact-us/">Talk to our team</a></div>
+      <p class="lead-secondary">Or <a href="/our-services-and-expertise/">explore our services</a>.</p>
+    </div>
 
-  <section class="section about-paper"><div class="prose">
-    <h2>Backed by research</h2>
-    <p>Our transaction work is supported by dedicated SDA research, including the SDA Market Report 2026, combining public NDIS data with proprietary transaction evidence across every Australian jurisdiction.</p>
-
-    <div class="actions"><a class="btn b1" href="/contact-us/">Talk to our team</a></div>
-    <p class="lead-secondary">Or <a href="/our-services-and-expertise/">explore our services</a>.</p>
-  </div></section>
-
-  <section class="section about-band-navy about-stats-section"><div class="wrap about-stats">
-    <div class="about-stat"><div class="n">25+</div><div class="k">Years of specialist commercial experience</div></div>
-    <div class="about-stat"><div class="n">Australia&#8209;wide</div><div class="k">National coverage across every jurisdiction</div></div>
-    <div class="about-stat"><div class="n">SDA&#8209;exclusive</div><div class="k">We do nothing else</div></div>
-    <div class="about-stat"><div class="n">76&#8209;page</div><div class="k">SDA Market Report 2026, free</div></div>
-  </div></section>
+    <div class="wrap about-stats">
+      <div class="about-stat"><div class="n">25+</div><div class="k">Years of specialist commercial experience</div></div>
+      <div class="about-stat"><div class="n">Australia&#8209;wide</div><div class="k">National coverage across every jurisdiction</div></div>
+      <div class="about-stat"><div class="n">SDA&#8209;exclusive</div><div class="k">We do nothing else</div></div>
+      <div class="about-stat"><div class="n">76&#8209;page</div><div class="k">SDA Market Report 2026, free</div></div>
+    </div>
+  </section>
 
   <section class="section about-paper about-steve-section"><div class="wrap about-grid">
     <div class="about-portrait-frame">
@@ -45,73 +51,62 @@ import steveDawson from '../assets/steve-dawson.jpg';
       <p>Steve Dawson has over 25 years of commercial real estate experience and 9 years in Specialist Disability Accommodation. He is a trusted board advisor to organisations such as Multiple Sclerosis Queensland, has sold SDA properties for multiple organisations, and has built a reputation for achieving results with discretion. Steve is passionate about the sector and works collaboratively with all stakeholders, including the major SDA funds invested in the space.</p>
     </div>
   </div></section>
-
-  <section class="section about-band-navy"><div class="wrap about-cards">
-    <a class="about-card" href="/research/sda-market-report-2026/">
-      <span class="about-card-label">Get the report</span>
-      <span class="about-card-body">SDA Market Report 2026 &middot; 76 pages &middot; free</span>
-    </a>
-    <a class="about-card" href="/contact-us/">
-      <span class="about-card-label">Contact</span>
-      <span class="about-card-body">Get in touch</span>
-    </a>
-    <div class="about-card">
-      <span class="about-card-label">Coverage</span>
-      <span class="about-card-body">National &middot; Australia-wide</span>
-    </div>
-    <div class="about-card">
-      <span class="about-card-label">Specialisation</span>
-      <span class="about-card-body">Specialist Disability Accommodation</span>
-    </div>
-  </div></section>
 </BaseLayout>
 <style>
-:root{--about-depth:.85}
+:root{
+  --about-depth:.85;
+  --about-flow-top:var(--navy);
+  --about-flow-mid:var(--slate);
+  --about-flow-bottom:color-mix(in srgb,var(--navy) 45%,var(--paper));
+}
 
 /* hero: layer the CTA/testimonials depth recipe behind PageHeader's own markup without editing that shared component */
 :global(section.pagehead.pagehead){background:var(--navy);overflow:hidden}
 :global(section.pagehead)::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--about-depth);background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
 :global(section.pagehead .wrap){position:relative;z-index:1}
 
-/* paper bands: light on-brand surface, with AA-safe overrides for the shared .prose/.lead-secondary colours tuned for navy elsewhere */
-.about-paper{background:var(--paper)}
-.about-paper .prose{color:var(--slate)}
-.about-paper .prose h2{color:var(--navy)}
-.about-paper .prose strong{color:var(--navy)}
-.about-paper .prose a{color:var(--navy2)}
-.about-paper .lead-secondary{color:var(--slate)}
-.about-paper .lead-secondary a{color:var(--navy2)}
+/* the single flowing band: blends out of the hero navy, through a lighter slate zone behind the trio,
+   back toward a richer glow behind the stats row, then eases toward paper for the handoff into Steve */
+.about-flow{position:relative;overflow:hidden;padding:88px 0 96px}
+.about-flow::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--about-flow-top) 0%,var(--about-flow-mid) 30%,var(--about-flow-mid) 56%,var(--navy) 76%,var(--about-flow-bottom) 100%)}
+.about-flow::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--about-depth);background:radial-gradient(900px 560px at 50% 84%,rgba(4,118,217,.35) 0%,rgba(4,118,217,0) 62%)}
+.about-flow>*{position:relative;z-index:1}
 
-/* navy bands: the same layered gradient/glow recipe as the CTA and testimonials sections, one shared strength dial */
-.about-band-navy{position:relative;overflow:hidden;background:var(--navy)}
-.about-band-navy::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--about-depth);background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
-.about-band-navy>*{position:relative;z-index:1}
+/* the three differentiated items: deliberately different constructions, not a repeated card */
+.about-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:36px;align-items:start}
+.trio-item h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(22px,2.3vw,27px);line-height:1.15;margin:0 0 14px}
+.trio-item p{font-family:var(--sans);color:#fff;font-size:15.5px;line-height:1.65;margin:0}
+.trio-1{padding-top:26px;border-top:3px solid var(--blue)}
+.trio-1 .trio-no{display:block;font-family:var(--cond);font-weight:600;font-size:46px;line-height:1;color:color-mix(in srgb,var(--blue) 20%,var(--pale));margin-bottom:10px}
+.trio-2{position:relative;padding-left:24px;border-left:3px solid var(--teal);padding-top:2px}
+.trio-2 h2{font-size:clamp(26px,3vw,33px)}
+.trio-2 p{font-family:var(--serif);font-style:italic;color:#fff;font-size:17px;line-height:1.5}
+.trio-3{position:relative;padding:26px 24px;border:1px solid color-mix(in srgb,var(--pale) 20%,transparent);border-radius:8px;background:rgba(255,255,255,.04)}
+.trio-3 .trio-no{position:absolute;top:20px;right:20px;font-family:var(--cond);font-size:12px;font-weight:600;letter-spacing:.04em;color:color-mix(in srgb,var(--amber) 25%,#fff);border:1px solid color-mix(in srgb,var(--amber) 45%,#fff);border-radius:20px;padding:3px 11px}
+@media(max-width:860px){.about-trio{grid-template-columns:1fr;gap:40px}}
+
+.about-trio-actions{text-align:center;margin:64px auto 0;max-width:60ch}
+.about-flow .lead-secondary{color:var(--pale)}
+.about-flow .lead-secondary a{color:#fff}
 
 /* stats / credentials row */
-.about-stats-section{padding:96px 0}
-.about-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.about-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:88px}
 .about-stat{padding:30px 24px;border:1px solid color-mix(in srgb,var(--pale) 16%,transparent);border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
 .about-stat .n{font-family:var(--cond);font-weight:600;font-size:clamp(30px,3.4vw,44px);line-height:1;color:#fff;font-variant-numeric:tabular-nums}
 .about-stat .k{font-size:14px;color:var(--pale);margin-top:12px;max-width:22ch}
 @media(max-width:860px){.about-stats{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.about-stats{grid-template-columns:1fr}}
 
-/* Steve Dawson feature */
+/* Steve Dawson feature, unchanged from the approved pass */
+.about-paper{background:var(--paper)}
+.about-paper .prose{color:var(--slate)}
+.about-paper .prose h2{color:var(--navy)}
+.about-paper .prose strong{color:var(--navy)}
+.about-paper .prose a{color:var(--navy2)}
 .about-grid{display:grid;grid-template-columns:340px 1fr;gap:56px;align-items:center}
 .about-portrait-frame{background:#fff;padding:16px;border-radius:12px;box-shadow:0 24px 60px rgba(0,10,25,.28)}
 .portrait{display:block;width:100%;height:auto;border-radius:6px}
 .about-prose{padding:0;max-width:none}
 .about-prose h2{margin-top:0}
 @media(max-width:700px){.about-grid{grid-template-columns:1fr}.about-portrait-frame{max-width:280px;margin:0 auto}}
-
-/* info cards */
-.about-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.about-card{position:relative;display:block;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 16%,transparent);border-radius:8px;background:rgba(255,255,255,.03);text-decoration:none;transition:transform .25s ease,border-color .25s ease,background .25s ease}
-a.about-card:hover{transform:translateY(-4px);border-color:var(--blue);background:color-mix(in srgb,var(--blue) 9%,transparent)}
-.about-card-label{display:block;font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin-bottom:10px}
-.about-card-body{display:block;font-family:var(--sans);font-size:15px;color:#fff}
-@media(max-width:860px){.about-cards{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){.about-cards{grid-template-columns:1fr}}
-
-@media(prefers-reduced-motion:reduce){a.about-card{transition:none}}
 </style>
