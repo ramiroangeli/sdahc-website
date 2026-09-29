@@ -4,6 +4,12 @@
   --pale:#B9CBE0; --blue:#0476D9; --paper:#F6F1EC; --white:#FFFFFF;
   --amber:#C97A0A; --mapfill:#1E3A57; --maphover:#2E6FB0; --teal:#2FA0A8;
   --accent-msq:#E43024; --accent-guardian:#008BAD; --accent-sdaservices:#909030;
+  /* fixed navigation and decorative effects */
+  --nav-top:calc(16px + env(safe-area-inset-top,0px));
+  --nav-height:62px;
+  --nav-clearance:calc(var(--nav-top) + var(--nav-height) + 24px);
+  --nav-radius:16px;
+  --z-nav:60; --z-click-effects:70;
   /* type */
   --serif:'Playfair Display',Georgia,serif;
   --sans:'Source Sans 3',system-ui,-apple-system,sans-serif;
