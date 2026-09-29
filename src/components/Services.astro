@@ -10,7 +10,10 @@
  </div>
 </div></section>
 <style>
-.services{padding:104px 0;background:radial-gradient(1000px 520px at 80% 15%,rgba(4,118,217,.10),transparent 60%),var(--navy)}
+.services{position:relative;overflow:hidden;padding:104px 0;--photo-tint:85%}
+.services::before{content:"";position:absolute;inset:0;z-index:0;background-image:url('/home_aerial-photo.jpg');background-size:cover;background-position:center;background-repeat:no-repeat}
+.services::after{content:"";position:absolute;inset:0;z-index:1;background:radial-gradient(1000px 520px at 80% 15%,rgba(4,118,217,.10),transparent 60%),color-mix(in srgb,var(--navy) var(--photo-tint),transparent)}
+.services .wrap{position:relative;z-index:2}
 .svcs{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
 .svc{position:relative;overflow:hidden;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:8px;padding:38px 30px;transition:transform .25s,background .25s,border-color .25s}
 .svc::before{content:"";position:absolute;left:0;top:0;height:3px;width:100%;background:var(--acc);transform:scaleX(0);transform-origin:left;transition:transform .3s}
