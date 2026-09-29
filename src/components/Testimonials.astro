@@ -87,7 +87,8 @@ const testimonials = [
 </script>
 
 <style>
-.testimonials{padding:104px 0;background:radial-gradient(1000px 520px at 50% 100%,rgba(4,118,217,.10),transparent 60%),var(--navy)}
+.testimonials{padding:104px 0;border-top:1px solid color-mix(in srgb,var(--pale) 12%,transparent);background:var(--navy)}
+.testimonials::after{content:"";position:absolute;inset:0;z-index:-1;--testi-depth:.7;opacity:var(--testi-depth);background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
 .testi-accordion{margin-top:52px;display:flex;gap:14px;height:440px;align-items:stretch}
 .testi-strip{position:relative;flex:1 1 0%;min-width:0;display:block;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:10px;padding:0;cursor:pointer;overflow:hidden;transition:flex-grow .3s ease,background .3s ease,border-color .3s ease;font-family:var(--sans);text-align:left}
 .testi-strip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);opacity:.55;transition:opacity .3s ease}
