@@ -28,8 +28,8 @@ import logoIcon from '../assets/logo-icon-white.png';
   </div>
 </header>
 <style>
-header{position:fixed;top:var(--nav-top);left:24px;right:24px;max-width:1180px;margin-inline:auto;z-index:var(--z-nav);backdrop-filter:blur(12px);background:color-mix(in srgb,var(--navy) 94%,transparent);border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:999px;box-shadow:0 10px 30px color-mix(in srgb,var(--navy) 35%,transparent)}
-.nav{display:flex;align-items:center;gap:26px;height:var(--nav-height);margin:0 auto;padding:0 30px}
+header{position:fixed;top:var(--nav-top);left:24px;right:24px;max-width:1180px;margin-inline:auto;z-index:var(--z-nav)}
+.nav{position:relative;display:flex;align-items:center;gap:26px;height:var(--nav-height);margin:0 auto;padding:0 30px;background:linear-gradient(180deg,color-mix(in srgb,var(--navy2) 30%,var(--navy)) 0%,var(--navy) 100%);border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);clip-path:polygon(var(--nav-chamfer) 0,calc(100% - var(--nav-chamfer)) 0,100% var(--nav-chamfer),100% calc(100% - var(--nav-chamfer)),calc(100% - var(--nav-chamfer)) 100%,var(--nav-chamfer) 100%,0 calc(100% - var(--nav-chamfer)),0 var(--nav-chamfer));filter:drop-shadow(0 10px 22px color-mix(in srgb,var(--navy) 45%,transparent))}
 .mark{display:inline-flex;align-items:center;font-family:var(--geo);font-weight:600;letter-spacing:.30em;font-size:14px;text-transform:uppercase;color:var(--white);margin-right:auto;text-decoration:none}
 .mark .mkicon{height:26px;width:auto;margin-right:12px}
 .nls{display:flex;gap:22px;align-items:center}

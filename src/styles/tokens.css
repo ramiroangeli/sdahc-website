@@ -8,6 +8,7 @@
   --nav-top:calc(16px + env(safe-area-inset-top,0px));
   --nav-height:62px;
   --nav-clearance:calc(var(--nav-top) + var(--nav-height) + 24px);
+  --nav-chamfer:12px;
   --z-nav:60; --z-click-effects:70;
   /* type */
   --serif:'Playfair Display',Georgia,serif;
