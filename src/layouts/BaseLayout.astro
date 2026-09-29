@@ -63,6 +63,55 @@ const website = {
   <Nav />
   <slot />
   <Footer />
+  <div class="click-effects" aria-hidden="true"></div>
   <Analytics />
 </body>
 </html>
+
+<script>
+  const effects = document.querySelector<HTMLElement>('.click-effects');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const bursts = new Map<HTMLElement, number>();
+  const excluded = 'a, button, input, textarea, select, label, summary, [role="button"], [aria-disabled="true"], [contenteditable]';
+
+  function removeBurst(burst: HTMLElement) {
+    window.clearTimeout(bursts.get(burst));
+    bursts.delete(burst);
+    burst.remove();
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!effects || reducedMotion.matches || event.detail === 0) return;
+    if (!(event.target instanceof Element) || event.target.closest(excluded)) return;
+
+    if (bursts.size >= 8) removeBurst(bursts.keys().next().value!);
+    const burst = document.createElement('span');
+    burst.className = 'click-burst';
+    burst.style.left = `${event.clientX}px`;
+    burst.style.top = `${event.clientY}px`;
+    for (let i = 0; i < 3; i++) burst.append(document.createElement('i'));
+    burst.addEventListener('animationend', () => removeBurst(burst), { once: true });
+    burst.addEventListener('animationcancel', () => removeBurst(burst), { once: true });
+    bursts.set(burst, window.setTimeout(() => removeBurst(burst), 800));
+    effects.append(burst);
+  }, { passive: true });
+
+  function clearBursts() {
+    bursts.forEach((_, burst) => removeBurst(burst));
+  }
+  reducedMotion.addEventListener('change', () => {
+    if (reducedMotion.matches) clearBursts();
+  });
+  window.addEventListener('pagehide', clearBursts);
+</script>
+
+<style>
+.click-effects{position:fixed;inset:0;z-index:var(--z-click-effects);pointer-events:none;overflow:clip;contain:strict}
+.click-effects :global(.click-burst){position:fixed;width:26px;height:16px;pointer-events:none;animation:click-rise .6s ease-out forwards}
+.click-effects :global(.click-burst i){position:absolute;bottom:0;width:2px;height:12px;border-radius:1px;background:var(--pale)}
+.click-effects :global(.click-burst i:nth-child(1)){left:3px;transform:rotate(-24deg)}
+.click-effects :global(.click-burst i:nth-child(2)){left:12px;height:16px}
+.click-effects :global(.click-burst i:nth-child(3)){left:21px;transform:rotate(24deg)}
+@keyframes click-rise{from{opacity:.7;transform:translate(-50%,-100%)}to{opacity:0;transform:translate(-50%,calc(-100% - 26px))}}
+@media(prefers-reduced-motion:reduce){.click-effects{display:none}.click-effects :global(.click-burst){animation:none}}
+</style>
