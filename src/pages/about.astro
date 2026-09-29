@@ -13,16 +13,17 @@ import steveDawson from '../assets/steve-dawson.jpg';
 
   <section class="section about-flow">
     <div class="wrap about-trio">
-      <div class="trio-item trio-1">
+      <div class="trio-item">
         <span class="trio-no">01</span>
         <h2>What we do</h2>
         <p>We advise on the sale, acquisition and strategic review of SDA properties and portfolios, from individual dwellings to institutional holdings. Our work spans vendor due diligence, buyer representation, and independent commercial assessment of whether to hold, improve, reposition or sell.</p>
       </div>
-      <div class="trio-item trio-2">
+      <div class="trio-item">
+        <span class="trio-no">02</span>
         <h2>Why specialist</h2>
         <p>SDA is a niche, maturing market where headline funding and fully occupied forecasts can obscure real performance. We focus on the operating evidence that actually drives occupancy, income sustainability and capital value, and we do nothing else.</p>
       </div>
-      <div class="trio-item trio-3">
+      <div class="trio-item">
         <span class="trio-no">03</span>
         <h2>Backed by research</h2>
         <p>Our transaction work is supported by dedicated SDA research, including the SDA Market Report 2026, combining public NDIS data with proprietary transaction evidence across every Australian jurisdiction.</p>
@@ -72,20 +73,17 @@ import steveDawson from '../assets/steve-dawson.jpg';
 .about-flow::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--about-depth);background:radial-gradient(900px 560px at 50% 84%,rgba(4,118,217,.35) 0%,rgba(4,118,217,0) 62%)}
 .about-flow>*{position:relative;z-index:1}
 
-/* the three differentiated items: deliberately different constructions, not a repeated card */
-.about-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:36px;align-items:start}
-.trio-item h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(22px,2.3vw,27px);line-height:1.15;margin:0 0 14px}
+/* the three items: one consistent, uniform set, same structure and surface throughout */
+.about-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;align-items:stretch}
+.trio-item{display:flex;flex-direction:column;height:100%;padding:30px 26px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.trio-item:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
+.trio-no{display:block;font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.1em;color:#fff;margin-bottom:14px}
+.trio-item h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(21px,2.1vw,25px);line-height:1.18;margin:0 0 14px}
 .trio-item p{font-family:var(--sans);color:#fff;font-size:15.5px;line-height:1.65;margin:0}
-.trio-1{padding-top:26px;border-top:3px solid var(--blue)}
-.trio-1 .trio-no{display:block;font-family:var(--cond);font-weight:600;font-size:46px;line-height:1;color:color-mix(in srgb,var(--blue) 20%,var(--pale));margin-bottom:10px}
-.trio-2{position:relative;padding-left:24px;border-left:3px solid var(--teal);padding-top:2px}
-.trio-2 h2{font-size:clamp(26px,3vw,33px)}
-.trio-2 p{font-family:var(--serif);font-style:italic;color:#fff;font-size:17px;line-height:1.5}
-.trio-3{position:relative;padding:26px 24px;border:1px solid color-mix(in srgb,var(--pale) 20%,transparent);border-radius:8px;background:rgba(255,255,255,.04)}
-.trio-3 .trio-no{position:absolute;top:20px;right:20px;font-family:var(--cond);font-size:12px;font-weight:600;letter-spacing:.04em;color:color-mix(in srgb,var(--amber) 25%,#fff);border:1px solid color-mix(in srgb,var(--amber) 45%,#fff);border-radius:20px;padding:3px 11px}
-@media(max-width:860px){.about-trio{grid-template-columns:1fr;gap:40px}}
+@media(max-width:860px){.about-trio{grid-template-columns:1fr;gap:22px}}
+@media(prefers-reduced-motion:reduce){.trio-item{transition:background .22s ease,border-color .22s ease}.trio-item:hover{transform:none}}
 
-.about-trio-actions{text-align:center;margin:64px auto 0;max-width:60ch}
+.about-trio-actions{text-align:center;margin:48px auto 0;max-width:60ch}
 .about-flow .lead-secondary{color:var(--pale)}
 .about-flow .lead-secondary a{color:#fff}
 
