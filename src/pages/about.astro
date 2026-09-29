@@ -30,9 +30,10 @@ import steveDawson from '../assets/steve-dawson.jpg';
       </div>
     </div>
 
-    <div class="wrap about-trio-actions">
-      <div class="actions"><a class="btn b1" href="/contact-us/">Talk to our team</a></div>
-      <p class="lead-secondary">Or <a href="/our-services-and-expertise/">explore our services</a>.</p>
+    <div class="wrap about-cta-row">
+      <a class="btn b1 about-cta-bar" href="/contact-us/">Talk to our team</a>
+      <span class="about-cta-or">or</span>
+      <a class="btn b1 about-cta-bar" href="/our-services-and-expertise/">Explore our services</a>
     </div>
 
     <div class="wrap about-stats">
@@ -83,9 +84,10 @@ import steveDawson from '../assets/steve-dawson.jpg';
 @media(max-width:860px){.about-trio{grid-template-columns:1fr;gap:22px}}
 @media(prefers-reduced-motion:reduce){.trio-item{transition:background .22s ease,border-color .22s ease}.trio-item:hover{transform:none}}
 
-.about-trio-actions{text-align:center;margin:48px auto 0;max-width:60ch}
-.about-flow .lead-secondary{color:var(--pale)}
-.about-flow .lead-secondary a{color:#fff}
+.about-cta-row{display:flex;align-items:center;gap:24px;max-width:760px;margin:48px auto 0}
+.about-cta-bar{flex:1 1 0;display:block;text-align:center}
+.about-cta-or{flex:0 0 auto;font-family:var(--sans);font-size:15px;color:#fff}
+@media(max-width:600px){.about-cta-row{flex-direction:column;gap:16px}.about-cta-bar{width:100%}}
 
 /* stats / credentials row */
 .about-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:88px}
