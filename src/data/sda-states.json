@@ -1,10 +1,11 @@
 {
-  "NSW": { "name": "New South Wales", "d": 1180, "p": 1520, "r": 96 },
-  "VIC": { "name": "Victoria", "d": 980, "p": 1240, "r": 82 },
-  "QLD": { "name": "Queensland", "d": 1340, "p": 1710, "r": 104 },
-  "SA": { "name": "South Australia", "d": 520, "p": 690, "r": 47 },
-  "WA": { "name": "Western Australia", "d": 610, "p": 800, "r": 55 },
-  "TAS": { "name": "Tasmania", "d": 150, "p": 190, "r": 18 },
-  "NT": { "name": "Northern Territory", "d": 130, "p": 165, "r": 14 },
-  "ACT": { "name": "Australian Capital Territory", "d": 110, "p": 140, "r": 12 }
+  "NSW": { "name": "New South Wales", "d": 3387, "p": 5137, "r": 202, "f": 176635565 },
+  "VIC": { "name": "Victoria", "d": 4013, "p": 5489, "r": 187, "f": 185262817 },
+  "QLD": { "name": "Queensland", "d": 2875, "p": 2765, "r": 110, "f": 152308466 },
+  "SA": { "name": "South Australia", "d": 1802, "p": 1614, "r": 80, "f": 59998855 },
+  "WA": { "name": "Western Australia", "d": 1178, "p": 803, "r": 73, "f": 56211795 },
+  "TAS": { "name": "Tasmania", "d": 176, "p": 130, "r": 17, "f": 7866330 },
+  "NT": { "name": "Northern Territory", "d": 137, "p": 113, "r": 14, "f": 7515680 },
+  "ACT": { "name": "Australian Capital Territory", "d": 211, "p": 212, "r": 12, "f": 7562260 },
+  "NATIONAL": { "name": "Australia", "d": 13779, "p": 16263, "r": 563, "f": 653361769 }
 }
