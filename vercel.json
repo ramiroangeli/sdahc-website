@@ -9,6 +9,17 @@
   "headers": [
     {
       "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-55mLRHpbHd6FiDxySCV//qvOEtkExApVPjYze/Y/2U8=' 'sha256-o38oXzO4c2iT5Ighpvg1bDI3xAdM0Dn5yw4sye/KDRk=' 'sha256-yI3+5oIdVKo45DU64JKwZxZLJ3C9xQrpt2uPG0yPd/Q=' 'sha256-L28FqbWefQxjk+1bH/WOA6WS93hYxfNeaEU3G6P+cG8=' 'sha256-1urCP2W5xZrgJiTfL+PDfIqxfcmNVO6NTItffb8bQ3Q=' 'sha256-9LG9S8UHcWdUuPBLObOntgLWwSUwyVixZ2onEkaYo58=' 'sha256-A6GEgNJ55ZnVuvM+uakLcV3oGp8GxsLAXO0jCmzfQyg=' 'sha256-EtJ97X/eZsd3kpAk5XTNcFhHGQqyUg+q5+r9chITaAk=' 'sha256-BgzVFFVG0wSA8KJffpPyYcrtwSBPHgJX8SUFVrnQUjw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" }
+      ]
+    },
+    {
+      "source": "/(.*)",
       "has": [{ "type": "host", "value": "beta.sdahomechoices.com.au" }],
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     }
