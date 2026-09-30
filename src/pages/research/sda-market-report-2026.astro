@@ -22,15 +22,14 @@ import PageHeader from '../../components/PageHeader.astro';
           </button>
           <p class="cover-title">SDA Report 2026</p>
         </div>
-        <div class="cover-slot coming-soon" data-key="special">
-          <div class="cover-card" aria-disabled="true" title="Coming soon">
+        <div class="cover-slot" data-key="special">
+          <button type="button" class="cover-btn" id="specialCoverBtn" aria-label="Open the SDA Administration and Special Situations Report download form">
             <picture>
               <source srcset="/report-special-situations.webp" type="image/webp" />
               <img src="/report-special-situations.png" alt="SDA Administration and Special Situations Report cover" class="cover-img" width="1122" height="1402" />
             </picture>
-          </div>
+          </button>
           <p class="cover-title">SDA Administration &amp; Special Situations Report</p>
-          <p class="cover-caption">Coming soon</p>
         </div>
         <div class="cover-slot coming-soon" data-key="providers">
           <div class="cover-card" aria-disabled="true" title="Coming soon">
@@ -46,7 +45,8 @@ import PageHeader from '../../components/PageHeader.astro';
         <div class="feature-form" id="featureForm">
           <button type="button" class="back-btn" id="backBtn">&larr; Back to all reports</button>
           <h2 class="feature-heading" id="featureHeading" tabindex="-1">Request the SDA Report 2026</h2>
-          <form class="form" data-endpoint="/api/report/" data-success="/thank-you/?report=1">
+          <form class="form" data-endpoint="/api/report/">
+          <input type="hidden" id="reportKeyField" name="report" value="sda2026" />
           <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
           <div class="row2">
             <div>
@@ -147,26 +147,42 @@ import PageHeader from '../../components/PageHeader.astro';
     } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
   });
 
+  const REPORTS: Record<string, { label: string; success: string }> = {
+    sda2026: { label: 'SDA Report 2026', success: '/thank-you/?report=sda2026' },
+    special: { label: 'SDA Administration & Special Situations Report', success: '/thank-you/?report=special' },
+  };
+
   const showcase = document.getElementById('showcase');
   const sdaBtn = document.getElementById('sdaCoverBtn');
+  const specialBtn = document.getElementById('specialCoverBtn');
   const backBtn = document.getElementById('backBtn');
   const featureForm = document.getElementById('featureForm');
   const featureHeading = document.getElementById('featureHeading');
+  const reportKeyField = document.getElementById('reportKeyField') as HTMLInputElement | null;
   const comingSoonCards = document.querySelectorAll<HTMLElement>('.cover-card');
 
-  if (showcase && sdaBtn && backBtn && featureForm && featureHeading) {
-    const openForm = () => {
+  if (showcase && sdaBtn && specialBtn && backBtn && featureForm && featureHeading && reportKeyField && form) {
+    let lastBtn: HTMLElement = sdaBtn;
+    const openForm = (key: string, btn: HTMLElement) => {
+      const r = REPORTS[key];
+      lastBtn = btn;
       showcase.dataset.state = 'selected';
+      showcase.dataset.selected = key;
+      reportKeyField.value = key;
+      featureHeading.textContent = `Request the ${r.label}`;
+      form.dataset.success = r.success;
       featureForm.removeAttribute('inert');
       featureHeading.focus();
     };
     const closeForm = () => {
       showcase.dataset.state = 'grid';
+      delete showcase.dataset.selected;
       featureForm.setAttribute('inert', '');
-      sdaBtn.focus();
+      lastBtn.focus();
     };
     featureForm.setAttribute('inert', '');
-    sdaBtn.addEventListener('click', openForm);
+    sdaBtn.addEventListener('click', () => openForm('sda2026', sdaBtn));
+    specialBtn.addEventListener('click', () => openForm('special', specialBtn));
     backBtn.addEventListener('click', closeForm);
   }
 
@@ -228,17 +244,20 @@ import PageHeader from '../../components/PageHeader.astro';
 .feature-heading:focus-visible{outline:none}
 
 .showcase[data-state="selected"] .covers{align-items:flex-start}
-.showcase[data-state="selected"] .cover-slot.coming-soon{flex:0 0 0;max-width:0;opacity:0;transform:translateY(60px);pointer-events:none;margin:0}
-.showcase[data-state="selected"] .cover-slot[data-key="sda2026"]{flex:0 0 220px;max-width:220px}
-.showcase[data-state="selected"] .cover-slot[data-key="sda2026"] .cover-img{animation:none;transform:scale(1.05)}
+.showcase[data-state="selected"] .cover-slot{flex:0 0 0;max-width:0;opacity:0;transform:translateY(60px);pointer-events:none;margin:0}
+.showcase[data-selected="sda2026"] .cover-slot[data-key="sda2026"],
+.showcase[data-selected="special"] .cover-slot[data-key="special"]{flex:0 0 220px;max-width:220px;opacity:1;transform:none;pointer-events:auto}
+.showcase[data-selected="sda2026"] .cover-slot[data-key="sda2026"] .cover-img,
+.showcase[data-selected="special"] .cover-slot[data-key="special"] .cover-img{animation:none;transform:scale(1.05)}
 .showcase[data-state="selected"] .feature-form{flex:1 1 420px;width:auto;max-width:640px;opacity:1;padding:8px 0 0 8px}
 
 @media(max-width:860px){
   .covers{flex-direction:column;align-items:center}
   .cover-slot{max-width:220px}
   .showcase[data-state="selected"] .covers{flex-direction:column;gap:0}
-  .showcase[data-state="selected"] .cover-slot.coming-soon{max-height:0;transform:translateY(0)}
-  .showcase[data-state="selected"] .cover-slot[data-key="sda2026"]{max-width:180px;margin-bottom:0}
+  .showcase[data-state="selected"] .cover-slot{max-height:0;transform:translateY(0)}
+  .showcase[data-selected="sda2026"] .cover-slot[data-key="sda2026"],
+  .showcase[data-selected="special"] .cover-slot[data-key="special"]{max-width:180px;max-height:none;margin-bottom:0}
   .showcase[data-state="selected"] .feature-form{max-width:100%;padding:32px 0 0 0}
 }
 
