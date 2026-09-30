@@ -22,6 +22,7 @@ import Cta from '../components/Cta.astro';
   <Cta />
 </BaseLayout>
 
+<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
 <script>
 const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const logo=document.getElementById('brandlogo'),reveal=document.getElementById('reveal'),heromap=document.getElementById('heromap');

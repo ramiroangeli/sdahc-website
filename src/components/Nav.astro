@@ -63,6 +63,7 @@ header a:focus-visible,.menu-toggle:focus-visible{outline:2px solid var(--pale);
 }
 @media(prefers-reduced-motion:reduce){.menu-toggle span{transition:none}}
 </style>
+<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
 <script>
   const toggle = document.querySelector('.menu-toggle');
   const menu = document.getElementById('mobile-menu');

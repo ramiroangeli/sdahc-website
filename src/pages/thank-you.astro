@@ -13,6 +13,7 @@ import PageHeader from '../components/PageHeader.astro';
   </div></section>
 </BaseLayout>
 
+<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
 <script>
   if (new URLSearchParams(window.location.search).get('report') === '1') {
     document.getElementById('msg-default').style.display = 'none';
