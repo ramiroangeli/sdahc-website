@@ -8,6 +8,11 @@ function normalizeAuPhone(raw: string) {
   return n;
 }
 
+const REPORT_NAMES: Record<string, string> = {
+  sda2026: 'SDA Market Report 2026',
+  special: 'SDA Administration & Special Situations Report',
+};
+
 export const POST: APIRoute = async ({ request }) => {
   if (!isAllowedOrigin(request)) return json({ ok: false, error: 'Request not allowed.' }, 403);
 
@@ -22,6 +27,8 @@ export const POST: APIRoute = async ({ request }) => {
   const role = (data.get('role') as string || '').trim();
   const state = (data.get('state') as string || '').trim();
   const comments = (data.get('comments') as string || '').trim();
+  const reportKey = (data.get('report') as string || 'sda2026').trim();
+  const reportName = REPORT_NAMES[reportKey] || REPORT_NAMES.sda2026;
   const normalizedPhone = normalizeAuPhone(phone);
 
   if (!firstName || !lastName || !/.+@.+\..+/.test(email)) {
@@ -42,15 +49,15 @@ export const POST: APIRoute = async ({ request }) => {
   const resend = new Resend(key);
   const formattedPhone = `+61 ${normalizedPhone}`;
   const rows = [...data.entries()]
-    .filter(([k]) => k !== 'company' && k !== 'phone' && k !== 'phone_country')
+    .filter(([k]) => k !== 'company' && k !== 'phone' && k !== 'phone_country' && k !== 'report')
     .map(([k, v]) => `<p><strong>${escapeHtml(k)}:</strong> ${escapeHtml(String(v))}</p>`)
     .join('') + `<p><strong>phone:</strong> ${escapeHtml(formattedPhone)}</p>`;
   const { error } = await resend.emails.send({
     from: 'SDA Home Choices <noreply@send.sdahomechoices.com.au>',
     to: 'research@sdahomechoices.com.au',
     replyTo: email,
-    subject: `New SDA Market Report download from ${firstName}`,
-    html: `<h2>New SDA Market Report 2026 download</h2>${rows}`,
+    subject: `New ${reportName} download from ${firstName}`,
+    html: `<h2>New ${reportName} download</h2>${rows}`,
   });
   if (error) return json({ ok: false, error: 'Could not send. Please try again.' }, 502);
   return json({ ok: true });
