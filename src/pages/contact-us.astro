@@ -5,38 +5,57 @@ import PageHeader from '../components/PageHeader.astro';
 <BaseLayout title="Contact Us | SDA Home Choices" description="Get in touch with Steve Dawson at SDA Home Choices to discuss a sale, acquisition or strategic review.">
   <PageHeader
     eyebrow="Get in touch"
-    title="Contact Us"
+    title="Contact us"
+    standfirst="Whether you are considering a sale, weighing your options, or simply want to understand the SDA market, we are glad to hear from you."
   />
-  <section class="section"><div class="wrap">
-    <div class="contact-details">
-      <p class="cd-name">Steve Dawson</p>
-      <p><a href="tel:+61408550441">+61 408 550 441</a></p>
-      <p><a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a></p>
+
+  <section class="section contact-flow"><div class="wrap contact-grid">
+    <div class="contact-info">
+      <p class="contact-intro">Tell us about your property, portfolio or question, and the right person at SDA Home Choices will get back to you.</p>
+
+      <ul class="contact-items">
+        <li class="contact-item">
+          <span class="card-mark" aria-hidden="true"></span>
+          <p class="ci-label">Email</p>
+          <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>
+        </li>
+        <li class="contact-item">
+          <span class="card-mark" aria-hidden="true"></span>
+          <p class="ci-label">Phone</p>
+          <a href="tel:+61408550441">+61 408 550 441</a>
+        </li>
+      </ul>
+
+      <div class="contact-chips">
+        <span class="chip">National, Australia-wide</span>
+        <span class="chip">Specialist Disability Accommodation</span>
+      </div>
+    </div>
+
+    <div class="contact-form-card">
+      <form class="form" data-endpoint="/api/contact/" data-success="/thank-you/">
+        <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+        <div>
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div>
+          <label for="phone">Phone (optional)</label>
+          <input type="tel" id="phone" name="phone" />
+        </div>
+        <div>
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn b1">Send message</button>
+        <p class="form-status" role="status"></p>
+      </form>
     </div>
   </div></section>
-  <section class="section">
-    <form class="form" data-endpoint="/api/contact/" data-success="/thank-you/">
-      <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
-      <div>
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required />
-      </div>
-      <div>
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required />
-      </div>
-      <div>
-        <label for="phone">Phone</label>
-        <input type="tel" id="phone" name="phone" />
-      </div>
-      <div>
-        <label for="message">Message</label>
-        <textarea id="message" name="message" required></textarea>
-      </div>
-      <button type="submit" class="btn b1">Submit</button>
-      <p class="form-status" role="status"></p>
-    </form>
-  </section>
 </BaseLayout>
 
 <!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
@@ -63,9 +82,38 @@ import PageHeader from '../components/PageHeader.astro';
   });
 </script>
 <style>
-.contact-details{max-width:620px;margin:0 auto;padding:0 30px;color:var(--pale)}
-.contact-details p{margin:0 0 8px}
-.contact-details a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
-.cd-name{font-family:var(--geo);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
-.form button{justify-self:start}
+:root{
+  --contact-depth:.85;
+}
+
+/* hero: same layered gradient/glow recipe as About/Sales, scoped to this page only */
+:global(section.pagehead.pagehead){background:var(--navy);overflow:hidden}
+:global(section.pagehead)::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--contact-depth);background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
+:global(section.pagehead .wrap){position:relative;z-index:1}
+
+/* single navy band carrying the hero's depth down into the footer, which is also navy so the handoff is seamless */
+.contact-flow{position:relative;overflow:hidden;padding:88px 0 96px}
+.contact-flow::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 45%,var(--navy) 100%)}
+.contact-flow::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--contact-depth);background:radial-gradient(900px 560px at 50% 18%,rgba(4,118,217,.32) 0%,rgba(4,118,217,0) 62%)}
+.contact-flow>*{position:relative;z-index:1}
+
+.contact-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
+@media(max-width:860px){.contact-grid{grid-template-columns:1fr;gap:40px}}
+
+.contact-info{color:var(--pale)}
+.contact-intro{font-family:var(--sans);color:var(--pale);font-size:17px;line-height:1.65;margin:0 0 36px;max-width:42ch}
+
+.contact-items{list-style:none;margin:0 0 32px;padding:0;display:flex;flex-direction:column;gap:26px}
+.contact-item .card-mark{display:block;width:28px;height:3px;background:var(--blue);margin-bottom:14px;border-radius:2px}
+.ci-label{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.contact-item a{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2vw,22px);color:#fff;text-decoration:none}
+.contact-item a:hover,.contact-item a:focus-visible{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+
+.contact-chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;font-family:var(--geo);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--pale);border:1px solid color-mix(in srgb,var(--pale) 24%,transparent);background:rgba(255,255,255,.05);border-radius:999px;padding:8px 16px}
+
+.contact-form-card{border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);padding:36px 34px}
+.contact-form-card .form{max-width:none;margin:0;padding:0}
+.contact-form-card .form button{justify-self:start}
+@media(max-width:520px){.contact-form-card{padding:28px 22px}}
 </style>
