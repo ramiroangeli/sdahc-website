@@ -1,0 +1,176 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import data from '../data/opportunities.json';
+
+const { aggregates, statesCovered, teaserCards } = data;
+
+/*
+  Internal note, not rendered on the page: the real geocoded property counts behind the
+  "100+" headline are QLD 76, VIC 39, SA 26, NSW 8, WA 3, ACT 1 (153 geocoded, roughly 220
+  records in total). These counts fluctuate and include pipeline opportunities, so they are
+  deliberately not broken out per state on the page. NT is claimed through a portfolio but
+  not yet confirmed in the records, so it is excluded from statesCovered for now.
+*/
+---
+<BaseLayout title="Off-market SDA opportunities | SDA Home Choices" description="Off-market Specialist Disability Accommodation opportunities across Australia. Register your buyer mandate or speak to us about selling an SDA asset.">
+  <PageHeader
+    eyebrow="Opportunities"
+    title="Off-market SDA opportunities across Australia"
+    standfirst="We hold 100+ off-market Specialist Disability Accommodation opportunities nationally, from single dwellings to large portfolios. Most never reach the open market."
+  />
+  <section class="pagehead-cta"><div class="wrap">
+    <div class="actions">
+      <a class="btn b1" href="#enquiry">Register your buyer mandate</a>
+      <a class="btn b2" href="#enquiry">Selling an SDA asset?</a>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow"><div class="wrap">
+    <div class="opp-stats">
+      {aggregates.map((item) => (
+        <div class="opp-stat"><div class="n">{item.value}</div><div class="k">{item.label}</div></div>
+      ))}
+    </div>
+
+    <div class="opp-states">
+      <p class="opp-states-caption">Active mandates and listings across six states and territories.</p>
+      <div class="opp-pills">
+        {statesCovered.map((s) => <span class="opp-pill">{s}</span>)}
+      </div>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow"><div class="wrap">
+    <h2 class="opp-heading">Why off-market</h2>
+    <div class="opp-why-grid">
+      <div class="opp-why-card">
+        <span class="card-mark"></span>
+        <h3>A curated, confidential market</h3>
+        <p>Most SDA transactions of scale happen off-market. We match qualified buyers to opportunities without public listing, protecting price and tenant stability.</p>
+      </div>
+      <div class="opp-why-card">
+        <span class="card-mark"></span>
+        <h3>Specialist diligence built in</h3>
+        <p>Every opportunity is assessed against SDA design category, enrolment, tenancy and compliance, so you are evaluating real investable positions, not raw listings.</p>
+      </div>
+      <div class="opp-why-card">
+        <span class="card-mark"></span>
+        <h3>Access to the full picture</h3>
+        <p>Pricing is by EOI and detailed Information Memoranda are released under NDA, so serious parties see what they need to make a decision.</p>
+      </div>
+    </div>
+  </div></section>
+
+  {/* ===== DEAL TEASER CARDS (optional direction, removable as one block) ===== */}
+  <section class="section opp-flow"><div class="wrap">
+    <h2 class="opp-heading">A sample of current opportunities</h2>
+    <p class="opp-deals-intro">Anonymised for confidentiality. Full details are released under NDA.</p>
+    <div class="opp-deal-grid">
+      {teaserCards.map((card) => (
+        <div class="opp-deal-card">
+          <span class="opp-badge">{card.state}</span>
+          <h3>{card.line}</h3>
+          <p>{card.detail}</p>
+          <span class="opp-price">{card.price}</span>
+        </div>
+      ))}
+    </div>
+  </div></section>
+  {/* ===== END DEAL TEASER CARDS ===== */}
+
+  <section class="section opp-flow"><div class="wrap">
+    <h2 class="opp-heading">How access works</h2>
+    <div class="opp-step-grid">
+      <div class="opp-step-card">
+        <span class="opp-step-no">01</span>
+        <h3>Register your mandate</h3>
+        <p>Tell us what you are looking for, or what you are selling.</p>
+      </div>
+      <div class="opp-step-card">
+        <span class="opp-step-no">02</span>
+        <h3>Sign an NDA</h3>
+        <p>A short mutual NDA unlocks confidential detail.</p>
+      </div>
+      <div class="opp-step-card">
+        <span class="opp-step-no">03</span>
+        <h3>Receive matched opportunities</h3>
+        <p>We share Information Memoranda that fit your brief.</p>
+      </div>
+      <div class="opp-step-card">
+        <span class="opp-step-no">04</span>
+        <h3>Submit an EOI</h3>
+        <p>Move to offer and diligence on the assets that fit.</p>
+      </div>
+    </div>
+  </div></section>
+</BaseLayout>
+<style>
+:root{
+  --opp-depth:.85;
+}
+
+/* hero: same layered gradient/glow recipe as About/Sales/Advisory, scoped to this page only */
+:global(section.pagehead.pagehead){background:var(--navy);overflow:hidden}
+:global(section.pagehead)::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
+:global(section.pagehead .wrap){position:relative;z-index:1}
+
+/* shared navy band: every section using it starts and ends at plain navy, so any one
+   of them can be added, removed or reordered without creating a seam against its neighbours */
+.opp-flow{position:relative;overflow:hidden;background:var(--navy)}
+.opp-flow::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 50%,var(--navy) 100%)}
+.opp-flow::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(900px 560px at 50% 50%,rgba(4,118,217,.28) 0%,rgba(4,118,217,0) 62%)}
+.opp-flow>*{position:relative;z-index:1}
+
+.opp-heading{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}
+
+/* aggregate stat tiles */
+.opp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.opp-stat{padding:30px 24px;border:1px solid color-mix(in srgb,var(--pale) 16%,transparent);border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
+.opp-stat .n{font-family:var(--cond);font-weight:600;font-size:clamp(18px,2.1vw,25px);line-height:1.25;color:#fff}
+.opp-stat .k{font-size:14px;color:var(--pale);margin-top:12px;max-width:26ch}
+@media(max-width:860px){.opp-stats{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.opp-stats{grid-template-columns:1fr}}
+
+/* states coverage strip */
+.opp-states{margin-top:56px;text-align:center}
+.opp-states-caption{font-family:var(--sans);color:var(--pale);font-size:15px;margin:0 0 18px}
+.opp-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:#fff;border:1px solid color-mix(in srgb,var(--pale) 24%,transparent);background:rgba(255,255,255,.06);border-radius:999px;padding:10px 20px}
+
+/* why off-market: uniform credibility cards, same recipe as the Advisory audience cards */
+.opp-why-grid{margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
+.opp-why-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.opp-why-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
+.opp-why-card .card-mark{display:block;width:28px;height:3px;background:var(--blue);margin-bottom:16px;border-radius:2px}
+.opp-why-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
+.opp-why-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
+@media(max-width:860px){.opp-why-grid{grid-template-columns:1fr;gap:20px}}
+
+/* deal teaser cards: anonymised, uniform structure, no photos or prices */
+.opp-deals-intro{text-align:center;color:var(--pale);font-size:15px;margin:0 0 32px}
+.opp-deal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;align-items:stretch}
+.opp-deal-card{display:flex;flex-direction:column;height:100%;padding:26px 22px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.opp-deal-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
+.opp-badge{align-self:flex-start;font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.1em;color:#fff;background:var(--blue);border-radius:999px;padding:5px 14px;margin-bottom:16px}
+.opp-deal-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:18px;line-height:1.25;margin:0 0 10px}
+.opp-deal-card p{font-family:var(--sans);color:var(--pale);font-size:14px;line-height:1.55;margin:0 0 16px;flex:1 0 auto}
+.opp-price{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+@media(max-width:980px){.opp-deal-grid{grid-template-columns:1fr 1fr;gap:20px}}
+@media(max-width:560px){.opp-deal-grid{grid-template-columns:1fr}}
+
+/* how access works: uniform numbered steps, same recipe as the Sales process cards */
+.opp-step-grid{margin-top:28px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:stretch}
+.opp-step-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.opp-step-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
+.opp-step-no{display:block;font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.1em;color:#fff;margin-bottom:14px}
+.opp-step-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
+.opp-step-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
+@media(max-width:980px){.opp-step-grid{grid-template-columns:1fr 1fr;gap:22px}}
+@media(max-width:560px){.opp-step-grid{grid-template-columns:1fr}}
+
+@media(prefers-reduced-motion:reduce){
+  .opp-why-card,.opp-deal-card,.opp-step-card{transition:background .22s ease,border-color .22s ease}
+  .opp-why-card:hover,.opp-deal-card:hover,.opp-step-card:hover{transform:none}
+}
+</style>

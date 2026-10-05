@@ -1,0 +1,17 @@
+{
+  "headlineCount": "100+",
+  "statesCovered": ["QLD", "VIC", "SA", "NSW", "WA", "ACT"],
+  "designCategories": ["HPS", "IL", "Robust", "FA"],
+  "aggregates": [
+    { "label": "Off-market opportunities", "value": "100+" },
+    { "label": "States and territories", "value": "6" },
+    { "label": "SDA design categories", "value": "All" },
+    { "label": "Deal size", "value": "Single dwellings to 40+ dwelling portfolios" }
+  ],
+  "teaserCards": [
+    { "state": "QLD", "line": "HPS dwelling portfolio", "detail": "Tenanted. Available whole or in tranches.", "price": "EOI" },
+    { "state": "VIC", "line": "Mixed portfolio", "detail": "HPS, Fully Accessible and Robust dwellings.", "price": "EOI" },
+    { "state": "SA", "line": "Dwelling portfolio", "detail": "Multiple dwellings, single vendor.", "price": "EOI" },
+    { "state": "NSW", "line": "HPS and Robust", "detail": "Individual assets and small groupings.", "price": "EOI" }
+  ]
+}
