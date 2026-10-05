@@ -104,7 +104,86 @@ const { aggregates, statesCovered, teaserCards } = data;
       </div>
     </div>
   </div></section>
+
+  <section class="section opp-flow" id="enquiry"><div class="wrap opp-enquiry-grid">
+    <div class="opp-enquiry-info">
+      <h2 class="opp-heading opp-heading-left">Register your interest</h2>
+      <p class="opp-enquiry-intro">Tell us whether you are buying or selling and a little about your brief. The right person at SDA Home Choices will get back to you.</p>
+      <ul class="opp-enquiry-items">
+        <li class="opp-enquiry-item">
+          <span class="card-mark" aria-hidden="true"></span>
+          <p class="ci-label">Email</p>
+          <a href="mailto:research@sdahomechoices.com.au">research@sdahomechoices.com.au</a>
+        </li>
+        <li class="opp-enquiry-item">
+          <span class="card-mark" aria-hidden="true"></span>
+          <p class="ci-label">Phone</p>
+          <a href="tel:+61408550441">+61 408 550 441</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="opp-enquiry-card">
+      <form class="form" data-endpoint="/api/opportunities/">
+        <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+        <fieldset class="opp-radio-group">
+          <legend>I am a...</legend>
+          <label class="opp-radio"><input type="radio" name="enquiryType" value="Buyer" required /> Buyer</label>
+          <label class="opp-radio"><input type="radio" name="enquiryType" value="Vendor" required /> Vendor</label>
+        </fieldset>
+        <div>
+          <label for="oppName">Name</label>
+          <input type="text" id="oppName" name="name" required />
+        </div>
+        <div>
+          <label for="oppEmail">Email</label>
+          <input type="email" id="oppEmail" name="email" required />
+        </div>
+        <div>
+          <label for="oppPhone">Phone (optional)</label>
+          <input type="tel" id="oppPhone" name="phone" />
+        </div>
+        <div>
+          <label for="oppMessage">Your brief or property</label>
+          <textarea id="oppMessage" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn b1">Send enquiry</button>
+        <p class="form-status" role="status"></p>
+      </form>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow"><div class="wrap opp-vendor-inner">
+    <h2>Selling an SDA asset?</h2>
+    <p>We run confidential, off-market sale processes for SDA dwellings and portfolios. Talk to us before you list.</p>
+    <a class="btn b1" href="#enquiry">Register your interest</a>
+  </div></section>
 </BaseLayout>
+
+<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
+<script>
+  const form = document.querySelector('form[data-endpoint]');
+  if (form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const status = form.querySelector('.form-status');
+    const enquiryType = form.querySelector('input[name="enquiryType"]:checked');
+    const name = form.querySelector('#oppName').value.trim();
+    const email = form.querySelector('#oppEmail').value.trim();
+    const message = form.querySelector('#oppMessage').value.trim();
+    if (!enquiryType || !name || !email || !message) {
+      status.textContent = 'Please complete all required fields.';
+      return;
+    }
+    btn.disabled = true; status.textContent = 'Sending...';
+    try {
+      const res = await fetch(form.dataset.endpoint, { method: 'POST', body: new FormData(form) });
+      const out = await res.json();
+      if (out.ok) { status.textContent = 'Thank you. We will be in touch shortly.'; }
+      else { status.textContent = out.error || 'Something went wrong.'; btn.disabled = false; }
+    } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
+  });
+</script>
 <style>
 :root{
   --opp-depth:.85;
@@ -173,4 +252,31 @@ const { aggregates, statesCovered, teaserCards } = data;
   .opp-why-card,.opp-deal-card,.opp-step-card{transition:background .22s ease,border-color .22s ease}
   .opp-why-card:hover,.opp-deal-card:hover,.opp-step-card:hover{transform:none}
 }
+
+/* enquiry form: two columns, same pattern as the Contact page */
+.opp-heading-left{text-align:left;margin:0 0 20px}
+.opp-enquiry-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
+@media(max-width:860px){.opp-enquiry-grid{grid-template-columns:1fr;gap:40px}}
+
+.opp-enquiry-intro{font-family:var(--sans);color:var(--pale);font-size:16px;line-height:1.65;margin:0 0 32px;max-width:42ch}
+.opp-enquiry-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:26px}
+.opp-enquiry-item .card-mark{display:block;width:28px;height:3px;background:var(--blue);margin-bottom:14px;border-radius:2px}
+.opp-enquiry-item .ci-label{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.opp-enquiry-item a{font-family:var(--serif);font-weight:600;font-size:clamp(18px,1.8vw,20px);color:#fff;text-decoration:none}
+.opp-enquiry-item a:hover,.opp-enquiry-item a:focus-visible{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+
+.opp-enquiry-card{border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);padding:36px 34px}
+.opp-enquiry-card .form{max-width:none;margin:0;padding:0}
+.opp-enquiry-card .form button{justify-self:start}
+@media(max-width:520px){.opp-enquiry-card{padding:28px 22px}}
+
+.opp-radio-group{border:0;padding:0;margin:0 0 4px;display:flex;flex-direction:column;gap:10px}
+.opp-radio-group legend{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin-bottom:8px;padding:0}
+.opp-radio-group .opp-radio{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:15px;font-weight:400;color:#fff;text-transform:none;letter-spacing:normal;margin-bottom:0}
+.opp-radio-group .opp-radio input{width:auto;accent-color:var(--blue);margin:0}
+
+/* vendor strip: short closing band before the footer, same centred-CTA pattern as the Sales page */
+.opp-vendor-inner{text-align:center;max-width:64ch;margin:0 auto}
+.opp-vendor-inner h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(26px,3.4vw,38px);line-height:1.12;margin:0}
+.opp-vendor-inner p{color:var(--pale);margin:20px 0 28px}
 </style>
