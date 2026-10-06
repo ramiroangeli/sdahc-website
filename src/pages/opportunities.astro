@@ -1,0 +1,239 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import data from '../data/opportunities.json';
+
+const { statesCovered } = data;
+
+/*
+  Internal note, not rendered on the page: the real geocoded property counts behind the
+  "100+" headline are QLD 76, VIC 39, SA 26, NSW 8, WA 3, ACT 1 (153 geocoded, roughly 220
+  records in total). These counts fluctuate and include pipeline opportunities, so they are
+  deliberately not broken out per state on the page. NT is claimed through a portfolio but
+  not yet confirmed in the records, so it is excluded from statesCovered for now.
+*/
+---
+<BaseLayout title="Off-market SDA opportunities | SDA Home Choices" description="Off-market Specialist Disability Accommodation opportunities across Australia. Register your buyer mandate or speak to us about selling an SDA asset.">
+  <PageHeader
+    eyebrow="Opportunities"
+    title="Off-market SDA opportunities across Australia"
+    standfirst="We hold 100+ off-market Specialist Disability Accommodation opportunities nationally, from single dwellings to large portfolios. Most never reach the open market."
+  />
+  <section class="pagehead-cta"><div class="wrap">
+    <div class="actions">
+      <a class="btn b1" href="#enquiry">Register your interest</a>
+      <a class="btn b2" href="#enquiry">Selling an SDA asset?</a>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow"><div class="wrap">
+    <div class="opp-states">
+      <p class="opp-states-caption">Active mandates and listings across six states and territories.</p>
+      <div class="opp-pills">
+        {statesCovered.map((s) => <span class="opp-pill">{s}</span>)}
+      </div>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow"><div class="wrap">
+    <h2 class="opp-heading">Why off-market</h2>
+    <div class="opp-why-grid">
+      <div class="opp-why-card">
+        <span class="card-mark"></span>
+        <h3>A curated, confidential market</h3>
+        <p>Most SDA transactions of scale happen off-market. We match qualified buyers to opportunities without public listing, protecting price and tenant stability.</p>
+      </div>
+      <div class="opp-why-card">
+        <span class="card-mark"></span>
+        <h3>Specialist diligence built in</h3>
+        <p>Every opportunity is assessed against SDA design category, enrolment, tenancy and compliance, so you are evaluating real investable positions, not raw listings.</p>
+      </div>
+      <div class="opp-why-card">
+        <span class="card-mark"></span>
+        <h3>Access to the full picture</h3>
+        <p>Pricing is by EOI and detailed Information Memoranda are released under NDA, so serious parties see what they need to make a decision.</p>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow"><div class="wrap">
+    <h2 class="opp-heading">How access works</h2>
+    <div class="opp-step-grid">
+      <div class="opp-step-card">
+        <span class="opp-step-no">01</span>
+        <h3>Register your interest</h3>
+        <p>Tell us what you are looking for, or what you are selling.</p>
+      </div>
+      <div class="opp-step-card">
+        <span class="opp-step-no">02</span>
+        <h3>Sign an NDA</h3>
+        <p>A short mutual NDA unlocks confidential detail.</p>
+      </div>
+      <div class="opp-step-card">
+        <span class="opp-step-no">03</span>
+        <h3>Receive matched opportunities</h3>
+        <p>We share Information Memoranda that fit your brief.</p>
+      </div>
+      <div class="opp-step-card">
+        <span class="opp-step-no">04</span>
+        <h3>Submit an EOI</h3>
+        <p>Move to offer and diligence on the assets that fit.</p>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow" id="enquiry"><div class="wrap opp-enquiry-grid">
+    <div class="opp-enquiry-info">
+      <h2 class="opp-heading opp-heading-left">Register your interest</h2>
+      <p class="opp-enquiry-intro">Tell us whether you are buying or selling and a little about your brief. The right person at SDA Home Choices will get back to you.</p>
+      <ul class="opp-enquiry-items">
+        <li class="opp-enquiry-item">
+          <span class="card-mark" aria-hidden="true"></span>
+          <p class="ci-label">Email</p>
+          <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>
+        </li>
+        <li class="opp-enquiry-item">
+          <span class="card-mark" aria-hidden="true"></span>
+          <p class="ci-label">Phone</p>
+          <a href="tel:+61408550441">+61 408 550 441</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="opp-enquiry-card">
+      <form class="form" data-endpoint="/api/opportunities/">
+        <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+        <fieldset class="opp-radio-group">
+          <legend>I am a...</legend>
+          <label class="opp-radio"><input type="radio" name="enquiryType" value="Buyer" required /> Buyer</label>
+          <label class="opp-radio"><input type="radio" name="enquiryType" value="Vendor" required /> Vendor</label>
+        </fieldset>
+        <div>
+          <label for="oppName">Name</label>
+          <input type="text" id="oppName" name="name" required />
+        </div>
+        <div>
+          <label for="oppEmail">Email</label>
+          <input type="email" id="oppEmail" name="email" required />
+        </div>
+        <div>
+          <label for="oppPhone">Phone</label>
+          <input type="tel" id="oppPhone" name="phone" required />
+        </div>
+        <div>
+          <label for="oppMessage">Your brief or property</label>
+          <textarea id="oppMessage" name="message" required></textarea>
+        </div>
+        <button type="submit" class="btn b1">Send enquiry</button>
+        <p class="form-status" role="status"></p>
+      </form>
+    </div>
+  </div></section>
+
+  <section class="section opp-flow"><div class="wrap opp-vendor-inner">
+    <h2>Selling an SDA asset?</h2>
+    <p>We run confidential, off-market sale processes for SDA dwellings and portfolios. Talk to us before you list.</p>
+    <a class="btn b1" href="#enquiry">Register your interest</a>
+  </div></section>
+</BaseLayout>
+
+<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
+<script>
+  const form = document.querySelector('form[data-endpoint]');
+  if (form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const status = form.querySelector('.form-status');
+    const enquiryType = form.querySelector('input[name="enquiryType"]:checked');
+    const name = form.querySelector('#oppName').value.trim();
+    const email = form.querySelector('#oppEmail').value.trim();
+    const message = form.querySelector('#oppMessage').value.trim();
+    if (!enquiryType || !name || !email || !message) {
+      status.textContent = 'Please complete all required fields.';
+      return;
+    }
+    btn.disabled = true; status.textContent = 'Sending...';
+    try {
+      const res = await fetch(form.dataset.endpoint, { method: 'POST', body: new FormData(form) });
+      const out = await res.json();
+      if (out.ok) { status.textContent = 'Thank you. We will be in touch shortly.'; }
+      else { status.textContent = out.error || 'Something went wrong.'; btn.disabled = false; }
+    } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
+  });
+</script>
+<style>
+:root{
+  --opp-depth:.85;
+}
+
+/* hero: same layered gradient/glow recipe as About/Sales/Advisory, scoped to this page only */
+:global(section.pagehead.pagehead){background:var(--navy);overflow:hidden}
+:global(section.pagehead)::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
+:global(section.pagehead .wrap){position:relative;z-index:1}
+
+/* shared navy band: every section using it starts and ends at plain navy, so any one
+   of them can be added, removed or reordered without creating a seam against its neighbours */
+.opp-flow{position:relative;overflow:hidden;background:var(--navy)}
+.opp-flow::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 50%,var(--navy) 100%)}
+.opp-flow::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(900px 560px at 50% 50%,rgba(4,118,217,.28) 0%,rgba(4,118,217,0) 62%)}
+.opp-flow>*{position:relative;z-index:1}
+
+.opp-heading{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}
+
+/* states coverage strip */
+.opp-states{text-align:center}
+.opp-states-caption{font-family:var(--sans);color:var(--pale);font-size:15px;margin:0 0 18px}
+.opp-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:#fff;border:1px solid color-mix(in srgb,var(--pale) 24%,transparent);background:rgba(255,255,255,.06);border-radius:999px;padding:10px 20px}
+
+/* why off-market: uniform credibility cards, same recipe as the Advisory audience cards */
+.opp-why-grid{margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
+.opp-why-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.opp-why-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
+.opp-why-card .card-mark{display:block;width:28px;height:3px;background:var(--blue);margin-bottom:16px;border-radius:2px}
+.opp-why-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
+.opp-why-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
+@media(max-width:860px){.opp-why-grid{grid-template-columns:1fr;gap:20px}}
+
+/* how access works: uniform numbered steps, same recipe as the Sales process cards */
+.opp-step-grid{margin-top:28px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:stretch}
+.opp-step-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.opp-step-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
+.opp-step-no{display:block;font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.1em;color:#fff;margin-bottom:14px}
+.opp-step-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
+.opp-step-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
+@media(max-width:980px){.opp-step-grid{grid-template-columns:1fr 1fr;gap:22px}}
+@media(max-width:560px){.opp-step-grid{grid-template-columns:1fr}}
+
+@media(prefers-reduced-motion:reduce){
+  .opp-why-card,.opp-step-card{transition:background .22s ease,border-color .22s ease}
+  .opp-why-card:hover,.opp-step-card:hover{transform:none}
+}
+
+/* enquiry form: two columns, same pattern as the Contact page */
+.opp-heading-left{text-align:left;margin:0 0 20px}
+.opp-enquiry-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
+@media(max-width:860px){.opp-enquiry-grid{grid-template-columns:1fr;gap:40px}}
+
+.opp-enquiry-intro{font-family:var(--sans);color:var(--pale);font-size:16px;line-height:1.65;margin:0 0 32px;max-width:42ch}
+.opp-enquiry-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:26px}
+.opp-enquiry-item .card-mark{display:block;width:28px;height:3px;background:var(--blue);margin-bottom:14px;border-radius:2px}
+.opp-enquiry-item .ci-label{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.opp-enquiry-item a{font-family:var(--serif);font-weight:600;font-size:clamp(18px,1.8vw,20px);color:#fff;text-decoration:none}
+.opp-enquiry-item a:hover,.opp-enquiry-item a:focus-visible{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+
+.opp-enquiry-card{border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);padding:36px 34px}
+.opp-enquiry-card .form{max-width:none;margin:0;padding:0}
+.opp-enquiry-card .form button{justify-self:start}
+@media(max-width:520px){.opp-enquiry-card{padding:28px 22px}}
+
+.opp-radio-group{border:0;padding:0;margin:0 0 4px;display:flex;flex-direction:column;gap:10px}
+.opp-radio-group legend{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin-bottom:8px;padding:0}
+.opp-radio-group .opp-radio{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:15px;font-weight:400;color:#fff;text-transform:none;letter-spacing:normal;margin-bottom:0}
+.opp-radio-group .opp-radio input{width:auto;accent-color:var(--blue);margin:0}
+
+/* vendor strip: short closing band before the footer, same centred-CTA pattern as the Sales page */
+.opp-vendor-inner{text-align:center;max-width:64ch;margin:0 auto}
+.opp-vendor-inner h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(26px,3.4vw,38px);line-height:1.12;margin:0}
+.opp-vendor-inner p{color:var(--pale);margin:20px 0 28px}
+</style>
