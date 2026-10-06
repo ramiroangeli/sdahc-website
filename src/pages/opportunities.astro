@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
 import data from '../data/opportunities.json';
 
-const { aggregates, statesCovered, teaserCards } = data;
+const { statesCovered } = data;
 
 /*
   Internal note, not rendered on the page: the real geocoded property counts behind the
@@ -21,18 +21,12 @@ const { aggregates, statesCovered, teaserCards } = data;
   />
   <section class="pagehead-cta"><div class="wrap">
     <div class="actions">
-      <a class="btn b1" href="#enquiry">Register your buyer mandate</a>
+      <a class="btn b1" href="#enquiry">Register your interest</a>
       <a class="btn b2" href="#enquiry">Selling an SDA asset?</a>
     </div>
   </div></section>
 
   <section class="section opp-flow"><div class="wrap">
-    <div class="opp-stats">
-      {aggregates.map((item) => (
-        <div class="opp-stat"><div class="n">{item.value}</div><div class="k">{item.label}</div></div>
-      ))}
-    </div>
-
     <div class="opp-states">
       <p class="opp-states-caption">Active mandates and listings across six states and territories.</p>
       <div class="opp-pills">
@@ -62,29 +56,12 @@ const { aggregates, statesCovered, teaserCards } = data;
     </div>
   </div></section>
 
-  {/* ===== DEAL TEASER CARDS (optional direction, removable as one block) ===== */}
-  <section class="section opp-flow"><div class="wrap">
-    <h2 class="opp-heading">A sample of current opportunities</h2>
-    <p class="opp-deals-intro">Anonymised for confidentiality. Full details are released under NDA.</p>
-    <div class="opp-deal-grid">
-      {teaserCards.map((card) => (
-        <div class="opp-deal-card">
-          <span class="opp-badge">{card.state}</span>
-          <h3>{card.line}</h3>
-          <p>{card.detail}</p>
-          <span class="opp-price">{card.price}</span>
-        </div>
-      ))}
-    </div>
-  </div></section>
-  {/* ===== END DEAL TEASER CARDS ===== */}
-
   <section class="section opp-flow"><div class="wrap">
     <h2 class="opp-heading">How access works</h2>
     <div class="opp-step-grid">
       <div class="opp-step-card">
         <span class="opp-step-no">01</span>
-        <h3>Register your mandate</h3>
+        <h3>Register your interest</h3>
         <p>Tell us what you are looking for, or what you are selling.</p>
       </div>
       <div class="opp-step-card">
@@ -113,7 +90,7 @@ const { aggregates, statesCovered, teaserCards } = data;
         <li class="opp-enquiry-item">
           <span class="card-mark" aria-hidden="true"></span>
           <p class="ci-label">Email</p>
-          <a href="mailto:research@sdahomechoices.com.au">research@sdahomechoices.com.au</a>
+          <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>
         </li>
         <li class="opp-enquiry-item">
           <span class="card-mark" aria-hidden="true"></span>
@@ -140,8 +117,8 @@ const { aggregates, statesCovered, teaserCards } = data;
           <input type="email" id="oppEmail" name="email" required />
         </div>
         <div>
-          <label for="oppPhone">Phone (optional)</label>
-          <input type="tel" id="oppPhone" name="phone" />
+          <label for="oppPhone">Phone</label>
+          <input type="tel" id="oppPhone" name="phone" required />
         </div>
         <div>
           <label for="oppMessage">Your brief or property</label>
@@ -203,16 +180,8 @@ const { aggregates, statesCovered, teaserCards } = data;
 
 .opp-heading{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}
 
-/* aggregate stat tiles */
-.opp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.opp-stat{padding:30px 24px;border:1px solid color-mix(in srgb,var(--pale) 16%,transparent);border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
-.opp-stat .n{font-family:var(--cond);font-weight:600;font-size:clamp(18px,2.1vw,25px);line-height:1.25;color:#fff}
-.opp-stat .k{font-size:14px;color:var(--pale);margin-top:12px;max-width:26ch}
-@media(max-width:860px){.opp-stats{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){.opp-stats{grid-template-columns:1fr}}
-
 /* states coverage strip */
-.opp-states{margin-top:56px;text-align:center}
+.opp-states{text-align:center}
 .opp-states-caption{font-family:var(--sans);color:var(--pale);font-size:15px;margin:0 0 18px}
 .opp-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
 .opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:#fff;border:1px solid color-mix(in srgb,var(--pale) 24%,transparent);background:rgba(255,255,255,.06);border-radius:999px;padding:10px 20px}
@@ -226,18 +195,6 @@ const { aggregates, statesCovered, teaserCards } = data;
 .opp-why-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
 @media(max-width:860px){.opp-why-grid{grid-template-columns:1fr;gap:20px}}
 
-/* deal teaser cards: anonymised, uniform structure, no photos or prices */
-.opp-deals-intro{text-align:center;color:var(--pale);font-size:15px;margin:0 0 32px}
-.opp-deal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;align-items:stretch}
-.opp-deal-card{display:flex;flex-direction:column;height:100%;padding:26px 22px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
-.opp-deal-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
-.opp-badge{align-self:flex-start;font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.1em;color:#fff;background:var(--blue);border-radius:999px;padding:5px 14px;margin-bottom:16px}
-.opp-deal-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:18px;line-height:1.25;margin:0 0 10px}
-.opp-deal-card p{font-family:var(--sans);color:var(--pale);font-size:14px;line-height:1.55;margin:0 0 16px;flex:1 0 auto}
-.opp-price{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-@media(max-width:980px){.opp-deal-grid{grid-template-columns:1fr 1fr;gap:20px}}
-@media(max-width:560px){.opp-deal-grid{grid-template-columns:1fr}}
-
 /* how access works: uniform numbered steps, same recipe as the Sales process cards */
 .opp-step-grid{margin-top:28px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:stretch}
 .opp-step-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
@@ -249,8 +206,8 @@ const { aggregates, statesCovered, teaserCards } = data;
 @media(max-width:560px){.opp-step-grid{grid-template-columns:1fr}}
 
 @media(prefers-reduced-motion:reduce){
-  .opp-why-card,.opp-deal-card,.opp-step-card{transition:background .22s ease,border-color .22s ease}
-  .opp-why-card:hover,.opp-deal-card:hover,.opp-step-card:hover{transform:none}
+  .opp-why-card,.opp-step-card{transition:background .22s ease,border-color .22s ease}
+  .opp-why-card:hover,.opp-step-card:hover{transform:none}
 }
 
 /* enquiry form: two columns, same pattern as the Contact page */

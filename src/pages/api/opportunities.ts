@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (enquiryType !== 'Buyer' && enquiryType !== 'Vendor') {
     return json({ ok: false, error: 'Please select whether you are a buyer or a vendor.' }, 400);
   }
-  if (!name || !/.+@.+\..+/.test(email) || !message) {
+  if (!name || !/.+@.+\..+/.test(email) || !phone || !message) {
     return json({ ok: false, error: 'Please complete all fields.' }, 400);
   }
   if (name.length > 100 || email.length > 200 || phone.length > 40 || message.length > 2000) {
@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
     .join('');
   const { error } = await resend.emails.send({
     from: 'SDA Home Choices <noreply@send.sdahomechoices.com.au>',
-    to: 'research@sdahomechoices.com.au',
+    to: 'steve@sdahomechoices.com.au',
     replyTo: email,
     subject: `New Opportunities enquiry (${enquiryType})`,
     html: `<h2>New Opportunities enquiry (${enquiryType})</h2>${rows}`,
