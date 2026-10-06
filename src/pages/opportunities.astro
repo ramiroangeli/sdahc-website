@@ -25,6 +25,11 @@ const heroPoster = '';
 <BaseLayout title="Off-market SDA opportunities | SDA Home Choices" description="Off-market Specialist Disability Accommodation opportunities across Australia. Register your buyer mandate or speak to us about selling an SDA asset.">
   <section class="opp-cinehero" id="oppHero" data-has-video={heroVideo ? '1' : ''}>
     <div class="opp-cinehero-bg" aria-hidden="true">
+      <div class="opp-aurora">
+        <span class="opp-aurora-blob b1"></span>
+        <span class="opp-aurora-blob b2"></span>
+        <span class="opp-aurora-blob b3"></span>
+      </div>
       {heroVideo ? (
         <>
           <video class="opp-hero-video v1" muted autoplay loop playsinline preload="auto" poster={heroPoster || undefined} aria-hidden="true">
@@ -33,11 +38,11 @@ const heroPoster = '';
           <video class="opp-hero-video v2" muted autoplay loop playsinline preload="auto" poster={heroPoster || undefined} aria-hidden="true">
             <source src={heroVideo} type="video/mp4" />
           </video>
-          <div class="opp-hero-scrim"></div>
         </>
       ) : heroPoster ? (
         <img class="opp-hero-poster" src={heroPoster} alt="" />
       ) : null}
+      <div class="opp-hero-scrim"></div>
     </div>
 
     <div class="opp-cinehero-inner">
@@ -255,34 +260,45 @@ const heroPoster = '';
   --opp-depth:.85;
 }
 
-/* cinematic hero: full-bleed, scrolls as a normal section (no viewport lock). The brand gradient
-   is the same layered glow recipe used on the other internal-page heroes, reused here as the
-   background instead of an external image/video so the hero looks finished with heroVideo unset. */
+/* cinematic hero: full-bleed, scrolls as a normal section (no viewport lock). The background is
+   a slow, continuous brand aurora (three blurred, drifting radial blobs in navy2/blue/teal over
+   the base navy) instead of a static gradient, so the hero has visible ambient motion even with
+   heroVideo unset. If heroVideo is later set, the video sits above this aurora base. */
 .opp-cinehero{position:relative;overflow:hidden;width:100%;height:min(100svh,760px);min-height:560px;display:flex;align-items:center;justify-content:center}
-.opp-cinehero-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
+.opp-cinehero-bg{position:absolute;inset:0;z-index:0;background:var(--navy);overflow:hidden}
+.opp-aurora{position:absolute;inset:-12%}
+.opp-aurora-blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform,opacity}
+.opp-aurora-blob.b1{width:58vw;height:58vw;max-width:780px;max-height:780px;left:-8%;top:-12%;background:radial-gradient(circle,var(--navy2) 0%,rgba(6,51,107,0) 70%);opacity:.6;animation:auroraDrift1 30s ease-in-out infinite alternate}
+.opp-aurora-blob.b2{width:52vw;height:52vw;max-width:720px;max-height:720px;right:-10%;top:6%;background:radial-gradient(circle,var(--blue) 0%,rgba(4,118,217,0) 70%);opacity:.32;animation:auroraDrift2 36s ease-in-out infinite alternate}
+.opp-aurora-blob.b3{width:42vw;height:42vw;max-width:600px;max-height:600px;left:22%;bottom:-18%;background:radial-gradient(circle,var(--teal) 0%,rgba(47,160,168,0) 70%);opacity:.16;animation:auroraDrift3 42s ease-in-out infinite alternate}
+@keyframes auroraDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(6%,5%) scale(1.14)}}
+@keyframes auroraDrift2{0%{transform:translate(0,0) scale(1);opacity:.28}100%{transform:translate(-6%,-5%) scale(1.1);opacity:.4}}
+@keyframes auroraDrift3{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-5%,6%) scale(1.12)}}
 .opp-hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .opp-hero-video.v2{opacity:0}
 .opp-hero-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.opp-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,22,43,.25) 0%,rgba(0,22,43,.55) 100%)}
+/* protects text contrast over the brightest point of the aurora (or the video, if enabled) */
+.opp-hero-scrim{position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 56%,rgba(0,22,43,.45) 0%,rgba(0,22,43,.1) 70%),linear-gradient(180deg,rgba(0,22,43,.1) 0%,rgba(0,22,43,.3) 100%)}
 
-.opp-cinehero-inner{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:var(--nav-clearance) 24px 0;display:flex;flex-direction:column;align-items:center}
+.opp-cinehero-inner{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:var(--nav-clearance) 24px 0;display:flex;flex-direction:column;align-items:center}
 
-/* headline: a proportional unit authored against a 1280x760 composition drives desktop sizing;
-   below that, and on mobile, it falls back to the site's normal clamp()-based responsive scale.
-   No max-width in ch is set on the headline itself, so each authored line wraps only when the
-   viewport is genuinely too narrow for it, never mid-word. */
-.opp-hero-headline{font-family:var(--serif);font-weight:600;color:#fff;line-height:1.1;letter-spacing:-.01em;margin:0;text-align:center;overflow-wrap:normal;word-break:normal;hyphens:none;font-size:clamp(30px,6.6vw,52px)}
+/* headline: a proportional unit authored against a 1280x760 composition drives desktop sizing,
+   filling close to the hero's content width while keeping "Off-market SDA opportunities" on one
+   line at 1160px and up, with a safety margin; below that, and on mobile, it falls back to the
+   site's normal clamp()-based responsive scale. No max-width in ch is set on the headline itself,
+   so each authored line wraps only when the viewport is genuinely too narrow for it, never mid-word. */
+.opp-hero-headline{font-family:var(--serif);font-weight:600;color:#fff;line-height:1.08;letter-spacing:-.01em;margin:0;text-align:center;overflow-wrap:normal;word-break:normal;hyphens:none;font-size:clamp(34px,8.4vw,60px)}
 @media(min-width:1160px){
-  .opp-cinehero{--u:min(calc(100vw / 1280),calc(100svh / 760))}
-  .opp-hero-headline{font-size:min(calc(var(--u) * 60px),66px)}
+  .opp-cinehero{--u:min(calc(100vw / 1280px),calc(100svh / 760px))}
+  .opp-hero-headline{font-size:min(calc(var(--u) * 70px),72px)}
 }
 .opp-hero-headline .ln{display:block;overflow:hidden}
 .opp-hero-headline .ln-i{display:block;transform:translateY(110%);transition:transform .9s cubic-bezier(.16,1,.3,1)}
 .opp-hero-headline .ln:nth-child(2) .ln-i{transition-delay:.14s}
 
-.opp-hero-subtitle{font-family:var(--sans);color:var(--pale);font-size:clamp(16px,1.6vw,20px);line-height:1.55;max-width:58ch;margin:24px 0 0;text-align:center;opacity:0;filter:blur(6px);transform:translateY(14px);transition:opacity .7s ease,filter .7s ease,transform .7s ease;transition-delay:.32s}
+.opp-hero-subtitle{font-family:var(--sans);color:var(--pale);font-size:clamp(16px,1.6vw,20px);line-height:1.55;max-width:58ch;margin:28px 0 0;text-align:center;opacity:0;filter:blur(6px);transform:translateY(14px);transition:opacity .7s ease,filter .7s ease,transform .7s ease;transition-delay:.32s}
 
-.opp-hero-ctas{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:36px}
+.opp-hero-ctas{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:40px}
 .opp-hero-ctas .btn{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease;display:inline-flex;align-items:center;gap:8px}
 .opp-hero-ctas .btn:nth-child(1){transition-delay:.44s}
 .opp-hero-ctas .btn:nth-child(2){transition-delay:.54s}
@@ -302,6 +318,7 @@ const heroPoster = '';
 
 @media(prefers-reduced-motion:reduce){
   .opp-hero-headline .ln-i,.opp-hero-subtitle,.opp-hero-ctas .btn{transition:none!important;transform:none!important;opacity:1!important;filter:none!important}
+  .opp-aurora-blob{animation:none!important}
 }
 
 /* shared navy band: every section using it starts and ends at plain navy, so any one
