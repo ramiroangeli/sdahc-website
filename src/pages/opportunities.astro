@@ -21,6 +21,25 @@ const { statesCovered } = data;
 // vercel.json's Content-Security-Policy, or the browser will block it.
 const heroVideo = '';
 const heroPoster = '';
+
+// Reference-image placeholders, empty by default. These are for GENERIC reference photography
+// only (accessible housing, purpose-built dwelling exteriors/interiors, community settings): they
+// are NEVER a specific off-market asset, and must never carry an address or other identifying
+// detail. Keep captions generic. To enable, drop a same-origin image at the path noted below and
+// set its src here:
+//   featureImage.src -> public/images/opportunities/feature.jpg (recommended 1600 x 900, 16:9)
+//   refImages[0].src -> public/images/opportunities/ref-1.jpg (recommended 900 x 675)
+//   refImages[1].src -> public/images/opportunities/ref-2.jpg (recommended 900 x 675)
+//   refImages[2].src -> public/images/opportunities/ref-3.jpg (recommended 900 x 675)
+// If an image is ever hosted off-origin instead, that domain must be added to img-src in
+// vercel.json's Content-Security-Policy, or the browser will block it. With src left empty, a
+// styled placeholder renders instead of a broken image.
+const featureImage = { src: '', alt: 'Purpose-built SDA housing', caption: 'Purpose-built SDA housing', w: 1600, h: 900 };
+const refImages = [
+  { src: '', alt: 'Purpose-built SDA housing', caption: 'Purpose-built SDA housing', w: 900, h: 675 },
+  { src: '', alt: 'Accessible living spaces', caption: 'Accessible living spaces', w: 900, h: 675 },
+  { src: '', alt: 'Community settings', caption: 'Community settings', w: 900, h: 675 },
+];
 ---
 <BaseLayout title="Off-market SDA opportunities | SDA Home Choices" description="Off-market Specialist Disability Accommodation opportunities across Australia. Register your buyer mandate or speak to us about selling an SDA asset.">
   <section class="opp-cinehero" id="oppHero" data-has-video={heroVideo ? '1' : ''}>
@@ -58,7 +77,7 @@ const heroPoster = '';
     </div>
   </section>
 
-  <section class="section opp-flow"><div class="wrap">
+  <section class="section opp-states-band"><div class="wrap">
     <div class="opp-states">
       <p class="opp-states-caption">Active mandates and listings across six states and territories.</p>
       <div class="opp-pills">
@@ -67,7 +86,7 @@ const heroPoster = '';
     </div>
   </div></section>
 
-  <section class="section opp-flow"><div class="wrap">
+  <section class="section opp-why-band"><div class="wrap">
     <h2 class="opp-heading">Why off-market</h2>
     <div class="opp-why-grid">
       <div class="opp-why-card">
@@ -86,9 +105,37 @@ const heroPoster = '';
         <p>Pricing is by EOI and detailed Information Memoranda are released under NDA, so serious parties see what they need to make a decision.</p>
       </div>
     </div>
+
+    <div class="opp-img-row">
+      {refImages.map((img) => (
+        <figure class="opp-img-cell">
+          {img.src ? (
+            <img src={img.src} alt={img.alt} loading="lazy" width={img.w} height={img.h} class="opp-img-cell-media" />
+          ) : (
+            <div class="opp-img-cell-media opp-img-ph" aria-hidden="true">
+              <svg class="opp-img-ph-icon" width="28" height="28" viewBox="0 0 24 24"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.3" /><circle cx="9" cy="10" r="1.4" fill="currentColor" /><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              <span class="opp-img-ph-dim">{img.w} x {img.h}</span>
+            </div>
+          )}
+          <figcaption class="opp-img-caption">{img.caption}</figcaption>
+        </figure>
+      ))}
+    </div>
   </div></section>
 
-  <section class="section opp-flow"><div class="wrap">
+  <section class="section opp-feature-band"><div class="wrap">
+    {featureImage.src ? (
+      <img src={featureImage.src} alt={featureImage.alt} loading="lazy" width={featureImage.w} height={featureImage.h} class="opp-feature-img" />
+    ) : (
+      <div class="opp-feature-img opp-img-ph" aria-hidden="true">
+        <svg class="opp-img-ph-icon" width="40" height="40" viewBox="0 0 24 24"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.3" /><circle cx="9" cy="10" r="1.5" fill="currentColor" /><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        <span class="opp-img-ph-dim">{featureImage.w} x {featureImage.h}</span>
+      </div>
+    )}
+    <p class="opp-img-caption">{featureImage.caption}</p>
+  </div></section>
+
+  <section class="section opp-access-band"><div class="wrap">
     <h2 class="opp-heading">How access works</h2>
     <div class="opp-step-grid">
       <div class="opp-step-card">
@@ -114,7 +161,7 @@ const heroPoster = '';
     </div>
   </div></section>
 
-  <section class="section opp-flow" id="enquiry"><div class="wrap opp-enquiry-grid">
+  <section class="section opp-enquiry-band" id="enquiry"><div class="wrap opp-enquiry-grid">
     <div class="opp-enquiry-info">
       <h2 class="opp-heading opp-heading-left">Register your interest</h2>
       <p class="opp-enquiry-intro">Tell us whether you are buying or selling and a little about your brief. The right person at SDA Home Choices will get back to you.</p>
@@ -162,7 +209,7 @@ const heroPoster = '';
     </div>
   </div></section>
 
-  <section class="section opp-flow"><div class="wrap opp-vendor-inner">
+  <section class="section opp-vendor-band"><div class="wrap opp-vendor-inner">
     <h2>Selling an SDA asset?</h2>
     <p>We run confidential, off-market sale processes for SDA dwellings and portfolios. Talk to us before you list.</p>
     <a class="btn b1" href="#enquiry">Register your interest</a>
@@ -321,22 +368,28 @@ const heroPoster = '';
   .opp-aurora-blob{animation:none!important}
 }
 
-/* shared navy band: every section using it starts and ends at plain navy, so any one
-   of them can be added, removed or reordered without creating a seam against its neighbours */
-.opp-flow{position:relative;overflow:hidden;background:var(--navy)}
-.opp-flow::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 50%,var(--navy) 100%)}
-.opp-flow::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(900px 560px at 50% 50%,rgba(4,118,217,.28) 0%,rgba(4,118,217,0) 62%)}
-.opp-flow>*{position:relative;z-index:1}
-
+/* ===== section colour rhythm =====
+   The page alternates light (paper) and dark (navy) bands down the page, closing on a deeper
+   navy2 "accent" band before the footer. Each band fades only on its OWN outgoing (bottom) edge
+   toward the next band's colour; the next band then starts flat at that same colour, so every
+   seam is a single soft gradient rather than two competing ones. The hero (its own component)
+   and the footer (plain navy) are the fixed colour anchors at each end of the sequence. */
 .opp-heading{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}
 
-/* states coverage strip */
+/* states coverage strip: LIGHT. Fades in from the hero's navy and out to the next (dark) band. */
+.opp-states-band{position:relative;overflow:hidden;background:var(--paper)}
+.opp-states-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--paper) 16%,var(--paper) 84%,var(--navy) 100%)}
+.opp-states-band>*{position:relative;z-index:1}
 .opp-states{text-align:center}
-.opp-states-caption{font-family:var(--sans);color:var(--pale);font-size:15px;margin:0 0 18px}
+.opp-states-caption{font-family:var(--sans);color:var(--slate);font-size:15px;margin:0 0 18px}
 .opp-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
-.opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:#fff;border:1px solid color-mix(in srgb,var(--pale) 24%,transparent);background:rgba(255,255,255,.06);border-radius:999px;padding:10px 20px}
+.opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--navy);border:1px solid color-mix(in srgb,var(--navy) 22%,transparent);background:color-mix(in srgb,var(--navy) 5%,transparent);border-radius:999px;padding:10px 20px}
 
-/* why off-market: uniform credibility cards, same recipe as the Advisory audience cards */
+/* why off-market: DARK. Receives the states-band fade-out (starts flat navy), stays flat through
+   to the feature band below (also navy there), so no bottom fade is needed on this band itself. */
+.opp-why-band{position:relative;overflow:hidden;background:var(--navy)}
+.opp-why-band::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(900px 560px at 50% 30%,rgba(4,118,217,.28) 0%,rgba(4,118,217,0) 62%)}
+.opp-why-band>*{position:relative;z-index:1}
 .opp-why-grid{margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
 .opp-why-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
 .opp-why-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
@@ -345,22 +398,55 @@ const heroPoster = '';
 .opp-why-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
 @media(max-width:860px){.opp-why-grid{grid-template-columns:1fr;gap:20px}}
 
-/* how access works: uniform numbered steps, same recipe as the Sales process cards */
+/* 3-up reference image row, embedded at the foot of the why-off-market band */
+.opp-img-row{margin-top:36px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.opp-img-cell{margin:0}
+.opp-img-cell-media{display:block;width:100%;aspect-ratio:4/3;border-radius:10px;object-fit:cover}
+.opp-img-caption{margin:10px 0 0;font-family:var(--geo);font-size:12px;letter-spacing:.06em;color:var(--pale);text-align:center}
+@media(max-width:860px){.opp-img-row{grid-template-columns:1fr 1fr;gap:16px}}
+@media(max-width:560px){.opp-img-row{grid-template-columns:1fr}}
+
+/* generic placeholder surface used by both the feature image and the 3-up row until a real
+   src is supplied; never a broken image, always an intentional styled slot */
+.opp-img-ph.opp-img-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;border-radius:10px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--navy2) 55%,transparent) 0%,color-mix(in srgb,var(--navy) 70%,transparent) 100%);color:var(--pale)}
+.opp-img-ph-icon{opacity:.8}
+.opp-img-ph-dim{font-family:var(--geo);font-size:11px;letter-spacing:.08em;color:var(--muted)}
+
+/* feature image band: full content-width 16:9 image, framed in navy, fading out to the next
+   (light) band below. Its own top is flat navy, received from the why-band above. */
+.opp-feature-band{position:relative;overflow:hidden;background:var(--navy)}
+.opp-feature-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy) 86%,var(--paper) 100%)}
+.opp-feature-band>*{position:relative;z-index:1}
+.opp-feature-img{display:block;width:100%;aspect-ratio:16/9;border-radius:14px;object-fit:cover}
+.opp-feature-band .opp-img-ph{aspect-ratio:16/9}
+.opp-feature-band .opp-img-caption{margin-top:14px}
+
+/* how access works: LIGHT. Receives the feature band's fade-out (starts flat paper) and fades
+   out at its own bottom toward the dark enquiry band below. Step cards flip to a light surface,
+   used only in this band so the base rule is changed in place rather than duplicated. */
+.opp-access-band{position:relative;overflow:hidden;background:var(--paper)}
+.opp-access-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--paper) 0%,var(--paper) 84%,var(--navy) 100%)}
+.opp-access-band>*{position:relative;z-index:1}
+.opp-access-band .opp-heading{color:var(--navy)}
 .opp-step-grid{margin-top:28px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:stretch}
-.opp-step-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
-.opp-step-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
-.opp-step-no{display:block;font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.1em;color:#fff;margin-bottom:14px}
-.opp-step-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
-.opp-step-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
+.opp-step-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--navy) 12%,transparent);border-radius:10px;background:#fff;box-shadow:0 10px 26px rgba(0,22,43,.06);transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+.opp-step-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 45%,transparent);box-shadow:0 14px 32px rgba(0,22,43,.1)}
+.opp-step-no{display:block;font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.1em;color:var(--blue);margin-bottom:14px}
+.opp-step-card h3{font-family:var(--serif);font-weight:600;color:var(--navy);font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
+.opp-step-card p{font-family:var(--sans);color:var(--slate);font-size:14.5px;line-height:1.6;margin:0}
 @media(max-width:980px){.opp-step-grid{grid-template-columns:1fr 1fr;gap:22px}}
 @media(max-width:560px){.opp-step-grid{grid-template-columns:1fr}}
 
 @media(prefers-reduced-motion:reduce){
-  .opp-why-card,.opp-step-card{transition:background .22s ease,border-color .22s ease}
+  .opp-why-card,.opp-step-card{transition:background .22s ease,border-color .22s ease,box-shadow .22s ease}
   .opp-why-card:hover,.opp-step-card:hover{transform:none}
 }
 
-/* enquiry form: two columns, same pattern as the Contact page */
+/* enquiry form: DARK. Starts flat navy (received from the access band's fade-out) and fades out
+   at its own bottom toward the navy2 accent band below. */
+.opp-enquiry-band{position:relative;overflow:hidden;background:var(--navy)}
+.opp-enquiry-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy) 84%,var(--navy2) 100%)}
+.opp-enquiry-band>*{position:relative;z-index:1}
 .opp-heading-left{text-align:left;margin:0 0 20px}
 .opp-enquiry-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
 @media(max-width:860px){.opp-enquiry-grid{grid-template-columns:1fr;gap:40px}}
@@ -372,7 +458,8 @@ const heroPoster = '';
 .opp-enquiry-item a{font-family:var(--serif);font-weight:600;font-size:clamp(18px,1.8vw,20px);color:#fff;text-decoration:none}
 .opp-enquiry-item a:hover,.opp-enquiry-item a:focus-visible{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
 
-.opp-enquiry-card{border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);padding:36px 34px}
+/* a visibly lighter, more elevated surface than the standard dark-band card, for form legibility */
+.opp-enquiry-card{border:1px solid color-mix(in srgb,var(--pale) 26%,transparent);border-radius:10px;background:rgba(255,255,255,.1);padding:36px 34px}
 .opp-enquiry-card .form{max-width:none;margin:0;padding:0}
 .opp-enquiry-card .form button{justify-self:start}
 @media(max-width:520px){.opp-enquiry-card{padding:28px 22px}}
@@ -382,7 +469,13 @@ const heroPoster = '';
 .opp-radio-group .opp-radio{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:15px;font-weight:400;color:#fff;text-transform:none;letter-spacing:normal;margin-bottom:0}
 .opp-radio-group .opp-radio input{width:auto;accent-color:var(--blue);margin:0}
 
-/* vendor strip: short closing band before the footer, same centred-CTA pattern as the Sales page */
+/* vendor strip: ACCENT. Starts flat navy2 (received from the enquiry band's fade-out), a richer
+   glow for emphasis as the page's closing beat, then fades at its own bottom back to plain navy
+   so the handoff into the footer (also navy) is seamless. */
+.opp-vendor-band{position:relative;overflow:hidden;background:var(--navy2)}
+.opp-vendor-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy2) 0%,var(--navy2) 72%,var(--navy) 100%)}
+.opp-vendor-band::after{content:"";position:absolute;inset:0;z-index:0;opacity:.7;background:radial-gradient(900px 520px at 50% 25%,rgba(4,118,217,.38) 0%,rgba(4,118,217,0) 65%)}
+.opp-vendor-band>*{position:relative;z-index:1}
 .opp-vendor-inner{text-align:center;max-width:64ch;margin:0 auto}
 .opp-vendor-inner h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(26px,3.4vw,38px);line-height:1.12;margin:0}
 .opp-vendor-inner p{color:var(--pale);margin:20px 0 28px}
