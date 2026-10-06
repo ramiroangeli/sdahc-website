@@ -116,7 +116,6 @@ const refImages = [
               <span class="opp-img-ph-dim">{img.w} x {img.h}</span>
             </div>
           )}
-          <figcaption class="opp-img-caption">{img.caption}</figcaption>
         </figure>
       ))}
     </div>
@@ -391,8 +390,9 @@ const refImages = [
 .opp-why-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
 @media(max-width:860px){.opp-why-grid{grid-template-columns:1fr;gap:20px}}
 
-/* 3-up reference image row, embedded at the foot of the why-off-market band */
-.opp-img-row{margin-top:36px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+/* 3-up reference image row, embedded at the foot of the why-off-market band. Kept deliberately
+   modest (max-width, centred) so the photos read as supporting imagery, not hero-scale cards. */
+.opp-img-row{margin:36px auto 0;max-width:560px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .opp-img-cell{margin:0}
 .opp-img-cell-media{display:block;width:100%;aspect-ratio:4/3;border-radius:10px;object-fit:cover}
 .opp-img-caption{margin:10px 0 0;font-family:var(--geo);font-size:12px;letter-spacing:.06em;color:var(--pale);text-align:center}
@@ -405,13 +405,15 @@ const refImages = [
 .opp-img-ph-icon{opacity:.8}
 .opp-img-ph-dim{font-family:var(--geo);font-size:11px;letter-spacing:.08em;color:var(--muted)}
 
-/* feature image band: full content-width 16:9 image, framed in navy, fading out to the next
-   (light) band below. Its own top is flat navy, received from the why-band above. */
-.opp-feature-band{position:relative;overflow:hidden;background:var(--navy)}
+/* feature image band: a contained, centred 16:9 image (not full-bleed), framed in navy, fading
+   out to the next (light) band below. Its own top is flat navy, received from the why-band above.
+   Kept to a modest max-width so it reads as supporting imagery, not a hero-scale photo, with
+   reduced band padding to match the smaller image. */
+.opp-feature-band{position:relative;overflow:hidden;background:var(--navy);padding-top:40px;padding-bottom:40px}
 .opp-feature-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy) 86%,var(--paper) 100%)}
 .opp-feature-band>*{position:relative;z-index:1}
-.opp-feature-img{display:block;width:100%;aspect-ratio:16/9;border-radius:14px;object-fit:cover}
-.opp-feature-band .opp-img-ph{aspect-ratio:16/9}
+.opp-feature-img{display:block;width:100%;max-width:700px;margin:0 auto;aspect-ratio:16/9;border-radius:14px;object-fit:cover}
+.opp-feature-band .opp-img-ph{max-width:700px;margin:0 auto;aspect-ratio:16/9}
 .opp-feature-band .opp-img-caption{margin-top:14px}
 
 /* how access works: LIGHT. Receives the feature band's fade-out (starts flat paper) and fades
