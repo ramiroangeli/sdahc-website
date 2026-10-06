@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PageHeader from '../components/PageHeader.astro';
 import data from '../data/opportunities.json';
 
 const { statesCovered } = data;
@@ -12,19 +11,47 @@ const { statesCovered } = data;
   deliberately not broken out per state on the page. NT is claimed through a portfolio but
   not yet confirmed in the records, so it is excluded from statesCovered for now.
 */
+
+// Pluggable hero background video, empty by default: with no value set, the hero renders the
+// brand gradient only (no video element is rendered at all). To enable, set these to a same-origin
+// SDAHC-hosted clip and poster, e.g. heroVideo = '/videos/opportunities-hero.mp4' and
+// heroPoster = '/images/opportunities-hero-poster.jpg'. Never point this at a third party's
+// branded video or poster URL. If the asset is ever hosted on a domain other than this site's own,
+// that domain must also be added to media-src (for the video) and img-src (for the poster) in
+// vercel.json's Content-Security-Policy, or the browser will block it.
+const heroVideo = '';
+const heroPoster = '';
 ---
 <BaseLayout title="Off-market SDA opportunities | SDA Home Choices" description="Off-market Specialist Disability Accommodation opportunities across Australia. Register your buyer mandate or speak to us about selling an SDA asset.">
-  <PageHeader
-    eyebrow="Opportunities"
-    title="Off-market SDA opportunities across Australia"
-    standfirst="We hold 100+ off-market Specialist Disability Accommodation opportunities nationally, from single dwellings to large portfolios. Most never reach the open market."
-  />
-  <section class="pagehead-cta"><div class="wrap">
-    <div class="actions">
-      <a class="btn b1" href="#enquiry">Register your interest</a>
-      <a class="btn b2" href="#enquiry">Selling an SDA asset?</a>
+  <section class="opp-cinehero" id="oppHero" data-has-video={heroVideo ? '1' : ''}>
+    <div class="opp-cinehero-bg" aria-hidden="true">
+      {heroVideo ? (
+        <>
+          <video class="opp-hero-video v1" muted autoplay loop playsinline preload="auto" poster={heroPoster || undefined} aria-hidden="true">
+            <source src={heroVideo} type="video/mp4" />
+          </video>
+          <video class="opp-hero-video v2" muted autoplay loop playsinline preload="auto" poster={heroPoster || undefined} aria-hidden="true">
+            <source src={heroVideo} type="video/mp4" />
+          </video>
+          <div class="opp-hero-scrim"></div>
+        </>
+      ) : heroPoster ? (
+        <img class="opp-hero-poster" src={heroPoster} alt="" />
+      ) : null}
     </div>
-  </div></section>
+
+    <div class="opp-cinehero-inner">
+      <h1 class="opp-hero-headline">
+        <span class="ln"><span class="ln-i">Off-market SDA opportunities</span></span>
+        <span class="ln"><span class="ln-i">across Australia</span></span>
+      </h1>
+      <p class="opp-hero-subtitle">We hold 100+ off-market Specialist Disability Accommodation opportunities nationally, from single dwellings to large portfolios. Most never reach the open market.</p>
+      <div class="opp-hero-ctas">
+        <a class="btn b1 opp-hero-cta" href="#enquiry">Register your interest<svg class="opp-arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+        <a class="btn b2 opp-hero-cta-ghost" href="#enquiry">Selling an SDA asset?</a>
+      </div>
+    </div>
+  </section>
 
   <section class="section opp-flow"><div class="wrap">
     <div class="opp-states">
@@ -139,6 +166,68 @@ const { statesCovered } = data;
 
 <!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
 <script>
+  const hero = document.getElementById('oppHero');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (hero) {
+    // pluggable background video: cross-fades two looped <video> elements near the loop
+    // point to hide the seam. Inert (no-op) until heroVideo is set on the page, since the
+    // video elements then do not exist in the DOM at all.
+    if (hero.dataset.hasVideo === '1') {
+      const v1 = hero.querySelector('.opp-hero-video.v1');
+      const v2 = hero.querySelector('.opp-hero-video.v2');
+      if (v1 && v2) {
+        if (reduceMotion) {
+          v1.pause();
+          v2.pause();
+        } else {
+          let active = v1, idle = v2;
+          idle.style.opacity = '0';
+          const crossfade = () => {
+            idle.currentTime = 0;
+            idle.play().catch(() => {});
+            idle.style.opacity = '1';
+            active.style.opacity = '0';
+            const next = idle;
+            idle = active;
+            active = next;
+          };
+          active.addEventListener('timeupdate', () => {
+            if (active.duration && active.duration - active.currentTime < 1) crossfade();
+          });
+        }
+      }
+    }
+
+    // masked line-rise entrance: the hidden/offset state is the plain CSS default (no flash),
+    // and arming is gated on fonts.ready (with a timeout ceiling) so type doesn't visibly reflow
+    // mid-animation. The apparatus detaches itself (transitions removed) once the last tween ends,
+    // so the resting page is fully static.
+    if (reduceMotion) {
+      hero.classList.add('is-armed', 'is-settled');
+    } else {
+      const arm = () => {
+        if (hero.classList.contains('is-armed')) return;
+        hero.classList.add('is-armed');
+        const tweened = hero.querySelectorAll('.ln-i, .opp-hero-subtitle, .opp-hero-ctas .btn');
+        let pending = tweened.length;
+        const settle = () => { hero.classList.add('is-settled'); };
+        const onEnd = () => { pending -= 1; if (pending <= 0) { settle(); hero.removeEventListener('transitionend', onEnd); } };
+        hero.addEventListener('transitionend', onEnd);
+        window.setTimeout(settle, 1800);
+      };
+      const ceiling = window.setTimeout(arm, 400);
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => { window.clearTimeout(ceiling); arm(); });
+      } else {
+        arm();
+      }
+    }
+  }
+</script>
+
+<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
+<script>
   const form = document.querySelector('form[data-endpoint]');
   if (form) form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -166,10 +255,54 @@ const { statesCovered } = data;
   --opp-depth:.85;
 }
 
-/* hero: same layered gradient/glow recipe as About/Sales/Advisory, scoped to this page only */
-:global(section.pagehead.pagehead){background:var(--navy);overflow:hidden}
-:global(section.pagehead)::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
-:global(section.pagehead .wrap){position:relative;z-index:1}
+/* cinematic hero: full-bleed, scrolls as a normal section (no viewport lock). The brand gradient
+   is the same layered glow recipe used on the other internal-page heroes, reused here as the
+   background instead of an external image/video so the hero looks finished with heroVideo unset. */
+.opp-cinehero{position:relative;overflow:hidden;width:100%;height:min(100svh,760px);min-height:560px;display:flex;align-items:center;justify-content:center}
+.opp-cinehero-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),radial-gradient(100% 120% at 100% 100%,rgba(4,118,217,.42) 0%,rgba(4,118,217,0) 58%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
+.opp-hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.opp-hero-video.v2{opacity:0}
+.opp-hero-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.opp-hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,22,43,.25) 0%,rgba(0,22,43,.55) 100%)}
+
+.opp-cinehero-inner{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:var(--nav-clearance) 24px 0;display:flex;flex-direction:column;align-items:center}
+
+/* headline: a proportional unit authored against a 1280x760 composition drives desktop sizing;
+   below that, and on mobile, it falls back to the site's normal clamp()-based responsive scale.
+   No max-width in ch is set on the headline itself, so each authored line wraps only when the
+   viewport is genuinely too narrow for it, never mid-word. */
+.opp-hero-headline{font-family:var(--serif);font-weight:600;color:#fff;line-height:1.1;letter-spacing:-.01em;margin:0;text-align:center;overflow-wrap:normal;word-break:normal;hyphens:none;font-size:clamp(30px,6.6vw,52px)}
+@media(min-width:1160px){
+  .opp-cinehero{--u:min(calc(100vw / 1280),calc(100svh / 760))}
+  .opp-hero-headline{font-size:min(calc(var(--u) * 60px),66px)}
+}
+.opp-hero-headline .ln{display:block;overflow:hidden}
+.opp-hero-headline .ln-i{display:block;transform:translateY(110%);transition:transform .9s cubic-bezier(.16,1,.3,1)}
+.opp-hero-headline .ln:nth-child(2) .ln-i{transition-delay:.14s}
+
+.opp-hero-subtitle{font-family:var(--sans);color:var(--pale);font-size:clamp(16px,1.6vw,20px);line-height:1.55;max-width:58ch;margin:24px 0 0;text-align:center;opacity:0;filter:blur(6px);transform:translateY(14px);transition:opacity .7s ease,filter .7s ease,transform .7s ease;transition-delay:.32s}
+
+.opp-hero-ctas{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:36px}
+.opp-hero-ctas .btn{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease;display:inline-flex;align-items:center;gap:8px}
+.opp-hero-ctas .btn:nth-child(1){transition-delay:.44s}
+.opp-hero-ctas .btn:nth-child(2){transition-delay:.54s}
+.opp-arrow{flex:0 0 auto}
+.opp-hero-cta-ghost{backdrop-filter:blur(6px);background:rgba(255,255,255,.06)}
+
+.opp-cinehero.is-armed .opp-hero-headline .ln-i{transform:translateY(0)}
+.opp-cinehero.is-armed .opp-hero-subtitle{opacity:1;filter:blur(0);transform:translateY(0)}
+.opp-cinehero.is-armed .opp-hero-ctas .btn{opacity:1;transform:translateY(0)}
+
+/* detach the entrance apparatus once settled: the resting page carries no live transitions */
+.opp-cinehero.is-settled .opp-hero-headline .ln-i,
+.opp-cinehero.is-settled .opp-hero-subtitle,
+.opp-cinehero.is-settled .opp-hero-ctas .btn{transition:none}
+
+@media(max-width:480px){.opp-hero-ctas{flex-direction:column;width:100%}.opp-hero-ctas .btn{width:100%;justify-content:center}}
+
+@media(prefers-reduced-motion:reduce){
+  .opp-hero-headline .ln-i,.opp-hero-subtitle,.opp-hero-ctas .btn{transition:none!important;transform:none!important;opacity:1!important;filter:none!important}
+}
 
 /* shared navy band: every section using it starts and ends at plain navy, so any one
    of them can be added, removed or reordered without creating a seam against its neighbours */
