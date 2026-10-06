@@ -22,23 +22,22 @@ const { statesCovered } = data;
 const heroVideo = '';
 const heroPoster = '';
 
-// Reference-image placeholders, empty by default. These are for GENERIC reference photography
-// only (accessible housing, purpose-built dwelling exteriors/interiors, community settings): they
-// are NEVER a specific off-market asset, and must never carry an address or other identifying
-// detail. Keep captions generic. To enable, drop a same-origin image at the path noted below and
-// set its src here:
-//   featureImage.src -> public/images/opportunities/feature.jpg (recommended 1600 x 900, 16:9)
-//   refImages[0].src -> public/images/opportunities/ref-1.jpg (recommended 900 x 675)
-//   refImages[1].src -> public/images/opportunities/ref-2.jpg (recommended 900 x 675)
-//   refImages[2].src -> public/images/opportunities/ref-3.jpg (recommended 900 x 675)
+// Reference images. These are for GENERIC reference photography only (accessible housing,
+// purpose-built dwelling exteriors/interiors, community settings): they are NEVER a specific
+// off-market asset, and must never carry an address or other identifying detail. Keep captions
+// generic. Source files live at:
+//   featureImage.src -> public/images/opportunities/feature.jpg (1600 x 900, 16:9)
+//   refImages[0].src -> public/images/opportunities/ref-1.jpg (900 x 675)
+//   refImages[1].src -> public/images/opportunities/ref-2.jpg (900 x 675)
+//   refImages[2].src -> public/images/opportunities/ref-3.jpg (900 x 675)
 // If an image is ever hosted off-origin instead, that domain must be added to img-src in
-// vercel.json's Content-Security-Policy, or the browser will block it. With src left empty, a
-// styled placeholder renders instead of a broken image.
-const featureImage = { src: '', alt: 'Purpose-built SDA housing', caption: 'Purpose-built SDA housing', w: 1600, h: 900 };
+// vercel.json's Content-Security-Policy, or the browser will block it. Clearing a slot's src back
+// to '' renders the styled placeholder instead of a broken image.
+const featureImage = { src: '/images/opportunities/feature.jpg', alt: 'SDA housing across an Australian residential community at dusk', caption: 'Off-market opportunities, Australia-wide', w: 1600, h: 900 };
 const refImages = [
-  { src: '', alt: 'Purpose-built SDA housing', caption: 'Purpose-built SDA housing', w: 900, h: 675 },
-  { src: '', alt: 'Accessible living spaces', caption: 'Accessible living spaces', w: 900, h: 675 },
-  { src: '', alt: 'Community settings', caption: 'Community settings', w: 900, h: 675 },
+  { src: '/images/opportunities/ref-1.jpg', alt: 'Accessible, purpose-built home with ramp access', caption: 'Accessible, purpose-built dwellings', w: 900, h: 675 },
+  { src: '/images/opportunities/ref-2.jpg', alt: 'Contemporary purpose-built homes in an established location', caption: 'Purpose-built housing', w: 900, h: 675 },
+  { src: '/images/opportunities/ref-3.jpg', alt: 'Aerial view of an Australian residential neighbourhood', caption: 'Communities across Australia', w: 900, h: 675 },
 ];
 ---
 <BaseLayout title="Off-market SDA opportunities | SDA Home Choices" description="Off-market Specialist Disability Accommodation opportunities across Australia. Register your buyer mandate or speak to us about selling an SDA asset.">
@@ -207,12 +206,6 @@ const refImages = [
         <p class="form-status" role="status"></p>
       </form>
     </div>
-  </div></section>
-
-  <section class="section opp-vendor-band"><div class="wrap opp-vendor-inner">
-    <h2>Selling an SDA asset?</h2>
-    <p>We run confidential, off-market sale processes for SDA dwellings and portfolios. Talk to us before you list.</p>
-    <a class="btn b1" href="#enquiry">Register your interest</a>
   </div></section>
 </BaseLayout>
 
@@ -442,10 +435,10 @@ const refImages = [
   .opp-why-card:hover,.opp-step-card:hover{transform:none}
 }
 
-/* enquiry form: DARK. Starts flat navy (received from the access band's fade-out) and fades out
-   at its own bottom toward the navy2 accent band below. */
+/* enquiry form: DARK, the last band before the footer. Starts flat navy (received from the access
+   band's fade-out) and stays flat navy through its own bottom edge, so the handoff into the
+   footer (also plain navy) is seamless with no fade needed. */
 .opp-enquiry-band{position:relative;overflow:hidden;background:var(--navy)}
-.opp-enquiry-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy) 84%,var(--navy2) 100%)}
 .opp-enquiry-band>*{position:relative;z-index:1}
 .opp-heading-left{text-align:left;margin:0 0 20px}
 .opp-enquiry-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
@@ -468,15 +461,4 @@ const refImages = [
 .opp-radio-group legend{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin-bottom:8px;padding:0}
 .opp-radio-group .opp-radio{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:15px;font-weight:400;color:#fff;text-transform:none;letter-spacing:normal;margin-bottom:0}
 .opp-radio-group .opp-radio input{width:auto;accent-color:var(--blue);margin:0}
-
-/* vendor strip: ACCENT. Starts flat navy2 (received from the enquiry band's fade-out), a richer
-   glow for emphasis as the page's closing beat, then fades at its own bottom back to plain navy
-   so the handoff into the footer (also navy) is seamless. */
-.opp-vendor-band{position:relative;overflow:hidden;background:var(--navy2)}
-.opp-vendor-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy2) 0%,var(--navy2) 72%,var(--navy) 100%)}
-.opp-vendor-band::after{content:"";position:absolute;inset:0;z-index:0;opacity:.7;background:radial-gradient(900px 520px at 50% 25%,rgba(4,118,217,.38) 0%,rgba(4,118,217,0) 65%)}
-.opp-vendor-band>*{position:relative;z-index:1}
-.opp-vendor-inner{text-align:center;max-width:64ch;margin:0 auto}
-.opp-vendor-inner h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(26px,3.4vw,38px);line-height:1.12;margin:0}
-.opp-vendor-inner p{color:var(--pale);margin:20px 0 28px}
 </style>
