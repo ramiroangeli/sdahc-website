@@ -4,7 +4,9 @@
     { "source": "/report2026-li", "destination": "/research/sda-market-report-2026/?utm_source=linkedin&utm_medium=social&utm_campaign=report_2026", "permanent": true },
     { "source": "/sda-market-report-2026", "destination": "/research/sda-market-report-2026/", "permanent": true },
     { "source": "/ndis-sda-mergers-and-acquisitions", "destination": "/sda-property-and-portfolio-sales/", "permanent": true },
-    { "source": "/about-steve-dawson", "destination": "/about", "permanent": true }
+    { "source": "/about-steve-dawson", "destination": "/about", "permanent": true },
+    { "source": "/research/methodology", "destination": "/research/research-methodology/", "permanent": true },
+    { "source": "/research/methodology/", "destination": "/research/research-methodology/", "permanent": true }
   ],
   "headers": [
     {
