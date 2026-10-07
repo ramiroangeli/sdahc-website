@@ -12,42 +12,36 @@ const { statesCovered } = data;
   not yet confirmed in the records, so it is excluded from statesCovered for now.
 */
 
-// Pluggable hero background video, empty by default: with no value set, the hero renders the
-// brand gradient only (no video element is rendered at all). To enable, set these to a same-origin
-// SDAHC-hosted clip and poster, e.g. heroVideo = '/videos/opportunities-hero.mp4' and
-// heroPoster = '/images/opportunities-hero-poster.jpg'. Never point this at a third party's
-// branded video or poster URL. If the asset is ever hosted on a domain other than this site's own,
-// that domain must also be added to media-src (for the video) and img-src (for the poster) in
-// vercel.json's Content-Security-Policy, or the browser will block it.
+// Pluggable hero background. heroVideo stays empty (no SDAHC-hosted clip exists yet); heroPoster
+// points at the same generic reference photo used to be a standalone content image (see below),
+// now repurposed as the hero's static background, shown under a dark navy mask so it reads as a
+// quiet texture rather than a bright photo. To swap in a real SDAHC-hosted clip later, set
+// heroVideo = '/videos/opportunities-hero.mp4' (heroPoster already covers the poster/fallback
+// role). Never point either at a third party's branded asset. If either is ever hosted on a
+// domain other than this site's own, that domain must be added to media-src (video) / img-src
+// (poster) in vercel.json's Content-Security-Policy, or the browser will block it.
 const heroVideo = '';
-const heroPoster = '';
+const heroPoster = '/images/opportunities/feature.jpg';
 
-// Reference images. These are for GENERIC reference photography only (accessible housing,
-// purpose-built dwelling exteriors/interiors, community settings): they are NEVER a specific
-// off-market asset, and must never carry an address or other identifying detail. Keep captions
-// generic. Source files live at:
-//   featureImage.src -> public/images/opportunities/feature.jpg (1600 x 900, 16:9)
-//   refImages[0].src -> public/images/opportunities/ref-1.jpg (900 x 675)
-//   refImages[1].src -> public/images/opportunities/ref-2.jpg (900 x 675)
-//   refImages[2].src -> public/images/opportunities/ref-3.jpg (900 x 675)
+// Reference images for the 3-up row. GENERIC reference photography only (accessible housing,
+// purpose-built dwelling exteriors/interiors, community settings): NEVER a specific off-market
+// asset, and must never carry an address or other identifying detail. Keep captions generic.
+// Source files (square, 800 x 800) live at:
+//   refImages[0].src -> public/images/opportunities/ref-1.jpg
+//   refImages[1].src -> public/images/opportunities/ref-2.jpg
+//   refImages[2].src -> public/images/opportunities/ref-3.jpg
 // If an image is ever hosted off-origin instead, that domain must be added to img-src in
 // vercel.json's Content-Security-Policy, or the browser will block it. Clearing a slot's src back
 // to '' renders the styled placeholder instead of a broken image.
-const featureImage = { src: '/images/opportunities/feature.jpg', alt: 'SDA housing across an Australian residential community at dusk', caption: 'Off-market opportunities, Australia-wide', w: 1600, h: 900 };
 const refImages = [
-  { src: '/images/opportunities/ref-1.jpg', alt: 'Accessible, purpose-built home with ramp access', caption: 'Accessible, purpose-built dwellings', w: 900, h: 675 },
-  { src: '/images/opportunities/ref-2.jpg', alt: 'Contemporary purpose-built homes in an established location', caption: 'Purpose-built housing', w: 900, h: 675 },
-  { src: '/images/opportunities/ref-3.jpg', alt: 'Aerial view of an Australian residential neighbourhood', caption: 'Communities across Australia', w: 900, h: 675 },
+  { src: '/images/opportunities/ref-1.jpg', alt: 'Accessible, purpose-built home with ramp access', caption: 'Accessible, purpose-built dwellings', w: 800, h: 800 },
+  { src: '/images/opportunities/ref-2.jpg', alt: 'Contemporary purpose-built homes in an established location', caption: 'Purpose-built housing', w: 800, h: 800 },
+  { src: '/images/opportunities/ref-3.jpg', alt: 'Aerial view of an Australian residential neighbourhood', caption: 'Communities across Australia', w: 800, h: 800 },
 ];
 ---
 <BaseLayout title="Off-market SDA opportunities | SDA Home Choices" description="Off-market Specialist Disability Accommodation opportunities across Australia. Register your buyer mandate or speak to us about selling an SDA asset.">
   <section class="opp-cinehero" id="oppHero" data-has-video={heroVideo ? '1' : ''}>
     <div class="opp-cinehero-bg" aria-hidden="true">
-      <div class="opp-aurora">
-        <span class="opp-aurora-blob b1"></span>
-        <span class="opp-aurora-blob b2"></span>
-        <span class="opp-aurora-blob b3"></span>
-      </div>
       {heroVideo ? (
         <>
           <video class="opp-hero-video v1" muted autoplay loop playsinline preload="auto" poster={heroPoster || undefined} aria-hidden="true">
@@ -60,6 +54,11 @@ const refImages = [
       ) : heroPoster ? (
         <img class="opp-hero-poster" src={heroPoster} alt="" />
       ) : null}
+      <div class="opp-aurora">
+        <span class="opp-aurora-blob b1"></span>
+        <span class="opp-aurora-blob b2"></span>
+        <span class="opp-aurora-blob b3"></span>
+      </div>
       <div class="opp-hero-scrim"></div>
     </div>
 
@@ -119,18 +118,6 @@ const refImages = [
         </figure>
       ))}
     </div>
-  </div></section>
-
-  <section class="section opp-feature-band"><div class="wrap">
-    {featureImage.src ? (
-      <img src={featureImage.src} alt={featureImage.alt} loading="lazy" width={featureImage.w} height={featureImage.h} class="opp-feature-img" />
-    ) : (
-      <div class="opp-feature-img opp-img-ph" aria-hidden="true">
-        <svg class="opp-img-ph-icon" width="40" height="40" viewBox="0 0 24 24"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.3" /><circle cx="9" cy="10" r="1.5" fill="currentColor" /><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
-        <span class="opp-img-ph-dim">{featureImage.w} x {featureImage.h}</span>
-      </div>
-    )}
-    <p class="opp-img-caption">{featureImage.caption}</p>
   </div></section>
 
   <section class="section opp-access-band"><div class="wrap">
@@ -299,25 +286,27 @@ const refImages = [
   --opp-depth:.85;
 }
 
-/* cinematic hero: full-bleed, scrolls as a normal section (no viewport lock). The background is
-   a slow, continuous brand aurora (three blurred, drifting radial blobs in navy2/blue/teal over
-   the base navy) instead of a static gradient, so the hero has visible ambient motion even with
-   heroVideo unset. If heroVideo is later set, the video sits above this aurora base. */
+/* cinematic hero: full-bleed, scrolls as a normal section (no viewport lock). Background layer
+   order (bottom to top): the photo (heroPoster, or the video once heroVideo is set), a subtle
+   brand aurora drifting above it, then a dark navy mask on top of both so the photo reads as a
+   quiet texture behind the hero rather than a bright image, and the aurora reads as a soft glow
+   rather than competing with the photo. */
 .opp-cinehero{position:relative;overflow:hidden;width:100%;height:min(100svh,760px);min-height:560px;display:flex;align-items:center;justify-content:center}
 .opp-cinehero-bg{position:absolute;inset:0;z-index:0;background:var(--navy);overflow:hidden}
-.opp-aurora{position:absolute;inset:-12%}
-.opp-aurora-blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform,opacity}
-.opp-aurora-blob.b1{width:58vw;height:58vw;max-width:780px;max-height:780px;left:-8%;top:-12%;background:radial-gradient(circle,var(--navy2) 0%,rgba(6,51,107,0) 70%);opacity:.6;animation:auroraDrift1 30s ease-in-out infinite alternate}
-.opp-aurora-blob.b2{width:52vw;height:52vw;max-width:720px;max-height:720px;right:-10%;top:6%;background:radial-gradient(circle,var(--blue) 0%,rgba(4,118,217,0) 70%);opacity:.32;animation:auroraDrift2 36s ease-in-out infinite alternate}
-.opp-aurora-blob.b3{width:42vw;height:42vw;max-width:600px;max-height:600px;left:22%;bottom:-18%;background:radial-gradient(circle,var(--teal) 0%,rgba(47,160,168,0) 70%);opacity:.16;animation:auroraDrift3 42s ease-in-out infinite alternate}
-@keyframes auroraDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(6%,5%) scale(1.14)}}
-@keyframes auroraDrift2{0%{transform:translate(0,0) scale(1);opacity:.28}100%{transform:translate(-6%,-5%) scale(1.1);opacity:.4}}
-@keyframes auroraDrift3{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-5%,6%) scale(1.12)}}
-.opp-hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.opp-hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
 .opp-hero-video.v2{opacity:0}
-.opp-hero-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-/* protects text contrast over the brightest point of the aurora (or the video, if enabled) */
-.opp-hero-scrim{position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 56%,rgba(0,22,43,.45) 0%,rgba(0,22,43,.1) 70%),linear-gradient(180deg,rgba(0,22,43,.1) 0%,rgba(0,22,43,.3) 100%)}
+.opp-hero-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
+.opp-aurora{position:absolute;inset:-12%;pointer-events:none}
+.opp-aurora-blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform,opacity}
+.opp-aurora-blob.b1{width:58vw;height:58vw;max-width:780px;max-height:780px;left:-8%;top:-12%;background:radial-gradient(circle,var(--navy2) 0%,rgba(6,51,107,0) 70%);opacity:.32;animation:auroraDrift1 30s ease-in-out infinite alternate}
+.opp-aurora-blob.b2{width:52vw;height:52vw;max-width:720px;max-height:720px;right:-10%;top:6%;background:radial-gradient(circle,var(--blue) 0%,rgba(4,118,217,0) 70%);opacity:.18;animation:auroraDrift2 36s ease-in-out infinite alternate}
+.opp-aurora-blob.b3{width:42vw;height:42vw;max-width:600px;max-height:600px;left:22%;bottom:-18%;background:radial-gradient(circle,var(--teal) 0%,rgba(47,160,168,0) 70%);opacity:.1;animation:auroraDrift3 42s ease-in-out infinite alternate}
+@keyframes auroraDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(6%,5%) scale(1.14)}}
+@keyframes auroraDrift2{0%{transform:translate(0,0) scale(1);opacity:.16}100%{transform:translate(-6%,-5%) scale(1.1);opacity:.24}}
+@keyframes auroraDrift3{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-5%,6%) scale(1.12)}}
+/* the mask: strong dark navy overall, a touch stronger toward the top, so the photo and aurora
+   both read as a quiet texture and hero text stays fully legible at every point */
+.opp-hero-scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,22,43,.92) 0%,rgba(0,22,43,.82) 45%,rgba(0,22,43,.88) 100%)}
 
 .opp-cinehero-inner{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:var(--nav-clearance) 24px 0;display:flex;flex-direction:column;align-items:center}
 
@@ -377,9 +366,10 @@ const refImages = [
 .opp-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
 .opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--navy);border:1px solid color-mix(in srgb,var(--navy) 22%,transparent);background:color-mix(in srgb,var(--navy) 5%,transparent);border-radius:999px;padding:10px 20px}
 
-/* why off-market: DARK. Receives the states-band fade-out (starts flat navy), stays flat through
-   to the feature band below (also navy there), so no bottom fade is needed on this band itself. */
+/* why off-market: DARK. Receives the states-band fade-out (starts flat navy) and fades out at its
+   own bottom toward the light how-access-works band below. */
 .opp-why-band{position:relative;overflow:hidden;background:var(--navy)}
+.opp-why-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy) 86%,var(--paper) 100%)}
 .opp-why-band::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(900px 560px at 50% 30%,rgba(4,118,217,.28) 0%,rgba(4,118,217,0) 62%)}
 .opp-why-band>*{position:relative;z-index:1}
 .opp-why-grid{margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
@@ -390,35 +380,24 @@ const refImages = [
 .opp-why-card p{font-family:var(--sans);color:#fff;font-size:14.5px;line-height:1.6;margin:0}
 @media(max-width:860px){.opp-why-grid{grid-template-columns:1fr;gap:20px}}
 
-/* 3-up reference image row, embedded at the foot of the why-off-market band. Kept deliberately
-   modest (max-width, centred) so the photos read as supporting imagery, not hero-scale cards. */
+/* 3-up reference image row, embedded at the foot of the why-off-market band. Square tiles, kept
+   deliberately modest (max-width, centred) so the photos read as supporting imagery. */
 .opp-img-row{margin:36px auto 0;max-width:560px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .opp-img-cell{margin:0}
-.opp-img-cell-media{display:block;width:100%;aspect-ratio:4/3;border-radius:10px;object-fit:cover}
+.opp-img-cell-media{display:block;width:100%;height:100%;aspect-ratio:1/1;border-radius:10px;object-fit:cover}
 .opp-img-caption{margin:10px 0 0;font-family:var(--geo);font-size:12px;letter-spacing:.06em;color:var(--pale);text-align:center}
 @media(max-width:860px){.opp-img-row{grid-template-columns:1fr 1fr;gap:16px}}
 @media(max-width:560px){.opp-img-row{grid-template-columns:1fr}}
 
-/* generic placeholder surface used by both the feature image and the 3-up row until a real
-   src is supplied; never a broken image, always an intentional styled slot */
+/* generic placeholder surface used by the 3-up row until a real src is supplied; never a broken
+   image, always an intentional styled slot */
 .opp-img-ph.opp-img-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;border-radius:10px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--navy2) 55%,transparent) 0%,color-mix(in srgb,var(--navy) 70%,transparent) 100%);color:var(--pale)}
 .opp-img-ph-icon{opacity:.8}
 .opp-img-ph-dim{font-family:var(--geo);font-size:11px;letter-spacing:.08em;color:var(--muted)}
 
-/* feature image band: a contained, centred 16:9 image (not full-bleed), framed in navy, fading
-   out to the next (light) band below. Its own top is flat navy, received from the why-band above.
-   Kept to a modest max-width so it reads as supporting imagery, not a hero-scale photo, with
-   reduced band padding to match the smaller image. */
-.opp-feature-band{position:relative;overflow:hidden;background:var(--navy);padding-top:40px;padding-bottom:40px}
-.opp-feature-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy) 86%,var(--paper) 100%)}
-.opp-feature-band>*{position:relative;z-index:1}
-.opp-feature-img{display:block;width:100%;max-width:700px;margin:0 auto;aspect-ratio:16/9;border-radius:14px;object-fit:cover}
-.opp-feature-band .opp-img-ph{max-width:700px;margin:0 auto;aspect-ratio:16/9}
-.opp-feature-band .opp-img-caption{margin-top:14px}
-
-/* how access works: LIGHT. Receives the feature band's fade-out (starts flat paper) and fades
-   out at its own bottom toward the dark enquiry band below. Step cards flip to a light surface,
-   used only in this band so the base rule is changed in place rather than duplicated. */
+/* how access works: LIGHT. Receives the why-band's fade-out (starts flat paper) and fades out at
+   its own bottom toward the dark enquiry band below. Step cards flip to a light surface, used
+   only in this band so the base rule is changed in place rather than duplicated. */
 .opp-access-band{position:relative;overflow:hidden;background:var(--paper)}
 .opp-access-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--paper) 0%,var(--paper) 84%,var(--navy) 100%)}
 .opp-access-band>*{position:relative;z-index:1}
