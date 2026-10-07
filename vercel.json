@@ -6,7 +6,9 @@
     { "source": "/ndis-sda-mergers-and-acquisitions", "destination": "/sda-property-and-portfolio-sales/", "permanent": true },
     { "source": "/about-steve-dawson", "destination": "/about", "permanent": true },
     { "source": "/research/methodology", "destination": "/research/research-methodology/", "permanent": true },
-    { "source": "/research/methodology/", "destination": "/research/research-methodology/", "permanent": true }
+    { "source": "/research/methodology/", "destination": "/research/research-methodology/", "permanent": true },
+    { "source": "/category/our-services", "destination": "/our-services-and-expertise/", "permanent": true },
+    { "source": "/category/our-services/", "destination": "/our-services-and-expertise/", "permanent": true }
   ],
   "headers": [
     {
