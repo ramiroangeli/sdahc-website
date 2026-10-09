@@ -8,14 +8,14 @@ interface Props { title?: string; description?: string; ogImage?: string }
 const {
   title = 'SDA Home Choices',
   description = 'Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation in Australia.',
-  ogImage,
+  ogImage = '/images/og-brand.jpg',
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-// ogImage is unset by default: with no image, the card stays a plain text "summary" card. Pass
-// ogImage (a path under public/, e.g. '/images/og-default.jpg') on a per-page basis once the
-// owner has a real share image ready, and the full image tag set plus a "summary_large_image"
-// Twitter card are emitted automatically.
+// ogImage defaults to the site-wide brand card (public/images/og-brand.jpg, 1200x630), so every
+// page emits a proper Open Graph image and link previews show the brand rather than whatever
+// image a scraper happens to pick from the page body. A page can still override ogImage with its
+// own path (or pass ogImage="" to opt out and fall back to the plain "summary" card).
 const ogImageUrl = ogImage ? new URL(ogImage, Astro.site).href : undefined;
 const org = {
   "@context": "https://schema.org",
