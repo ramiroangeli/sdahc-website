@@ -54,7 +54,7 @@ export interface ReportConfig {
    * ("coming-soon") while still accepting pre-registration (e.g. providers from Phase 3), and in
    * principle a published report's registration could later be paused without unpublishing it.
    * `status` answers "is the publication available"; `pdf` answers "can a PDF be downloaded";
-   * this field answers "is registration open" — three independent questions, one registry. */
+   * this field answers "is registration open": three independent questions, one registry. */
   acceptsRegistration: boolean;
   thankYou: {
     successUrl: string;
