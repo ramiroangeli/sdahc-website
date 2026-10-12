@@ -1,0 +1,296 @@
+---
+// Reusable report selection + download/preregistration gate, extracted from the showcase that
+// previously lived inline in src/pages/research/sda-market-report-2026.astro. Renders one or
+// more report covers from the central registry (src/data/research-reports.ts); clicking a
+// published cover reveals a shared form that posts to /api/report/.
+//
+// DOM structure, class names and data-key attributes are preserved exactly as they were in the
+// original page so the existing cover float animation, selected-state transitions and
+// reduced-motion handling keep working unchanged (see the <style> block below, moved verbatim).
+//
+// The client script below carries NO report-specific data in its own text: every per-report
+// value (title, aria-label, success URL, mode) is read from data-* attributes on the rendered
+// cover buttons at click time. This keeps the script's content identical regardless of which or
+// how many reports a given page renders, so every page using ReportGate shares the same inline
+// script and therefore the same single CSP hash, rather than each usage needing its own entry.
+import { REPORTS, type ReportConfig } from '../data/research-reports';
+
+interface Props { reportIds: string[] }
+const { reportIds } = Astro.props;
+const reports: ReportConfig[] = reportIds.map((id) => {
+  const r = REPORTS[id];
+  if (!r) throw new Error(`ReportGate: unknown report id "${id}"`);
+  return r;
+});
+---
+<section class="section">
+  <div class="showcase wrap" id="showcase" data-state="grid">
+    <p class="showcase-prompt">Select a report to download</p>
+    <div class="covers" id="covers">
+      {reports.map((report, i) => (
+        report.status === 'published' ? (
+          <div class="cover-slot" data-key={report.id}>
+            <button
+              type="button"
+              class="cover-btn"
+              data-key={report.id}
+              data-title={report.title}
+              data-mode={report.mode}
+              data-success={report.thankYou.successUrl}
+              aria-label={report.ariaLabel}
+            >
+              <picture>
+                <source srcset={report.cover.webp} type="image/webp" />
+                <img
+                  src={report.cover.png}
+                  alt={report.cover.alt}
+                  class="cover-img"
+                  width={report.cover.width}
+                  height={report.cover.height}
+                  fetchpriority={i === 0 ? 'high' : undefined}
+                />
+              </picture>
+            </button>
+            <p class="cover-title">{report.title}</p>
+          </div>
+        ) : (
+          <div class="cover-slot coming-soon" data-key={report.id}>
+            <div class="cover-card" aria-disabled="true" title="Coming soon">
+              <picture>
+                <source srcset={report.cover.webp} type="image/webp" />
+                <img src={report.cover.png} alt={report.cover.alt} class="cover-img" width={report.cover.width} height={report.cover.height} />
+              </picture>
+            </div>
+            <p class="cover-title">{report.title}</p>
+            <p class="cover-caption">Coming soon</p>
+          </div>
+        )
+      ))}
+
+      <div class="feature-form" id="featureForm">
+        <button type="button" class="back-btn" id="backBtn">&larr; Back to all reports</button>
+        <h2 class="feature-heading" id="featureHeading" tabindex="-1">Request the report</h2>
+        <form class="form" data-endpoint="/api/report/">
+          <input type="hidden" id="reportKeyField" name="report" value="" />
+          <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+          <div class="row2">
+            <div>
+              <label for="first_name">First Name</label>
+              <input type="text" id="first_name" name="first_name" required />
+            </div>
+            <div>
+              <label for="last_name">Last Name</label>
+              <input type="text" id="last_name" name="last_name" required />
+            </div>
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+          <div>
+            <label for="phone">Phone Number</label>
+            <div class="phone-row">
+              <select id="phone_country" name="phone_country">
+                <option value="+61" selected>Australia (+61)</option>
+              </select>
+              <input type="tel" id="phone" name="phone" placeholder="4XX XXX XXX" required />
+            </div>
+          </div>
+          <div class="row2">
+            <div>
+              <label for="role">Role</label>
+              <select id="role" name="role">
+                <option value="">- Role -</option>
+                <option value="Investor">Investor</option>
+                <option value="SDA Provider">SDA Provider</option>
+                <option value="Property Owner">Property Owner</option>
+                <option value="SIL Provider">SIL Provider</option>
+                <option value="Financier">Financier</option>
+                <option value="Administrator">Administrator</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="state">State</label>
+              <select id="state" name="state">
+                <option value="">- State -</option>
+                <option value="QLD">QLD</option>
+                <option value="NSW">NSW</option>
+                <option value="VIC">VIC</option>
+                <option value="WA">WA</option>
+                <option value="SA">SA</option>
+                <option value="TAS">TAS</option>
+                <option value="ACT">ACT</option>
+                <option value="NT">NT</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="comments">Comments</label>
+            <textarea id="comments" name="comments"></textarea>
+          </div>
+          <button type="submit" class="btn b1" id="gateSubmitBtn">Submit Form</button>
+          <p class="form-status" role="status"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
+<script>
+  function normalizeAuPhone(raw: string) {
+    let n = raw.replace(/[\s\-()]/g, '');
+    if (n.startsWith('0')) n = n.slice(1);
+    return n;
+  }
+  const form = document.querySelector<HTMLFormElement>('form[data-endpoint]');
+  if (form) form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const status = form.querySelector<HTMLElement>('.form-status');
+    const firstName = form.querySelector<HTMLInputElement>('#first_name')!.value.trim();
+    const lastName = form.querySelector<HTMLInputElement>('#last_name')!.value.trim();
+    const email = form.querySelector<HTMLInputElement>('#email')!.value.trim();
+    const phone = form.querySelector<HTMLInputElement>('#phone')!.value.trim();
+    if (!btn || !status) return;
+    if (!firstName || !lastName || !email) {
+      status.textContent = 'Please complete all required fields.';
+      return;
+    }
+    if (!/^[23478]\d{8}$/.test(normalizeAuPhone(phone))) {
+      status.textContent = 'Please enter a valid Australian phone number.';
+      return;
+    }
+    btn.disabled = true; status.textContent = 'Sending...';
+    try {
+      const res = await fetch(form.dataset.endpoint!, { method: 'POST', body: new FormData(form) });
+      const out = await res.json();
+      if (out.ok) { window.location.href = form.dataset.success!; }
+      else { status.textContent = out.error || 'Something went wrong.'; btn.disabled = false; }
+    } catch { status.textContent = 'Network error. Please try again.'; btn.disabled = false; }
+  });
+
+  const showcase = document.getElementById('showcase');
+  const backBtn = document.getElementById('backBtn');
+  const featureForm = document.getElementById('featureForm');
+  const featureHeading = document.getElementById('featureHeading');
+  const reportKeyField = document.getElementById('reportKeyField') as HTMLInputElement | null;
+  const gateSubmitBtn = document.getElementById('gateSubmitBtn');
+  const coverButtons = document.querySelectorAll<HTMLButtonElement>('.cover-btn[data-key]');
+  const comingSoonCards = document.querySelectorAll<HTMLElement>('.cover-card');
+
+  if (showcase && backBtn && featureForm && featureHeading && reportKeyField && form && coverButtons.length) {
+    let lastBtn: HTMLElement = coverButtons[0];
+    const openForm = (btn: HTMLButtonElement) => {
+      const key = btn.dataset.key || '';
+      const title = btn.dataset.title || '';
+      const mode = btn.dataset.mode || 'download';
+      const success = btn.dataset.success || '';
+      lastBtn = btn;
+      showcase.dataset.state = 'selected';
+      showcase.dataset.selected = key;
+      reportKeyField.value = key;
+      featureHeading.textContent = mode === 'preregistration' ? `Register your interest in the ${title}` : `Request the ${title}`;
+      if (gateSubmitBtn) gateSubmitBtn.textContent = mode === 'preregistration' ? 'Register interest' : 'Submit Form';
+      form.dataset.success = success;
+      featureForm.removeAttribute('inert');
+      featureHeading.focus();
+    };
+    const closeForm = () => {
+      showcase.dataset.state = 'grid';
+      delete showcase.dataset.selected;
+      featureForm.setAttribute('inert', '');
+      lastBtn.focus();
+    };
+    featureForm.setAttribute('inert', '');
+    coverButtons.forEach((btn) => btn.addEventListener('click', () => openForm(btn)));
+    backBtn.addEventListener('click', closeForm);
+  }
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce) {
+    comingSoonCards.forEach((card) => {
+      card.addEventListener('click', () => {
+        card.classList.remove('shake');
+        void card.offsetWidth;
+        card.classList.add('shake');
+      });
+    });
+  }
+</script>
+
+<style>
+.phone-row{display:flex;gap:10px}
+.phone-row select{flex:0 0 auto;width:auto;min-width:150px}
+.phone-row input{flex:1 1 auto}
+
+.showcase{margin-top:12px}
+.showcase-prompt{margin:0 0 40px;text-align:center;font-family:var(--geo);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.showcase[data-state="selected"] .showcase-prompt{display:none}
+.covers{display:flex;justify-content:space-evenly;gap:36px;align-items:flex-end;flex-wrap:wrap}
+.cover-slot{flex:1 1 0;min-width:180px;max-width:300px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:flex .5s ease,opacity .5s ease,transform .5s ease,max-width .5s ease}
+.cover-btn,.cover-card{display:block;width:100%;background:transparent;border:0;padding:0;margin:0}
+.cover-btn{cursor:pointer}
+.cover-card{cursor:not-allowed}
+.cover-btn:focus-visible{outline:2px solid #fff;outline-offset:6px;border-radius:4px}
+.cover-img{width:100%;height:auto;display:block;margin:0 auto;filter:drop-shadow(0 22px 44px rgba(0,10,25,.55))}
+.cover-title{margin:20px 0 0;font-family:var(--geo);font-size:14px;font-weight:600;letter-spacing:.03em;color:#fff;max-width:24ch}
+.cover-caption{margin:6px 0 0;font-family:var(--geo);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+@media(prefers-reduced-motion:no-preference){
+  .cover-btn,.cover-card{transition:scale .25s ease,filter .25s ease}
+  .cover-btn:focus-visible{scale:1.05;filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--navy) 35%,transparent))}
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .cover-btn:hover,.cover-card:hover{scale:1.05;filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--navy) 35%,transparent))}
+}
+
+.cover-slot[data-key="sda2026"] .cover-img{animation:floatA 6s ease-in-out infinite}
+.cover-slot[data-key="special"] .cover-img{animation:floatB 7s ease-in-out infinite;animation-delay:.35s}
+.cover-slot[data-key="providers"] .cover-img{animation:floatC 6.5s ease-in-out infinite;animation-delay:.7s}
+@keyframes floatA{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(-3deg)}}
+@keyframes floatB{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-10px) rotate(0deg)}}
+@keyframes floatC{0%,100%{transform:translateY(0) rotate(3deg)}50%{transform:translateY(-14px) rotate(3deg)}}
+
+.shake{animation:shake .4s ease}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+
+.feature-form{flex:0 0 0;width:0;max-width:0;opacity:0;overflow:hidden;transition:opacity .35s ease,max-width .5s ease;padding:0}
+.feature-form[inert]{visibility:hidden}
+.showcase[data-state="grid"] .feature-form{position:absolute}
+.back-btn{background:transparent;border:0;color:var(--pale);font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:0;margin:0 0 22px;text-decoration:underline;text-underline-offset:3px}
+.back-btn:hover{color:#fff}
+.back-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.feature-heading{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(20px,2.4vw,26px);margin:0 0 24px}
+.feature-heading:focus-visible{outline:none}
+
+.showcase[data-state="selected"] .covers{align-items:flex-start}
+.showcase[data-state="selected"] .cover-slot{flex:0 0 0;max-width:0;opacity:0;transform:translateY(60px);pointer-events:none;margin:0}
+.showcase[data-selected="sda2026"] .cover-slot[data-key="sda2026"],
+.showcase[data-selected="special"] .cover-slot[data-key="special"],
+.showcase[data-selected="providers"] .cover-slot[data-key="providers"]{flex:0 0 220px;max-width:220px;opacity:1;transform:none;pointer-events:auto}
+.showcase[data-selected="sda2026"] .cover-slot[data-key="sda2026"] .cover-img,
+.showcase[data-selected="special"] .cover-slot[data-key="special"] .cover-img,
+.showcase[data-selected="providers"] .cover-slot[data-key="providers"] .cover-img{animation:none;transform:scale(1.05)}
+.showcase[data-state="selected"] .feature-form{flex:1 1 420px;width:auto;max-width:640px;opacity:1;padding:8px 0 0 8px}
+
+@media(max-width:860px){
+  .covers{flex-direction:column;align-items:center}
+  .cover-slot{max-width:220px}
+  .showcase[data-state="selected"] .covers{flex-direction:column;gap:0}
+  .showcase[data-state="selected"] .cover-slot{max-height:0;transform:translateY(0)}
+  .showcase[data-selected="sda2026"] .cover-slot[data-key="sda2026"],
+  .showcase[data-selected="special"] .cover-slot[data-key="special"],
+  .showcase[data-selected="providers"] .cover-slot[data-key="providers"]{max-width:180px;max-height:none;margin-bottom:0}
+  .showcase[data-state="selected"] .feature-form{max-width:100%;padding:32px 0 0 0}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .cover-slot[data-key="sda2026"] .cover-img,
+  .cover-slot[data-key="special"] .cover-img,
+  .cover-slot[data-key="providers"] .cover-img{animation:none}
+  .cover-slot,.feature-form{transition:none}
+  .shake{animation:none}
+}
+</style>
