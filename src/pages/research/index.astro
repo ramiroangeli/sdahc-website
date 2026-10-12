@@ -1,39 +1,153 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
+import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro';
+import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
+import ResearchResourceCard from '../../components/ResearchResourceCard.astro';
+import ResearchStateGrid from '../../components/ResearchStateGrid.astro';
+import { REPORTS } from '../../data/research-reports';
+
+const title = 'SDA Research Hub: Market Reports & Sector Analysis | SDA Home Choices';
+const description = "SDAHC Research publishes market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, including the SDA Market Report 2026 and state-by-state data.";
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const absolute = (path: string) => new URL(path, Astro.site).href;
+
+// CollectionPage + ItemList describe this page as a hub of publications, not a single article.
+// The provider report has no `url` entry here (schema.org ListItem.url is optional) since it has
+// no live destination yet: structured data must not present a future page as an existing one.
+const collectionPage = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'SDAHC Research',
+  url: canonical,
+  description,
+  isPartOf: { '@type': 'WebSite', url: Astro.site?.href },
+  about: "Specialist Disability Accommodation (SDA) market research, Australia",
+};
+const itemList = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'SDAHC Research publications',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: REPORTS.sda2026.fullTitle, url: absolute(REPORTS.sda2026.url) },
+    { '@type': 'ListItem', position: 2, name: REPORTS.special.fullTitle, url: absolute(REPORTS.special.url) },
+    { '@type': 'ListItem', position: 3, name: REPORTS.providers.fullTitle, description: 'In development; pre-registration will open in a future release.' },
+  ],
+};
+const breadcrumbs = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: absolute('/') },
+    { '@type': 'ListItem', position: 2, name: 'Research', item: canonical },
+  ],
+};
 ---
-<BaseLayout title="SDA market research and reports | SDA Home Choices" description="In-depth research on Australia's SDA market: the SDA Market Report 2026, state-by-state analysis, and participant and supply data.">
+<BaseLayout title={title} description={description}>
   <PageHeader
     eyebrow="SDAHC Research"
-    title="Research"
+    title="Commercial intelligence for Australia's Specialist Disability Accommodation market."
+    standfirst="SDAHC Research produces market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, drawing on publicly available industry data alongside SDAHC's specialist commercial market experience."
   />
-  <section class="section"><div class="prose">
-    <p>SDAHC Research is the market intelligence arm of SDA Home Choices. We publish independent analysis of Australia's Specialist Disability Accommodation sector, combining public NDIS data with proprietary transaction data to give investors a clear view of demand, vacancy risk, and exit liquidity across every state and territory.</p>
+  <p class="rhub-tagline wrap">Market research. Investment intelligence. Sector analysis.</p>
 
-    <h2>SDA Market Report 2026</h2>
-    <p>Our flagship annual report is a 76-page analysis of Australia's SDA market: state-by-state commentary across all eight jurisdictions, new-build delivery and pipeline, value-for-money benchmarks, participant and sales data, and SDAHC's proprietary Market Assessment Framework. Built for investors who need to understand demand, vacancy exposure, and exit liquidity, not just new supply.</p>
-    <p><a class="btn b1" href="/research/sda-market-report-2026/">Access the report</a></p>
+  <section class="section rhub-publications" id="publications">
+    <div class="wrap">
+      <ResearchSectionHeader
+        eyebrow="Our publications"
+        heading="Research Publications"
+        lead="Three publications covering the national SDA market, administration and special situations, and the provider landscape."
+      />
+      <div class="rhub-pub-grid">
+        <ResearchPublicationCard id="sda2026" />
+        <ResearchPublicationCard id="special" />
+        <ResearchPublicationCard id="providers" />
+      </div>
+    </div>
+  </section>
 
-    <h2>From the report</h2>
-    <ul>
-      <li><a href="/research/executive-summary/">Executive summary</a></li>
-      <li><a href="/research/national-snapshot/">National snapshot</a></li>
-      <li><a href="/sda-statistics/">Australian SDA statistics</a>: key figures, definitions and quarterly data</li>
-    </ul>
+  <section class="section rhub-explore">
+    <div class="wrap">
+      <ResearchSectionHeader
+        eyebrow="Online research"
+        heading="Explore the SDA Market"
+        lead="Key findings from the SDA Market Report 2026, published as standalone pages."
+      />
+      <div class="rhub-resource-grid">
+        <ResearchResourceCard
+          href="/sda-statistics/"
+          title="Australian SDA Statistics"
+          description="Key figures, definitions and quarterly data for the national SDA sector."
+        />
+        <ResearchResourceCard
+          href="/research/national-snapshot/"
+          title="National Snapshot"
+          description="A national overview of supply, demand and participant growth across Australia."
+        />
+        <ResearchResourceCard
+          href="/research/executive-summary/"
+          title="Executive Summary"
+          description="The Market Report 2026's key findings in brief, for readers short on time."
+        />
+        <ResearchResourceCard
+          href="/research/research-methodology/"
+          title="Research Methodology"
+          description="How we source, verify and interpret the data behind our publications."
+        />
+      </div>
+    </div>
+  </section>
 
-    <h2>SDA market by state</h2>
-    <p>State-level analysis drawn from the SDA Market Report 2026, enrolled dwellings, participant demand, funding committed, regional distribution, and design category profile for each Australian jurisdiction.</p>
-    <ul>
-      <li><a href="/research/sda-market-qld/">Queensland</a></li>
-      <li><a href="/research/sda-market-nsw/">New South Wales</a></li>
-      <li><a href="/research/sda-market-vic/">Victoria</a></li>
-      <li><a href="/research/sda-market-wa/">Western Australia</a></li>
-      <li><a href="/research/sda-market-sa/">South Australia</a></li>
-      <li><a href="/research/sda-market-tas/">Tasmania</a></li>
-      <li><a href="/research/sda-market-act/">Australian Capital Territory</a></li>
-      <li><a href="/research/sda-market-nt/">Northern Territory</a></li>
-    </ul>
+  <section class="section rhub-states bg-glow-tl">
+    <div class="wrap">
+      <ResearchSectionHeader
+        eyebrow="Jurisdictional data"
+        heading="State & Territory Intelligence"
+        lead="State-level analysis drawn from the SDA Market Report 2026: enrolled dwellings, participant demand and funding committed by jurisdiction."
+      />
+      <ResearchStateGrid />
+    </div>
+  </section>
 
-    <p>Read our <a href="/research/research-methodology/">research methodology</a>, data sources and citation guidelines.</p>
-  </div></section>
+  <section class="section rhub-approach">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="Methodology" heading="Research Approach" />
+      <p class="rhub-approach-copy">SDAHC Research draws on relevant public datasets, sector observations and SDAHC's own commercial transaction experience. Sources and methodology are stated where applicable, and not every publication necessarily draws on the same data or approach. Read the full <a href="/research/research-methodology/">research methodology</a> for sources and definitions.</p>
+    </div>
+  </section>
+
+  <section class="section rhub-bridge bg-glow-bc">
+    <div class="wrap">
+      <ResearchSectionHeader heading="From market intelligence to informed commercial decisions" />
+      <p class="rhub-bridge-copy">Sector-wide research provides useful context: where demand is concentrated, how supply is moving, and what the national picture looks like. An asset-specific decision, buying, selling or holding a particular SDA property, requires closer examination: sustainable income, contracts, enrolment, property condition and market evidence specific to that asset. That is where specialist commercial advice becomes useful.</p>
+      <p class="rhub-bridge-links">
+        <a class="btn b1" href="/our-services-and-expertise/">Explore our services</a>
+        <a class="btn b2" href="/opportunities/">Current opportunities</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="section rhub-about">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="About" heading="About SDAHC Research" />
+      <p class="rhub-about-copy">SDAHC Research is the research and publications initiative of SDA Home Choices, an independent commercial advisory specialising in Specialist Disability Accommodation. It draws on the firm's specialist commercial market experience to produce evidence-based research for investors, providers and other sector participants. Read more <a href="/about/">about SDA Home Choices</a>.</p>
+    </div>
+  </section>
+
+  <script type="application/ld+json" set:html={JSON.stringify(collectionPage)} />
+  <script type="application/ld+json" set:html={JSON.stringify(itemList)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbs)} />
 </BaseLayout>
+<style>
+.rhub-tagline{margin:-24px 0 0;padding-bottom:12px;font-family:var(--geo);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.rhub-pub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.rhub-resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.rhub-approach-copy,.rhub-bridge-copy,.rhub-about-copy{max-width:74ch;color:var(--pale);font-size:17px;line-height:1.7;margin:0}
+.rhub-approach-copy a,.rhub-bridge-copy a,.rhub-about-copy a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.rhub-bridge-links{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 0}
+@media(max-width:980px){
+  .rhub-pub-grid{grid-template-columns:1fr}
+  .rhub-resource-grid{grid-template-columns:1fr}
+}
+</style>

@@ -1,0 +1,38 @@
+---
+// Plain link grid to the 8 existing state/territory Research pages. Deliberately not the
+// interactive homepage map (ResearchMap.astro / AustraliaMap.astro, which this phase does not
+// touch): a simple semantic list is sufficient here and keeps the Hub from depending on the
+// map's SVG/JS. State names and hrefs are the only data this needs, so they live inline rather
+// than in the central report registry, which models publications, not state pages.
+const states = [
+  { name: 'Queensland', abbr: 'QLD', href: '/research/sda-market-qld/' },
+  { name: 'New South Wales', abbr: 'NSW', href: '/research/sda-market-nsw/' },
+  { name: 'Victoria', abbr: 'VIC', href: '/research/sda-market-vic/' },
+  { name: 'Western Australia', abbr: 'WA', href: '/research/sda-market-wa/' },
+  { name: 'South Australia', abbr: 'SA', href: '/research/sda-market-sa/' },
+  { name: 'Tasmania', abbr: 'TAS', href: '/research/sda-market-tas/' },
+  { name: 'Australian Capital Territory', abbr: 'ACT', href: '/research/sda-market-act/' },
+  { name: 'Northern Territory', abbr: 'NT', href: '/research/sda-market-nt/' },
+];
+---
+<ul class="rsg-grid">
+  {states.map((s) => (
+    <li>
+      <a class="rsg-item" href={s.href}>
+        <span class="rsg-abbr" aria-hidden="true">{s.abbr}</span>
+        <span class="rsg-name">{s.name}</span>
+      </a>
+    </li>
+  ))}
+</ul>
+<style>
+.rsg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0;padding:0;list-style:none}
+.rsg-item{display:flex;align-items:center;gap:12px;padding:16px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:8px;text-decoration:none;transition:border-color .2s,background .2s}
+.rsg-item:hover{border-color:var(--blue);background:rgba(4,118,217,.07)}
+.rsg-item:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.rsg-abbr{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--blue);flex:0 0 auto}
+.rsg-name{font-size:14.5px;color:var(--pale)}
+.rsg-item:hover .rsg-name{color:#fff}
+@media(max-width:860px){.rsg-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.rsg-grid{grid-template-columns:1fr}}
+</style>

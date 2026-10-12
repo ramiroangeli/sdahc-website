@@ -1,0 +1,69 @@
+---
+// Publication card for the Research Hub. Reads everything (title, year, status, cover,
+// description, destination URL) from the central registry (src/data/research-reports.ts) so the
+// hub never becomes a second source of truth for report metadata.
+//
+// A published report's card links to its current working destination (report.url) exactly as the
+// registry defines it: today that is the shared /research/sda-market-report-2026/ showcase page
+// for both sda2026 and special, since neither has a dedicated landing page yet. A coming-soon
+// report (providers, in this phase) renders as a non-interactive status card with no href at all,
+// so no download or registration is exposed before it exists.
+//
+// Styles are scoped under .rp- so the upcoming SDAHC Research Design System can restyle
+// publication cards without touching this component's markup or the hub page.
+import { REPORTS } from '../data/research-reports';
+
+interface Props { id: string }
+const { id } = Astro.props;
+const report = REPORTS[id];
+if (!report) throw new Error(`ResearchPublicationCard: unknown report id "${id}"`);
+
+const statusLabel = report.status === 'published' ? 'Published' : 'In development';
+---
+<article class={`rp-card ${report.status === 'published' ? 'is-live' : 'is-pending'}`}>
+  <div class="rp-cover">
+    <picture>
+      <source srcset={report.cover.webp} type="image/webp" />
+      <img
+        src={report.cover.png}
+        alt={report.cover.alt}
+        width={report.cover.width}
+        height={report.cover.height}
+        loading="lazy"
+      />
+    </picture>
+  </div>
+  <div class="rp-body">
+    <p class="rp-meta"><span class="rp-year">{report.year}</span><span class={`rp-status rp-status-${report.status}`}>{statusLabel}</span></p>
+    <h3 class="rp-title">{report.title}</h3>
+    <p class="rp-desc">{report.description}</p>
+    {report.status === 'published' ? (
+      <a class="rp-cta" href={report.url}>Explore report <span aria-hidden="true">&rarr;</span></a>
+    ) : (
+      <p class="rp-pending-note">Pre-registration opening in a future release.</p>
+    )}
+  </div>
+</article>
+<style>
+.rp-card{display:flex;flex-direction:column;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:10px;overflow:hidden;transition:border-color .25s}
+.rp-card.is-live:hover{border-color:var(--blue)}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .rp-card{transition:transform .25s,border-color .25s}
+  .rp-card.is-live:hover{transform:translateY(-5px)}
+}
+.rp-cover{background:var(--navy2);display:flex;align-items:center;justify-content:center;padding:28px 0}
+.rp-cover img{width:auto;max-width:150px;height:auto;filter:drop-shadow(0 16px 30px rgba(0,10,25,.5))}
+.rp-card.is-pending .rp-cover img{opacity:.75}
+.rp-body{padding:26px 26px 30px;display:flex;flex-direction:column;flex:1}
+.rp-meta{display:flex;align-items:center;gap:12px;margin:0 0 14px;font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.rp-year{color:var(--muted)}
+.rp-status{padding:3px 10px;border-radius:999px;font-size:11px}
+.rp-status-published{color:var(--teal);background:rgba(47,160,168,.12)}
+.rp-status-coming-soon{color:var(--amber);background:rgba(201,122,10,.12)}
+.rp-title{font-family:var(--serif);font-weight:600;color:#fff;font-size:21px;line-height:1.2;margin:0 0 12px}
+.rp-desc{color:var(--pale);font-size:15px;line-height:1.55;margin:0 0 22px;flex:1}
+.rp-cta{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);text-decoration:none;align-self:flex-start}
+.rp-cta:hover{text-decoration:underline;text-underline-offset:3px}
+.rp-cta:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+.rp-pending-note{font-family:var(--geo);font-size:12px;letter-spacing:.06em;color:var(--muted);margin:0}
+</style>
