@@ -1,0 +1,144 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ReportGate from '../../components/ReportGate.astro';
+import ResearchFloatingCover from '../../components/ResearchFloatingCover.astro';
+import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro';
+import ResearchFeatureGrid from '../../components/ResearchFeatureGrid.astro';
+import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
+import { REPORTS } from '../../data/research-reports';
+
+const report = REPORTS.special;
+const title = 'SDA Administration & Special Situations Report 2026 | SDA Home Choices';
+const description = "Commercial clarity for SDA administrations, receiverships and special situations: a companion to the SDA Market Report 2026, from SDAHC Research.";
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const absolute = (path: string) => new URL(path, Astro.site).href;
+
+const webPage = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  url: canonical,
+  description,
+};
+const reportSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Report',
+  name: report.fullTitle,
+  description: report.description,
+  url: canonical,
+  image: absolute(report.cover.png),
+  copyrightYear: report.year,
+  publisher: { '@type': 'Organization', name: 'SDA Home Choices', url: Astro.site?.href },
+};
+const breadcrumbs = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: absolute('/') },
+    { '@type': 'ListItem', position: 2, name: 'Research', item: absolute('/research/') },
+    { '@type': 'ListItem', position: 3, name: report.fullTitle, item: canonical },
+  ],
+};
+---
+<BaseLayout title={title} description={description}>
+  <section class="rpt-hero section">
+    <div class="wrap rpt-hero-grid">
+      <div class="rpt-hero-copy">
+        <p class="eyebrow">SDAHC Research</p>
+        <h1 class="rpt-h1">Commercial clarity for SDA administrations and special situations.</h1>
+        <p class="rpt-standfirst">A distressed or underperforming SDA asset is really two things: the freehold property, and the provider business. This report helps administrators, receivers and their advisers tell the two apart, and work out what's recoverable, what isn't, and what to do first.</p>
+        <p class="rpt-meta"><span class="rpt-year">{report.year}</span><span class="rpt-status rpt-status-published">Published</span></p>
+        <p class="rpt-cta"><a class="btn b1" href="#access">Access the report</a></p>
+      </div>
+      <div class="rpt-hero-cover">
+        <ResearchFloatingCover id="special" />
+      </div>
+    </div>
+  </section>
+
+  <section class="section rpt-about">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="About the publication" heading="A companion to the SDA Market Report" />
+      <p class="rpt-copy">SDA is an emerging asset class: granular data is limited, and a common source of value leakage is treating an SDA appointment as a conventional property realisation, when an SDA appointment is really two assets at once. This report is a companion to the <a href="/research/sda-market-report-2026/">SDA Market Report 2026</a>, which covers the asset class broadly. It does not repeat that material; it focuses specifically on administration, distress, recovery and realisation for an individual appointment.</p>
+    </div>
+  </section>
+
+  <section class="section rpt-topics">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="Inside the report" heading="Key areas covered" />
+      <ResearchFeatureGrid items={[
+        { title: 'The property and the provider business', description: 'Why an SDA appointment is two assets, not one, and why they need to be assessed separately before any decision is made.' },
+        { title: 'The first 48 hours', description: 'What to secure immediately: provider and contracts, participant continuity, income, enrolment, the physical property and records.' },
+        { title: 'Commercial vendor due diligence', description: 'A sequence for the first 30 days: secure, reconcile, diagnose, stabilise, value and decide.' },
+        { title: 'Hidden chokeholds and recoverability', description: 'Identifying what is actually affecting recoverability, as distinct from what looks distressed on the surface.' },
+        { title: 'Stabilise, hold or sell', description: 'A framework for deciding whether to stabilise and hold, or prepare the asset for realisation.' },
+        { title: 'Occupancy quality through to realisation', description: 'How occupancy quality and due diligence findings carry through into a sale process and asset value.' },
+      ]} />
+    </div>
+  </section>
+
+  <section class="section rpt-audience">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="Who it's for" heading="Built for appointees and their advisers" />
+      <ResearchFeatureGrid items={[
+        { title: 'Administrators and receivers', description: 'Needing to orient quickly on an unfamiliar asset class in the first days of an appointment.' },
+        { title: 'Restructuring and insolvency advisers', description: 'Supporting appointees through stabilisation, due diligence and realisation decisions.' },
+        { title: 'Secured lenders', description: 'Assessing recoverability and the realistic range of outcomes for an SDA-secured position.' },
+        { title: 'Lawyers advising on SDA appointments', description: 'Needing commercial context to sit alongside their own legal analysis.' },
+        { title: 'SDA owners, investors and fund managers', description: 'Assessing a distressed or special-situation SDA asset as a potential acquisition.' },
+      ]} />
+      <p class="rpt-note">This report provides specialist commercial context; it is not legal, insolvency or financial advice, and does not replace the appointee's own professional obligations.</p>
+    </div>
+  </section>
+
+  <ReportGate reportIds={['special']} id="access" />
+
+  <section class="section rpt-methodology">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="Methodology" heading="How this report is built" />
+      <p class="rpt-copy">This report draws on the SDA Rules, published NDIA guidance and SDAHC's own commercial due-diligence experience across SDA administrations and special situations. It is intended to be read alongside the <a href="/research/sda-market-report-2026/">SDA Market Report 2026</a>, which sets out SDAHC Research's broader market methodology; see the site-wide <a href="/research/research-methodology/">research methodology</a> for further detail.</p>
+    </div>
+  </section>
+
+  <section class="section rpt-bridge bg-glow-bc">
+    <div class="wrap">
+      <ResearchSectionHeader heading="Where specialist commercial advice adds value" />
+      <p class="rpt-copy">This report explains the commercial issues at play; applying that to a specific appointment, portfolio or transaction is a separate exercise. Where specialist SDA commercial advice is useful, see our <a href="/sda-strategic-divestment-advisory/">strategic divestment advisory</a> and <a href="/sda-property-and-portfolio-sales/">property and portfolio sales</a> services, or the full <a href="/our-services-and-expertise/">services and expertise</a> overview.</p>
+    </div>
+  </section>
+
+  <section class="section rpt-related">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="More from SDAHC Research" heading="Related publications" />
+      <div class="rpt-related-grid">
+        <ResearchPublicationCard id="sda2026" />
+        <ResearchPublicationCard id="providers" />
+      </div>
+    </div>
+  </section>
+
+  <script type="application/ld+json" set:html={JSON.stringify(webPage)} />
+  <script type="application/ld+json" set:html={JSON.stringify(reportSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbs)} />
+</BaseLayout>
+<style>
+.rpt-hero{padding-top:calc(150px + var(--nav-top))}
+.rpt-hero-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:40px;align-items:center}
+.rpt-h1{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(32px,4.6vw,52px);line-height:1.08;letter-spacing:-.01em;margin:0 0 22px;max-width:18ch}
+.rpt-standfirst{font-family:var(--sans);color:var(--pale);font-size:clamp(16px,1.6vw,19px);line-height:1.55;max-width:56ch;margin:0 0 22px}
+.rpt-meta{display:flex;align-items:center;gap:12px;margin:0 0 28px;font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.rpt-year{color:var(--muted)}
+.rpt-status{padding:3px 10px;border-radius:999px;font-size:11px}
+.rpt-status-published{color:var(--teal);background:rgba(47,160,168,.12)}
+.rpt-status-coming-soon{color:var(--amber);background:rgba(201,122,10,.12)}
+.rpt-copy{max-width:74ch;color:var(--pale);font-size:17px;line-height:1.7;margin:0}
+.rpt-copy a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.rpt-note{max-width:74ch;color:var(--muted);font-size:14px;line-height:1.6;margin:22px 0 0}
+.rpt-related-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+@media(max-width:980px){
+  .rpt-hero-grid{grid-template-columns:1fr;gap:36px}
+  .rpt-hero-cover{order:-1}
+  .rpt-related-grid{grid-template-columns:1fr}
+}
+</style>
