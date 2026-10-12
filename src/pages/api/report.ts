@@ -1,17 +1,13 @@
 export const prerender = false;
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
+import { REPORTS, REPORT_IDS } from '../../data/research-reports';
 
 function normalizeAuPhone(raw: string) {
   let n = raw.replace(/[\s\-()]/g, '');
   if (n.startsWith('0')) n = n.slice(1);
   return n;
 }
-
-const REPORT_NAMES: Record<string, string> = {
-  sda2026: 'SDA Market Report 2026',
-  special: 'SDA Administration & Special Situations Report',
-};
 
 export const POST: APIRoute = async ({ request }) => {
   if (!isAllowedOrigin(request)) return json({ ok: false, error: 'Request not allowed.' }, 403);
@@ -27,9 +23,15 @@ export const POST: APIRoute = async ({ request }) => {
   const role = (data.get('role') as string || '').trim();
   const state = (data.get('state') as string || '').trim();
   const comments = (data.get('comments') as string || '').trim();
-  const reportKey = (data.get('report') as string || 'sda2026').trim();
-  const reportName = REPORT_NAMES[reportKey] || REPORT_NAMES.sda2026;
+  const reportKey = (data.get('report') as string || '').trim();
   const normalizedPhone = normalizeAuPhone(phone);
+
+  // server-side allowlist: an unrecognised report id is rejected outright rather than
+  // silently resolving to an unrelated report
+  if (!REPORT_IDS.includes(reportKey)) {
+    return json({ ok: false, error: 'Unknown report.' }, 400);
+  }
+  const report = REPORTS[reportKey];
 
   if (!firstName || !lastName || !/.+@.+\..+/.test(email)) {
     return json({ ok: false, error: 'Please complete all fields.' }, 400);
@@ -48,6 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const resend = new Resend(key);
   const formattedPhone = `+61 ${normalizedPhone}`;
+  const action = report.mode === 'preregistration' ? 'registration' : 'download';
   const rows = [...data.entries()]
     .filter(([k]) => k !== 'company' && k !== 'phone' && k !== 'phone_country' && k !== 'report')
     .map(([k, v]) => `<p><strong>${escapeHtml(k)}:</strong> ${escapeHtml(String(v))}</p>`)
@@ -56,8 +59,8 @@ export const POST: APIRoute = async ({ request }) => {
     from: 'SDA Home Choices <noreply@send.sdahomechoices.com.au>',
     to: 'research@sdahomechoices.com.au',
     replyTo: email,
-    subject: `New ${reportName} download from ${firstName}`,
-    html: `<h2>New ${reportName} download</h2>${rows}`,
+    subject: `New ${report.fullTitle} ${action} from ${firstName}`,
+    html: `<h2>New ${report.fullTitle} ${action}</h2>${rows}`,
   });
   if (error) return json({ ok: false, error: 'Could not send. Please try again.' }, 502);
   return json({ ok: true });
