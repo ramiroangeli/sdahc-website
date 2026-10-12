@@ -1,14 +1,141 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHeader from '../../components/PageHeader.astro';
 import ReportGate from '../../components/ReportGate.astro';
----
-<BaseLayout title="SDA Market Report 2026 | SDA Home Choices" description="The 2026 Specialist Disability Accommodation market report: supply, demand, pricing and investment context across Australia.">
-  <PageHeader
-    eyebrow="SDAHC Research"
-    title="SDA Market Reports"
-    standfirst="SDAHC Research produces commercial intelligence for Australia's Specialist Disability Accommodation sector. Combining proprietary transaction evidence, NDIS data and sector insight, our reports help investors, providers and boards make better-informed decisions."
-  />
+import ResearchFloatingCover from '../../components/ResearchFloatingCover.astro';
+import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro';
+import ResearchFeatureGrid from '../../components/ResearchFeatureGrid.astro';
+import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
+import { REPORTS } from '../../data/research-reports';
 
-  <ReportGate reportIds={['sda2026', 'special', 'providers']} />
+const report = REPORTS.sda2026;
+const title = 'SDA Market Report 2026 | SDA Home Choices';
+const description = "The SDA Market Report 2026: Australian SDA supply, participant demand, transaction evidence and state-by-state investment context, from SDAHC Research.";
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const absolute = (path: string) => new URL(path, Astro.site).href;
+
+const webPage = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: title,
+  url: canonical,
+  description,
+};
+const reportSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Report',
+  name: report.fullTitle,
+  description: report.description,
+  url: canonical,
+  image: absolute(report.cover.png),
+  copyrightYear: report.year,
+  publisher: { '@type': 'Organization', name: 'SDA Home Choices', url: Astro.site?.href },
+};
+const breadcrumbs = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: absolute('/') },
+    { '@type': 'ListItem', position: 2, name: 'Research', item: absolute('/research/') },
+    { '@type': 'ListItem', position: 3, name: report.fullTitle, item: canonical },
+  ],
+};
+---
+<BaseLayout title={title} description={description}>
+  <section class="rpt-hero section">
+    <div class="wrap rpt-hero-grid">
+      <div class="rpt-hero-copy">
+        <p class="eyebrow">SDAHC Research</p>
+        <h1 class="rpt-h1">Specialist intelligence for the SDA market.</h1>
+        <p class="rpt-standfirst">The SDA Market Report 2026 combines public NDIS data, transaction evidence and commercial interpretation to show where the Specialist Disability Accommodation market is performing, where risk is emerging, and where quality opportunity remains.</p>
+        <p class="rpt-meta"><span class="rpt-year">{report.year}</span><span class="rpt-status rpt-status-published">Published</span></p>
+        <p class="rpt-cta"><a class="btn b1" href="#access">Access the report</a></p>
+      </div>
+      <div class="rpt-hero-cover">
+        <ResearchFloatingCover id="sda2026" />
+      </div>
+    </div>
+  </section>
+
+  <section class="section rpt-about">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="About the publication" heading="Why this report exists" />
+      <p class="rpt-copy">The SDA market has enough public data; what it has lacked is interpretation. The SDA Market Report 2026 exists to assist better decision-making by combining public NDIS data with transaction evidence and commercial analysis drawn from SDAHC's work across the sector. It is written for investors, lenders, valuers, administrators, SIL providers and sector participants who need to understand the SDA market beyond headline government data.</p>
+    </div>
+  </section>
+
+  <section class="section rpt-topics">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="Inside the report" heading="Key areas covered" />
+      <ResearchFeatureGrid items={[
+        { title: 'National supply and enrolled dwellings', description: 'How enrolled SDA dwellings and places have grown nationally, and what the volume of underperforming stock obscures within that growth.' },
+        { title: 'Participant demand and funding alignment', description: 'Where funded-participant demand and enrolled supply are misaligned by state and territory, and what that means for commercial viability.' },
+        { title: 'Transaction intelligence and sales data', description: "Commercial evidence drawn from SDAHC's own transaction activity across the sector, alongside published sales data." },
+        { title: 'Providers and rent rolls', description: 'Provider depth and rent-roll quality, and how provider structure and agreements influence value and liquidity.' },
+        { title: 'State and territory market analysis', description: 'Jurisdiction-by-jurisdiction commentary on supply, demand and funding commitments across Australia.' },
+        { title: 'Value for money and management models', description: 'How different management and ownership models perform against value-for-money benchmarks.' },
+      ]} />
+    </div>
+  </section>
+
+  <section class="section rpt-audience">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="Who it's for" heading="Built for sector decision-makers" />
+      <ResearchFeatureGrid items={[
+        { title: 'Investors and fund managers', description: 'Assessing SDA as an asset class, and where quality opportunity and risk sit within it.' },
+        { title: 'Lenders and valuers', description: 'Understanding commercial context behind SDA valuations and lending decisions.' },
+        { title: 'Administrators and advisers', description: 'Needing a national and state-level baseline for SDA assets under their management.' },
+        { title: 'SIL and SDA providers', description: 'Benchmarking provider depth, rent rolls and participant demand against the broader market.' },
+      ]} />
+    </div>
+  </section>
+
+  <ReportGate reportIds={['sda2026']} id="access" />
+
+  <section class="section rpt-methodology">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="Methodology" heading="How this report is built" />
+      <p class="rpt-copy">The SDA Market Report 2026 synthesises public NDIS Supplement P data with SDAHC's own transaction, valuation and provider intelligence; the report's own methodology section sets out its data sources and currency in full. For the site-wide approach behind all SDAHC Research publications, see the <a href="/research/research-methodology/">research methodology</a>. Related online pages include the <a href="/research/executive-summary/">executive summary</a>, <a href="/research/national-snapshot/">national snapshot</a> and <a href="/sda-statistics/">Australian SDA statistics</a>.</p>
+    </div>
+  </section>
+
+  <section class="section rpt-bridge bg-glow-bc">
+    <div class="wrap">
+      <ResearchSectionHeader heading="From market intelligence to a specific transaction" />
+      <p class="rpt-copy">This report provides national and state-level context. An individual acquisition or divestment still depends on asset-specific evidence: income, occupancy, provider quality and market comparables for that property. Where that level of commercial advice is useful, see our <a href="/our-services-and-expertise/">services and expertise</a> or current <a href="/opportunities/">opportunities</a>.</p>
+    </div>
+  </section>
+
+  <section class="section rpt-related">
+    <div class="wrap">
+      <ResearchSectionHeader eyebrow="More from SDAHC Research" heading="Related publications" />
+      <div class="rpt-related-grid">
+        <ResearchPublicationCard id="special" />
+        <ResearchPublicationCard id="providers" />
+      </div>
+    </div>
+  </section>
+
+  <script type="application/ld+json" set:html={JSON.stringify(webPage)} />
+  <script type="application/ld+json" set:html={JSON.stringify(reportSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbs)} />
 </BaseLayout>
+<style>
+.rpt-hero{padding-top:calc(150px + var(--nav-top))}
+.rpt-hero-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:40px;align-items:center}
+.rpt-h1{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(32px,4.6vw,52px);line-height:1.08;letter-spacing:-.01em;margin:0 0 22px;max-width:18ch}
+.rpt-standfirst{font-family:var(--sans);color:var(--pale);font-size:clamp(16px,1.6vw,19px);line-height:1.55;max-width:56ch;margin:0 0 22px}
+.rpt-meta{display:flex;align-items:center;gap:12px;margin:0 0 28px;font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.rpt-year{color:var(--muted)}
+.rpt-status{padding:3px 10px;border-radius:999px;font-size:11px}
+.rpt-status-published{color:var(--teal);background:rgba(47,160,168,.12)}
+.rpt-status-coming-soon{color:var(--amber);background:rgba(201,122,10,.12)}
+.rpt-copy{max-width:74ch;color:var(--pale);font-size:17px;line-height:1.7;margin:0}
+.rpt-copy a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.rpt-related-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+@media(max-width:980px){
+  .rpt-hero-grid{grid-template-columns:1fr;gap:36px}
+  .rpt-hero-cover{order:-1}
+  .rpt-related-grid{grid-template-columns:1fr}
+}
+</style>

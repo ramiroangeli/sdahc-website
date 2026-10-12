@@ -15,20 +15,20 @@
 // script and therefore the same single CSP hash, rather than each usage needing its own entry.
 import { REPORTS, type ReportConfig } from '../data/research-reports';
 
-interface Props { reportIds: string[] }
-const { reportIds } = Astro.props;
+interface Props { reportIds: string[]; id?: string }
+const { reportIds, id } = Astro.props;
 const reports: ReportConfig[] = reportIds.map((id) => {
   const r = REPORTS[id];
   if (!r) throw new Error(`ReportGate: unknown report id "${id}"`);
   return r;
 });
 ---
-<section class="section">
+<section class="section" id={id}>
   <div class="showcase wrap" id="showcase" data-state="grid">
     <p class="showcase-prompt">Select a report to download</p>
     <div class="covers" id="covers">
       {reports.map((report, i) => (
-        report.status === 'published' ? (
+        report.acceptsRegistration ? (
           <div class="cover-slot" data-key={report.id}>
             <button
               type="button"
@@ -73,22 +73,23 @@ const reports: ReportConfig[] = reportIds.map((id) => {
         <form class="form" data-endpoint="/api/report/">
           <input type="hidden" id="reportKeyField" name="report" value="" />
           <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+          <p class="required-note"><span class="req" aria-hidden="true">*</span> Required fields</p>
           <div class="row2">
             <div>
-              <label for="first_name">First Name</label>
+              <label for="first_name">First Name<span class="req" aria-hidden="true">*</span></label>
               <input type="text" id="first_name" name="first_name" required />
             </div>
             <div>
-              <label for="last_name">Last Name</label>
+              <label for="last_name">Last Name<span class="req" aria-hidden="true">*</span></label>
               <input type="text" id="last_name" name="last_name" required />
             </div>
           </div>
           <div>
-            <label for="email">Email</label>
+            <label for="email">Email<span class="req" aria-hidden="true">*</span></label>
             <input type="email" id="email" name="email" required />
           </div>
           <div>
-            <label for="phone">Phone Number</label>
+            <label for="phone">Phone Number<span class="req" aria-hidden="true">*</span></label>
             <div class="phone-row">
               <select id="phone_country" name="phone_country">
                 <option value="+61" selected>Australia (+61)</option>
@@ -182,7 +183,7 @@ const reports: ReportConfig[] = reportIds.map((id) => {
 
   if (showcase && backBtn && featureForm && featureHeading && reportKeyField && form && coverButtons.length) {
     let lastBtn: HTMLElement = coverButtons[0];
-    const openForm = (btn: HTMLButtonElement) => {
+    const openForm = (btn: HTMLButtonElement, moveFocus = true) => {
       const key = btn.dataset.key || '';
       const title = btn.dataset.title || '';
       const mode = btn.dataset.mode || 'download';
@@ -195,7 +196,10 @@ const reports: ReportConfig[] = reportIds.map((id) => {
       if (gateSubmitBtn) gateSubmitBtn.textContent = mode === 'preregistration' ? 'Register interest' : 'Submit Form';
       form.dataset.success = success;
       featureForm.removeAttribute('inert');
-      featureHeading.focus();
+      // Only move focus for a genuine click: stealing focus on an unrequested page load (the
+      // single-report auto-open below) would skip a keyboard/screen-reader visitor past the hero
+      // they haven't read yet.
+      if (moveFocus) featureHeading.focus();
     };
     const closeForm = () => {
       showcase.dataset.state = 'grid';
@@ -206,6 +210,10 @@ const reports: ReportConfig[] = reportIds.map((id) => {
     featureForm.setAttribute('inert', '');
     coverButtons.forEach((btn) => btn.addEventListener('click', () => openForm(btn)));
     backBtn.addEventListener('click', closeForm);
+    // A page with exactly one report (a dedicated landing page) opens straight into the form:
+    // the visitor already chose this report by arriving on its page, so there is no second
+    // report to pick from and nothing useful a "grid" state would show.
+    if (coverButtons.length === 1) openForm(coverButtons[0], false);
   }
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -221,6 +229,8 @@ const reports: ReportConfig[] = reportIds.map((id) => {
 </script>
 
 <style>
+.required-note{margin:0 0 18px;font-family:var(--geo);font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.req{color:var(--required);margin-left:3px;font-weight:600}
 .phone-row{display:flex;gap:10px}
 .phone-row select{flex:0 0 auto;width:auto;min-width:150px}
 .phone-row input{flex:1 1 auto}
@@ -240,10 +250,10 @@ const reports: ReportConfig[] = reportIds.map((id) => {
 
 @media(prefers-reduced-motion:no-preference){
   .cover-btn,.cover-card{transition:scale .25s ease,filter .25s ease}
-  .cover-btn:focus-visible{scale:1.05;filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--navy) 35%,transparent))}
+  .cover-btn:focus-visible{scale:1.05;filter:drop-shadow(0 8px 18px rgba(var(--blue-rgb),.35))}
 }
 @media(hover:hover) and (prefers-reduced-motion:no-preference){
-  .cover-btn:hover,.cover-card:hover{scale:1.05;filter:drop-shadow(0 8px 18px color-mix(in srgb,var(--navy) 35%,transparent))}
+  .cover-btn:hover,.cover-card:hover{scale:1.05;filter:drop-shadow(0 8px 18px rgba(var(--blue-rgb),.35))}
 }
 
 .cover-slot[data-key="sda2026"] .cover-img{animation:floatA 6s ease-in-out infinite}

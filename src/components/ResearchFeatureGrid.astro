@@ -1,0 +1,24 @@
+---
+// Generic grid of {title, description} tiles, used on report landing pages for both "Key areas
+// covered" and "Who the report is for" sections: same visual shape, different data, so one
+// component serves both rather than two near-identical ones.
+interface Item { title: string; description: string }
+interface Props { items: Item[] }
+const { items } = Astro.props;
+---
+<div class="rfg-grid">
+  {items.map((item) => (
+    <div class="rfg-item">
+      <h3 class="rfg-title">{item.title}</h3>
+      <p class="rfg-desc">{item.description}</p>
+    </div>
+  ))}
+</div>
+<style>
+.rfg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.rfg-item{background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:8px;padding:24px}
+.rfg-title{font-family:var(--serif);font-weight:600;color:#fff;font-size:18px;line-height:1.25;margin:0 0 10px}
+.rfg-desc{color:var(--pale);font-size:14.5px;line-height:1.55;margin:0}
+@media(max-width:980px){.rfg-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.rfg-grid{grid-template-columns:1fr}}
+</style>
