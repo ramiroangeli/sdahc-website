@@ -6,10 +6,9 @@
 // src/pages/thank-you.astro. Extend this registry with new entries (e.g. a 2027 edition)
 // rather than touching the components that consume it.
 //
-// `url` is each report's current public landing page. In this phase all three reports are
-// hosted on the single existing /research/sda-market-report-2026/ page (the multi-cover
-// showcase), so all three currently share that URL. When dedicated landing pages are built in
-// a later phase, update each report's `url` here; nothing else needs to change.
+// `url` is each report's current dedicated landing page. Each report now has its own page
+// (Phase 3); adding a future edition (e.g. 2027) just means a new registry entry plus its own
+// page, following the same pattern, rather than any change to the components that consume it.
 
 export type ReportStatus = 'published' | 'coming-soon';
 export type SubmissionMode = 'download' | 'preregistration';
@@ -50,6 +49,13 @@ export interface ReportConfig {
    * report that should not expose a download (e.g. providers in this phase). */
   pdf?: ReportPdf;
   mode: SubmissionMode;
+  /** Whether ReportGate/the publication card may present an interactive registration form for
+   * this report right now. Deliberately independent of `status`: a report can be unpublished
+   * ("coming-soon") while still accepting pre-registration (e.g. providers from Phase 3), and in
+   * principle a published report's registration could later be paused without unpublishing it.
+   * `status` answers "is the publication available"; `pdf` answers "can a PDF be downloaded";
+   * this field answers "is registration open" — three independent questions, one registry. */
+  acceptsRegistration: boolean;
   thankYou: {
     successUrl: string;
   };
@@ -78,6 +84,7 @@ export const REPORTS: Record<string, ReportConfig> = {
       downloadLabel: 'SDA Market Report 2026',
     },
     mode: 'download',
+    acceptsRegistration: true,
     thankYou: { successUrl: '/thank-you/?report=sda2026' },
   },
   special: {
@@ -85,7 +92,7 @@ export const REPORTS: Record<string, ReportConfig> = {
     title: 'SDA Administration & Special Situations Report',
     fullTitle: 'SDA Administration & Special Situations Report',
     ariaLabel: 'Open the SDA Administration and Special Situations Report download form',
-    url: '/research/sda-market-report-2026/',
+    url: '/research/sda-administration-report-2026/',
     year: 2026,
     status: 'published',
     description: 'A dedicated commercial reference for administration and special situations in the SDA sector.',
@@ -102,6 +109,7 @@ export const REPORTS: Record<string, ReportConfig> = {
       downloadLabel: 'SDA Administration and Special Situations Report',
     },
     mode: 'download',
+    acceptsRegistration: true,
     thankYou: { successUrl: '/thank-you/?report=special' },
   },
   providers: {
@@ -109,7 +117,7 @@ export const REPORTS: Record<string, ReportConfig> = {
     title: 'SDA Providers Report',
     fullTitle: 'SDA Providers Report',
     ariaLabel: 'Open the SDA Providers Report registration form',
-    url: '/research/sda-market-report-2026/',
+    url: '/research/sda-provider-report-2026/',
     year: 2026,
     status: 'coming-soon',
     description: 'A dedicated report for SDA providers. Coming soon.',
@@ -122,6 +130,10 @@ export const REPORTS: Record<string, ReportConfig> = {
     },
     // No pdf entry: no file exists yet, and none should be exposed publicly in this phase.
     mode: 'preregistration',
+    // Registration is open from Phase 3 even though the publication itself is still
+    // coming-soon: acceptsRegistration is independent of status, by design (see the field's
+    // own comment above). The status stays coming-soon; only registration opens.
+    acceptsRegistration: true,
     thankYou: { successUrl: '/thank-you/?report=providers' },
   },
 };
@@ -130,4 +142,4 @@ export const REPORTS: Record<string, ReportConfig> = {
 export const REPORT_IDS = Object.keys(REPORTS);
 
 /** Reports whose cover should render as an interactive, clickable gate. */
-export const PUBLISHED_REPORT_IDS = REPORT_IDS.filter((id) => REPORTS[id].status === 'published');
+export const REGISTRATION_OPEN_REPORT_IDS = REPORT_IDS.filter((id) => REPORTS[id].acceptsRegistration);

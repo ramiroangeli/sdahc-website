@@ -15,20 +15,20 @@
 // script and therefore the same single CSP hash, rather than each usage needing its own entry.
 import { REPORTS, type ReportConfig } from '../data/research-reports';
 
-interface Props { reportIds: string[] }
-const { reportIds } = Astro.props;
+interface Props { reportIds: string[]; id?: string }
+const { reportIds, id } = Astro.props;
 const reports: ReportConfig[] = reportIds.map((id) => {
   const r = REPORTS[id];
   if (!r) throw new Error(`ReportGate: unknown report id "${id}"`);
   return r;
 });
 ---
-<section class="section">
+<section class="section" id={id}>
   <div class="showcase wrap" id="showcase" data-state="grid">
     <p class="showcase-prompt">Select a report to download</p>
     <div class="covers" id="covers">
       {reports.map((report, i) => (
-        report.status === 'published' ? (
+        report.acceptsRegistration ? (
           <div class="cover-slot" data-key={report.id}>
             <button
               type="button"
@@ -182,7 +182,7 @@ const reports: ReportConfig[] = reportIds.map((id) => {
 
   if (showcase && backBtn && featureForm && featureHeading && reportKeyField && form && coverButtons.length) {
     let lastBtn: HTMLElement = coverButtons[0];
-    const openForm = (btn: HTMLButtonElement) => {
+    const openForm = (btn: HTMLButtonElement, moveFocus = true) => {
       const key = btn.dataset.key || '';
       const title = btn.dataset.title || '';
       const mode = btn.dataset.mode || 'download';
@@ -195,7 +195,10 @@ const reports: ReportConfig[] = reportIds.map((id) => {
       if (gateSubmitBtn) gateSubmitBtn.textContent = mode === 'preregistration' ? 'Register interest' : 'Submit Form';
       form.dataset.success = success;
       featureForm.removeAttribute('inert');
-      featureHeading.focus();
+      // Only move focus for a genuine click: stealing focus on an unrequested page load (the
+      // single-report auto-open below) would skip a keyboard/screen-reader visitor past the hero
+      // they haven't read yet.
+      if (moveFocus) featureHeading.focus();
     };
     const closeForm = () => {
       showcase.dataset.state = 'grid';
@@ -206,6 +209,10 @@ const reports: ReportConfig[] = reportIds.map((id) => {
     featureForm.setAttribute('inert', '');
     coverButtons.forEach((btn) => btn.addEventListener('click', () => openForm(btn)));
     backBtn.addEventListener('click', closeForm);
+    // A page with exactly one report (a dedicated landing page) opens straight into the form:
+    // the visitor already chose this report by arriving on its page, so there is no second
+    // report to pick from and nothing useful a "grid" state would show.
+    if (coverButtons.length === 1) openForm(coverButtons[0], false);
   }
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
