@@ -1,0 +1,59 @@
+---
+// Large, purely presentational floating report cover for a dedicated landing page's hero.
+// ReportGate (src/components/ReportGate.astro) freezes its own cover's float animation once a
+// report is selected (`.cover-img{animation:none}` in its selected state) — correct there, since
+// attention should move to the form, but it means a single-report landing page using ReportGate
+// alone (which now auto-opens its form on load, see ReportGate's single-report behaviour) would
+// never show the continuous floating motion at all. This component exists only to keep that
+// motion visible, as the hero's primary visual object, above the ReportGate form section.
+//
+// Deliberately no click handler and no form: selection/registration stays ReportGate's job.
+// Deliberately no background box behind the cover (unlike the small ResearchPublicationCard
+// thumbnails on the hub): a boxed background flattens the depth this treatment is meant to keep.
+//
+// Reuses the exact float keyframes, rotation and drop-shadow values from ReportGate's own
+// .cover-img so a report's cover looks identical whether shown there or here.
+import { REPORTS } from '../data/research-reports';
+
+interface Props { id: string }
+const { id } = Astro.props;
+const report = REPORTS[id];
+if (!report) throw new Error(`ResearchFloatingCover: unknown report id "${id}"`);
+
+const variants: Record<string, 'A' | 'B' | 'C'> = { sda2026: 'A', special: 'B', providers: 'C' };
+const variant = variants[id] ?? 'A';
+---
+<div class={`rfc rfc-${variant}`}>
+  <picture>
+    <source srcset={report.cover.webp} type="image/webp" />
+    <img
+      src={report.cover.png}
+      alt={report.cover.alt}
+      width={report.cover.width}
+      height={report.cover.height}
+      fetchpriority="high"
+    />
+  </picture>
+</div>
+<style>
+.rfc{display:flex;justify-content:center}
+.rfc img{width:100%;max-width:320px;height:auto;filter:drop-shadow(0 26px 50px rgba(0,10,25,.55))}
+
+.rfc-A img{animation:rfcFloatA 6s ease-in-out infinite;transform:rotate(-3deg)}
+.rfc-B img{animation:rfcFloatB 7s ease-in-out infinite;animation-delay:.35s;transform:rotate(0deg)}
+.rfc-C img{animation:rfcFloatC 6.5s ease-in-out infinite;animation-delay:.7s;transform:rotate(3deg)}
+@keyframes rfcFloatA{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-16px) rotate(-3deg)}}
+@keyframes rfcFloatB{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(0deg)}}
+@keyframes rfcFloatC{0%,100%{transform:translateY(0) rotate(3deg)}50%{transform:translateY(-16px) rotate(3deg)}}
+
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .rfc img{transition:scale .25s ease,filter .25s ease}
+  .rfc:hover img{scale:1.04;filter:drop-shadow(0 30px 56px color-mix(in srgb,var(--navy) 35%,transparent))}
+}
+@media(prefers-reduced-motion:reduce){
+  .rfc-A img,.rfc-B img,.rfc-C img{animation:none}
+}
+@media(max-width:860px){
+  .rfc img{max-width:240px}
+}
+</style>
