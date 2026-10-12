@@ -1,6 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { REPORTS } from '../data/research-reports';
+
+// Only reports with a `pdf` entry are eligible for the auto-download here; `providers` has none,
+// so its PDF (which doesn't exist yet) is never referenced or exposed on this page.
+const downloads = Object.fromEntries(
+  Object.entries(REPORTS)
+    .filter(([, r]) => r.pdf)
+    .map(([id, r]) => [id, { href: r.pdf!.href, filename: r.pdf!.filename, label: r.pdf!.downloadLabel }])
+);
 ---
 <BaseLayout title="Thank You | SDA Home Choices" description="Thank you for reaching out to SDA Home Choices. We've received your request and our team will be in touch shortly.">
   <PageHeader
@@ -14,18 +23,14 @@ import PageHeader from '../components/PageHeader.astro';
 </BaseLayout>
 
 <!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
-<script>
-  const REPORTS: Record<string, { href: string; filename: string; label: string }> = {
-    sda2026: { href: '/sda-market-report-2026.pdf', filename: 'SDA-Market-Report-2026.pdf', label: 'SDA Market Report 2026' },
-    special: { href: '/sda-administration-special-situations-report-2026.pdf', filename: 'SDA-Administration-and-Special-Situations-Report-2026.pdf', label: 'SDA Administration and Special Situations Report' },
-  };
+<script define:vars={{ downloads }}>
   const reportKey = new URLSearchParams(window.location.search).get('report');
-  const report = reportKey ? REPORTS[reportKey] : undefined;
+  const report = reportKey ? downloads[reportKey] : undefined;
   if (report) {
-    document.getElementById('msg-default')!.style.display = 'none';
-    const msgReport = document.getElementById('msg-report')!;
+    document.getElementById('msg-default').style.display = 'none';
+    const msgReport = document.getElementById('msg-report');
     msgReport.style.display = '';
-    const link = document.getElementById('report-link') as HTMLAnchorElement;
+    const link = document.getElementById('report-link');
     link.href = report.href;
     link.textContent = `download the ${report.label} (PDF)`;
     setTimeout(() => {
