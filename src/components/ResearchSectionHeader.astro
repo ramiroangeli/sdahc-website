@@ -1,0 +1,16 @@
+---
+// Reusable section header for the Research Hub: eyebrow + heading + optional lead paragraph.
+// Reuses the site's existing .eyebrow/.sec-h/.sec-lead utility classes from global.css so it
+// inherits current typography without introducing new tokens. Scoped under .rhub-head so the
+// upcoming SDAHC Research Design System can retarget hub section headers without touching markup.
+interface Props { eyebrow?: string; heading: string; lead?: string }
+const { eyebrow, heading, lead } = Astro.props;
+---
+<div class="rhub-head">
+  {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+  <h2 class="sec-h">{heading}</h2>
+  {lead && <p class="sec-lead">{lead}</p>}
+</div>
+<style>
+.rhub-head{margin:0 0 36px}
+</style>
