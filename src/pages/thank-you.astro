@@ -18,9 +18,17 @@ const downloads = Object.fromEntries(
   <section class="section"><div class="prose">
     <p id="msg-default">Thank you for reaching out! We've received your request, and our team will be in touch shortly. We look forward to working with you!</p>
     <p id="msg-report" style="display:none">Your download is starting. If it doesn't begin automatically, <a href="/sda-market-report-2026.pdf" id="report-link">download the report (PDF)</a>.</p>
-    <p><a href="/">Back to the homepage</a></p>
+    <p class="thankyou-links">
+      <a href="/research/">Explore SDAHC Research</a>
+      <a href="/our-services-and-expertise/">Explore our services</a>
+      <a href="/">Back to the homepage</a>
+    </p>
   </div></section>
 </BaseLayout>
+
+<style>
+.thankyou-links{display:flex;flex-wrap:wrap;gap:8px 22px}
+</style>
 
 <!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
 <script define:vars={{ downloads }}>
