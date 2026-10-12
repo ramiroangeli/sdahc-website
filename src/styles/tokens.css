@@ -4,6 +4,12 @@
   --pale:#B9CBE0; --blue:#0476D9; --paper:#F6F1EC; --white:#FFFFFF;
   --amber:#C97A0A; --mapfill:#1E3A57; --maphover:#2E6FB0; --teal:#2FA0A8;
   --accent-msq:#E43024; --accent-guardian:#008BAD; --accent-sdaservices:#909030;
+  /* RGB components of --blue, for rgba()/alpha-compositing contexts (e.g. a filter:drop-shadow()
+     glow) where color-mix() with the `transparent` keyword renders unreliably across browsers. */
+  --blue-rgb:4,118,217;
+  /* Required-field indicator. A genuine, permanent UI need (not a speculative Research brand
+     colour), so it gets its own token rather than a hardcoded value in components. */
+  --required:#E5484D;
   /* fixed navigation and decorative effects */
   --nav-top:calc(16px + env(safe-area-inset-top,0px));
   --nav-height:62px;

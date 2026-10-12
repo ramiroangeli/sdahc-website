@@ -1,7 +1,7 @@
 ---
 // Large, purely presentational floating report cover for a dedicated landing page's hero.
 // ReportGate (src/components/ReportGate.astro) freezes its own cover's float animation once a
-// report is selected (`.cover-img{animation:none}` in its selected state) — correct there, since
+// report is selected (`.cover-img{animation:none}` in its selected state): correct there, since
 // attention should move to the form, but it means a single-report landing page using ReportGate
 // alone (which now auto-opens its form on load, see ReportGate's single-report behaviour) would
 // never show the continuous floating motion at all. This component exists only to keep that
@@ -48,7 +48,7 @@ const variant = variants[id] ?? 'A';
 
 @media(hover:hover) and (prefers-reduced-motion:no-preference){
   .rfc img{transition:scale .25s ease,filter .25s ease}
-  .rfc:hover img{scale:1.04;filter:drop-shadow(0 30px 56px color-mix(in srgb,var(--navy) 35%,transparent))}
+  .rfc:hover img{scale:1.04;filter:drop-shadow(0 30px 56px rgba(var(--blue-rgb),.35))}
 }
 @media(prefers-reduced-motion:reduce){
   .rfc-A img,.rfc-B img,.rfc-C img{animation:none}
