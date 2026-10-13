@@ -2,7 +2,10 @@
 // Simple link card for existing, already-indexed Research HTML pages (statistics, snapshot,
 // executive summary, methodology). The whole card is one semantic <a>, so it stays a single
 // crawlable, keyboard-accessible link rather than a div with a nested link.
-// Scoped under .rrc- so the upcoming Design System can restyle these independently.
+// Hub-only component (no other page imports it), so its Design System (Stage 2 v2, Set A
+// editorial) styling is applied directly rather than behind an opt-in variant prop.
+import '../styles/research-tokens.css';
+
 interface Props { href: string; title: string; description: string }
 const { href, title, description } = Astro.props;
 ---
@@ -12,11 +15,14 @@ const { href, title, description } = Astro.props;
   <span class="rrc-link" aria-hidden="true">&rarr;</span>
 </a>
 <style>
-.rrc-card{display:block;background:rgba(255,255,255,.03);border:1px solid rgba(185,203,224,.16);border-radius:8px;padding:26px;text-decoration:none;transition:border-color .25s,background .25s}
-.rrc-card:hover{border-color:var(--blue);background:rgba(4,118,217,.07)}
-.rrc-card:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
-.rrc-title{font-family:var(--serif);font-weight:600;color:#fff;font-size:18px;margin:0 0 8px}
-.rrc-desc{color:var(--pale);font-size:14.5px;line-height:1.5;margin:0 24px 0 0}
-.rrc-link{display:block;margin-top:14px;font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+.rrc-card{display:block;background:#FFFFFF;border:var(--r-rule-divider) solid var(--r-cover-slate);border-radius:var(--r-radius-card);padding:26px;text-decoration:none;transition:border-color var(--r-motion-base) var(--r-ease-out),background var(--r-motion-base) var(--r-ease-out)}
+.rrc-card:hover{border-color:var(--r-signal-deep);background:var(--r-signal-tint)}
+.rrc-card:focus-visible{outline:2px solid var(--r-signal-deep);outline-offset:4px}
+.rrc-title{font-family:var(--r-font-display);font-weight:700;font-stretch:90%;color:var(--r-midnight-ink);font-size:18px;margin:0 0 8px}
+.rrc-desc{color:var(--r-graphite);font-family:var(--r-font-body);font-size:14.5px;line-height:1.5;margin:0 24px 0 0}
+.rrc-link{display:block;margin-top:14px;font-family:var(--r-font-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--r-signal-deep)}
 .rrc-card:hover .rrc-link{text-decoration:underline;text-underline-offset:3px}
+@media(prefers-reduced-motion:reduce){
+  .rrc-card{transition:none}
+}
 </style>
