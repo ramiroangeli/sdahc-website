@@ -6,12 +6,22 @@
 // 4A restyles the Hub only, per its own scope boundary.
 import '../styles/research-tokens.css';
 
-interface Props { eyebrow?: string; heading: string; lead?: string; variant?: 'hub' }
-const { eyebrow, heading, lead, variant } = Astro.props;
+// `number` (e.g. "01") is an optional hub-only section number, rendered beside a short accent
+// rule ahead of the eyebrow: Set A's own type-scale notes describe its h2 token as "numbered
+// section heads", and the source board's own nav-tab specimens number sections the same way
+// ("01 Overview", "02 Publications"...). Landing-page call sites never pass it.
+interface Props { eyebrow?: string; heading: string; lead?: string; variant?: 'hub'; number?: string }
+const { eyebrow, heading, lead, variant, number } = Astro.props;
 const hub = variant === 'hub';
 ---
 <div class={hub ? 'rhub-head rhub-head-ds' : 'rhub-head'}>
-  {eyebrow && <p class={hub ? 'r-eyebrow' : 'eyebrow'}>{eyebrow}</p>}
+  {eyebrow && (
+    hub ? (
+      <p class="r-eyebrow">{number && <span class="r-eyebrow-rule" aria-hidden="true"></span>}{number && `${number} · `}{eyebrow}</p>
+    ) : (
+      <p class="eyebrow">{eyebrow}</p>
+    )
+  )}
   <h2 class={hub ? 'r-sec-h' : 'sec-h'}>{heading}</h2>
   {lead && <p class={hub ? 'r-sec-lead' : 'sec-lead'}>{lead}</p>}
 </div>
@@ -19,7 +29,8 @@ const hub = variant === 'hub';
 .rhub-head{margin:0 0 36px}
 
 /* Design System (Set A editorial): Bricolage Grotesque display heading, IBM Plex Mono eyebrow. */
-.r-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.08em;text-transform:uppercase;color:var(--r-graphite);margin:0 0 14px}
+.r-eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.08em;text-transform:uppercase;color:var(--r-graphite);margin:0 0 14px}
+.r-eyebrow-rule{display:inline-block;width:var(--r-rule-kpi);height:16px;background:var(--r-signal-deep)}
 .r-sec-h{font-family:var(--r-font-display);font-weight:700;font-stretch:90%;color:var(--r-midnight-ink);font-size:var(--r-size-h2);line-height:1.05;margin:0;max-width:20ch}
 .r-sec-lead{font-family:var(--r-font-body);color:var(--r-graphite);font-size:var(--r-size-lead);line-height:1.5;max-width:66ch;margin:16px 0 0}
 </style>
