@@ -13,17 +13,25 @@
 //
 // Reuses the exact float keyframes, rotation and drop-shadow values from ReportGate's own
 // .cover-img so a report's cover looks identical whether shown there or here.
+//
+// The cover is itself a link to the page's registration section (href, default "#access": the
+// id every ReportGate instance on these landing pages is given). Its accessible name reuses the
+// registry's own ariaLabel field rather than inventing new copy, since that field already
+// distinguishes "download form" from "registration form" per report. The <img> keeps its own alt
+// text unchanged; the link's aria-label takes precedence for this link's accessible name, which
+// is the standard pattern for a linked image whose destination needs more context than the bare
+// image description.
 import { REPORTS } from '../data/research-reports';
 
-interface Props { id: string }
-const { id } = Astro.props;
+interface Props { id: string; href?: string }
+const { id, href = '#access' } = Astro.props;
 const report = REPORTS[id];
 if (!report) throw new Error(`ResearchFloatingCover: unknown report id "${id}"`);
 
 const variants: Record<string, 'A' | 'B' | 'C'> = { sda2026: 'A', special: 'B', providers: 'C' };
 const variant = variants[id] ?? 'A';
 ---
-<div class={`rfc rfc-${variant}`}>
+<a class={`rfc rfc-${variant}`} href={href} aria-label={report.ariaLabel}>
   <picture>
     <source srcset={report.cover.webp} type="image/webp" />
     <img
@@ -34,10 +42,11 @@ const variant = variants[id] ?? 'A';
       fetchpriority="high"
     />
   </picture>
-</div>
+</a>
 <style>
-.rfc{display:flex;justify-content:center}
+.rfc{display:flex;justify-content:center;text-decoration:none}
 .rfc img{width:100%;max-width:320px;height:auto;filter:drop-shadow(0 26px 50px rgba(0,10,25,.55))}
+.rfc:focus-visible{outline:2px solid var(--blue);outline-offset:8px;border-radius:4px}
 
 .rfc-A img{animation:rfcFloatA 6s ease-in-out infinite;transform:rotate(-3deg)}
 .rfc-B img{animation:rfcFloatB 7s ease-in-out infinite;animation-delay:.35s;transform:rotate(0deg)}
@@ -46,8 +55,11 @@ const variant = variants[id] ?? 'A';
 @keyframes rfcFloatB{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-12px) rotate(0deg)}}
 @keyframes rfcFloatC{0%,100%{transform:translateY(0) rotate(3deg)}50%{transform:translateY(-16px) rotate(3deg)}}
 
-@media(hover:hover) and (prefers-reduced-motion:no-preference){
+@media(prefers-reduced-motion:no-preference){
   .rfc img{transition:scale .25s ease,filter .25s ease}
+  .rfc:focus-visible img{scale:1.04;filter:drop-shadow(0 30px 56px rgba(var(--blue-rgb),.35))}
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
   .rfc:hover img{scale:1.04;filter:drop-shadow(0 30px 56px rgba(var(--blue-rgb),.35))}
 }
 @media(prefers-reduced-motion:reduce){
