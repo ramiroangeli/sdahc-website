@@ -1,14 +1,22 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHeader from '../../components/PageHeader.astro';
 import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro';
 import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
 import ResearchResourceCard from '../../components/ResearchResourceCard.astro';
 import ResearchStateGrid from '../../components/ResearchStateGrid.astro';
+import ResearchDwellerRibbon from '../../components/ResearchDwellerRibbon.astro';
 import { REPORTS } from '../../data/research-reports';
+import '../../styles/research-tokens.css';
 
 const title = 'SDA Research Hub: Market Reports & Sector Analysis | SDA Home Choices';
 const description = "SDAHC Research publishes market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, including the SDA Market Report 2026 and state-by-state data.";
+
+// Set C (interface) fonts plus the Set A (editorial) and metadata faces this page needs beyond
+// the corporate set already loaded by BaseLayout. Opt-in via extraFontsHref so no other page
+// requests these. Query params copied directly from the approved Stage 2 v2 source document's
+// own (working) Google Fonts link, so the variable axes requested (Bricolage Grotesque's wdth,
+// Source Serif 4's italic-only opsz range) match what those fonts actually expose.
+const researchFontsHref = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,400&family=Plus+Jakarta+Sans:wght@800&family=IBM+Plex+Mono:wght@400;500&display=swap";
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const absolute = (path: string) => new URL(path, Astro.site).href;
@@ -44,33 +52,63 @@ const breadcrumbs = {
   ],
 };
 ---
-<BaseLayout title={title} description={description}>
-  <PageHeader
-    eyebrow="SDAHC Research"
-    title="Commercial intelligence for Australia's Specialist Disability Accommodation market"
-    standfirst="SDAHC Research produces market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, drawing on publicly available industry data alongside SDAHC's specialist commercial market experience."
-    wide
-  />
-  <p class="rhub-tagline wrap">Market research. Investment intelligence. Sector analysis.</p>
+<BaseLayout title={title} description={description} extraFontsHref={researchFontsHref}>
+  <!-- Hero: the text column has a hard max-width (not a grid-column share), and the ribbon is
+       absolutely positioned to occupy only the remaining right-hand zone, clipped by the hero
+       section's own overflow:hidden. This is what lets the ribbon bleed beyond its own box
+       top/bottom ("enters from beyond the boundary") while still making it structurally
+       impossible for it to ever sit behind or cross the H1/standfirst: the two never share
+       horizontal space, regardless of z-index or how the full-width-capable H1 wraps. -->
+  <section class="rhub-hero r-grain-dark">
+    <div class="wrap rhub-hero-inner">
+      <div class="rhub-hero-text">
+        <p class="rhub-eyebrow">SDAHC Research</p>
+        <h1 class="rhub-h1">Commercial intelligence for Australia's SDA <span class="rhub-h1-accent">market</span></h1>
+        <p class="rhub-standfirst">SDAHC Research delivers market analysis, transaction intelligence and evidence-based insights into Australia's SDA sector, combining public industry data with specialist commercial market experience.</p>
+        <p class="rhub-tagline">Market research. Investment intelligence. Sector analysis.</p>
+      </div>
+      <!-- Positioned relative to .rhub-hero-inner (same containing block as the text above), not
+           the full-bleed section: both this element's width and the text's max-width are then
+           percentages of the identical box, so the gap between them is exact at every viewport
+           width, not an estimate from two different reference widths. The trade-off is that the
+           ribbon can bleed past .wrap's own edge vertically (top/bottom, "beyond the boundary")
+           but is clipped horizontally to .wrap's own right edge rather than the viewport's. -->
+      <div class="rhub-hero-ribbon">
+        <ResearchDwellerRibbon size="large" />
+      </div>
+    </div>
+  </section>
 
-  <section class="section rhub-publications" id="publications">
+  <section class="section rhub-publications rhub-paper" id="publications">
+    <!-- Continuation cue: the hero's ribbon ends its visible arc at (574,213.5), the same point
+         this echo crops around, recoloured for the Paper ground. A direct crop of the identical
+         curve, not an independently drawn element, positioned in the same right-hand zone the
+         hero's ribbon occupied, so the two sections read as one composition rather than an
+         expressive hero followed by an unrelated flat one. -->
+    <div class="rhub-pub-echo" aria-hidden="true">
+      <ResearchDwellerRibbon size="echo" />
+    </div>
     <div class="wrap">
       <ResearchSectionHeader
+        variant="hub"
+        number="01"
         eyebrow="Our publications"
         heading="Research Publications"
         lead="Three publications covering the national SDA market, administration and special situations, and the provider landscape."
       />
       <div class="rhub-pub-grid">
-        <ResearchPublicationCard id="sda2026" />
-        <ResearchPublicationCard id="special" />
-        <ResearchPublicationCard id="providers" />
+        <ResearchPublicationCard id="sda2026" variant="hub" />
+        <ResearchPublicationCard id="special" variant="hub" />
+        <ResearchPublicationCard id="providers" variant="hub" />
       </div>
     </div>
   </section>
 
-  <section class="section rhub-explore">
+  <section class="section rhub-explore rhub-paper">
     <div class="wrap">
       <ResearchSectionHeader
+        variant="hub"
+        number="02"
         eyebrow="Online research"
         heading="Explore the SDA Market"
         lead="Key findings from the SDA Market Report 2026, published as standalone pages."
@@ -100,9 +138,11 @@ const breadcrumbs = {
     </div>
   </section>
 
-  <section class="section rhub-states bg-glow-tl">
+  <section class="section rhub-states rhub-paper">
     <div class="wrap">
       <ResearchSectionHeader
+        variant="hub"
+        number="03"
         eyebrow="Jurisdictional data"
         heading="State & Territory Intelligence"
         lead="State-level analysis drawn from the SDA Market Report 2026: enrolled dwellings, participant demand and funding committed by jurisdiction."
@@ -111,16 +151,16 @@ const breadcrumbs = {
     </div>
   </section>
 
-  <section class="section rhub-approach">
+  <section class="section rhub-approach rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader eyebrow="Methodology" heading="Research Approach" />
+      <ResearchSectionHeader variant="hub" number="04" eyebrow="Methodology" heading="Research Approach" />
       <p class="rhub-approach-copy">SDAHC Research draws on relevant public datasets, sector observations and SDAHC's own commercial transaction experience. Sources and methodology are stated where applicable, and not every publication necessarily draws on the same data or approach. Read the full <a href="/research/research-methodology/">research methodology</a> for sources and definitions.</p>
     </div>
   </section>
 
-  <section class="section rhub-bridge bg-glow-bc">
+  <section class="section rhub-bridge rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader heading="From market intelligence to informed commercial decisions" />
+      <ResearchSectionHeader variant="hub" number="05" eyebrow="Next steps" heading="From market intelligence to informed commercial decisions" />
       <p class="rhub-bridge-copy">Sector-wide research provides useful context: where demand is concentrated, how supply is moving, and what the national picture looks like. An asset-specific decision, buying, selling or holding a particular SDA property, requires closer examination: sustainable income, contracts, enrolment, property condition and market evidence specific to that asset. That is where specialist commercial advice becomes useful.</p>
       <p class="rhub-bridge-links">
         <a class="btn b1" href="/our-services-and-expertise/">Explore our services</a>
@@ -129,9 +169,9 @@ const breadcrumbs = {
     </div>
   </section>
 
-  <section class="section rhub-about">
+  <section class="section rhub-about rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader eyebrow="About" heading="About SDAHC Research" />
+      <ResearchSectionHeader variant="hub" number="06" eyebrow="About" heading="About SDAHC Research" />
       <p class="rhub-about-copy">SDAHC Research is the research and publications initiative of SDA Home Choices, an independent commercial advisory specialising in Specialist Disability Accommodation. It draws on the firm's specialist commercial market experience to produce evidence-based research for investors, providers and other sector participants. Read more <a href="/about/">about SDA Home Choices</a>.</p>
     </div>
   </section>
@@ -141,14 +181,93 @@ const breadcrumbs = {
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbs)} />
 </BaseLayout>
 <style>
-.rhub-tagline{margin:-24px 0 0;padding-bottom:12px;font-family:var(--geo);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+/* ---- Hero: expressive register, Set C, grad-ink-field ----
+   Text and graphic are two separate grid columns (not one layered behind the other). That is a
+   deliberate structural choice, not a styling detail: it is what guarantees the graphic can
+   never visually cross or sit behind the H1 or standfirst, however the full-width H1 wraps at a
+   given viewport width, rather than relying on z-index or a guessed-safe pixel zone. */
+.rhub-hero{position:relative;overflow:hidden;padding:calc(150px + var(--nav-top)) 0 0;background:var(--r-grad-ink-field)}
+.rhub-hero-inner{position:relative;z-index:1}
+/* White, not Signal Blue: grad-ink-field's own documented contrast note says Signal Blue only
+   passes reliably at 24px+ near its glow zones, and this eyebrow sits in that zone at 12px. */
+.rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 22px}
+/* Larger, more confident scale than the prior copy allowed: the shorter headline wraps to
+   2 lines at this size within the text column instead of 3-4, so there's room to push the
+   display size up without it overwhelming the column or forcing awkward line breaks. */
+.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(40px,5.4vw,74px);line-height:1.02;margin:0;max-width:none}
+/* The one typographic accent: the final word, Source Serif 4 italic in Signal Blue, echoing the
+   same bold-sans/italic-serif pairing the brand's own "SDAHC | Research" wordmark uses, rather
+   than a generic highlight colour applied for its own sake. */
+.rhub-h1-accent{font-family:var(--r-font-serif-accent);font-style:italic;font-weight:400;letter-spacing:0;color:var(--r-signal-blue)}
+.rhub-standfirst{font-family:var(--r-font-body);color:var(--r-signal-tint);font-size:var(--r-size-lead);line-height:1.5;max-width:52ch;margin:22px 0 0}
+.rhub-tagline{margin:28px 0 0;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.2em;text-transform:uppercase;color:var(--r-cover-slate)}
+/* Text and ribbon are both percentages of the SAME containing block (.rhub-hero-inner, the
+   .wrap below), not two different reference widths (one of a padded wrap, one of the full
+   section) that would make a "safe gap" only an estimate: 56% + 34% leaves a guaranteed 10% gap
+   between them at every viewport width, not a z-index-dependent guess. */
+.rhub-hero-text{position:relative;z-index:1;max-width:56%;padding-bottom:96px}
+/* top:0/bottom:0 (not negative): overflow:hidden on .rhub-hero clips a child at the parent's own
+   edges regardless of which direction it overshoots, so a negative offset here would hide the
+   bleed rather than reveal it. The "enters/exits beyond the boundary" effect instead comes from
+   the artwork itself: ResearchDwellerRibbon's curve endpoints already touch its own viewBox's
+   top and bottom edges (y=0 and y=750 of 750), and preserveAspectRatio="slice" fills whatever
+   height this box actually ends up being, so the curve reads as running off both edges at any
+   height rather than floating inside a visibly bounded panel. min-height keeps it substantial
+   even where the text column itself is short; .rhub-hero's own overflow:hidden is what controls
+   any excess below the section, which is the deliberate, approved use of that clip. */
+.rhub-hero-ribbon{position:absolute;top:0;right:0;bottom:0;width:34%;min-height:560px;z-index:0}
+
+/* ---- Editorial register: "Paper to read, Ink to frame" ----
+   Every section after the hero reads on Warm Paper with Ink/Graphite text, so dark stays
+   confined to the hero (roughly one section of seven on this page). Scoped to this page's own
+   .rhub-* wrapper classes only: global.css's shared .section/.wrap are untouched, so every other
+   page on the site keeps its existing navy background exactly as it is. */
+.rhub-paper{background:var(--r-paper);color:var(--r-graphite)}
+/* Publications transition: the echo ribbon (a direct crop of the hero ribbon's own curve,
+   recoloured for Paper) sits in the same right-hand zone the hero's ribbon occupied, clipped by
+   this section's own overflow:hidden so it reads as a continuation peeking in from above rather
+   than a separate graphic. */
+.rhub-publications{position:relative;overflow:hidden}
+/* top:0, not negative: overflow:hidden on .rhub-publications (above) would clip a negative
+   offset away entirely rather than let it peek in from above. "Meet" scaling inside the fixed
+   box below keeps this predictable without needing to verify exact crop proportions visually. */
+.rhub-pub-echo{position:absolute;top:0;right:6%;width:220px;height:180px;opacity:.8}
+/* A deliberate editorial rule between sections, rather than every Paper section running directly
+   into the next with no visual rhythm: the Approach/bridge/About sections that follow another
+   Paper section get a top divider; the two sections right after the hero and state grid don't
+   need one, since the dark-to-paper and card-grid-to-rule transitions already read as a break. */
+.rhub-approach,.rhub-bridge,.rhub-about{border-top:var(--r-rule-divider) solid var(--r-cover-slate)}
+.rhub-approach-copy,.rhub-bridge-copy,.rhub-about-copy{max-width:68ch;font-family:var(--r-font-body);color:var(--r-graphite);font-size:var(--r-size-body);line-height:1.65;margin:0}
+.rhub-approach-copy a,.rhub-bridge-copy a,.rhub-about-copy a{color:var(--r-signal-deep);text-decoration:underline;text-underline-offset:2px}
+.rhub-bridge-links{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 0}
+/* the shared .btn/.b1/.b2 utilities are corporate-navy-toned; on this light section they need
+   their own colours rather than inheriting defaults meant for a dark background */
+.rhub-bridge .btn.b1{background:var(--r-signal-deep);color:#FFFFFF}
+.rhub-bridge .btn.b1:hover{background:var(--r-navy)}
+.rhub-bridge .btn.b2{background:transparent;color:var(--r-midnight-ink);border-color:var(--r-cover-slate)}
+.rhub-bridge .btn.b2:hover{border-color:var(--r-signal-deep)}
+
 .rhub-pub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .rhub-resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
-.rhub-approach-copy,.rhub-bridge-copy,.rhub-about-copy{max-width:74ch;color:var(--pale);font-size:17px;line-height:1.7;margin:0}
-.rhub-approach-copy a,.rhub-bridge-copy a,.rhub-about-copy a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
-.rhub-bridge-links{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 0}
+
+/* Tablet: simplify the placement (smaller, less visually loud) without restructuring the
+   side-by-side layout yet, so the ribbon stops competing with the title for attention. */
 @media(max-width:980px){
   .rhub-pub-grid{grid-template-columns:1fr}
   .rhub-resource-grid{grid-template-columns:1fr}
+  .rhub-hero-text{max-width:62%}
+  .rhub-hero-ribbon{width:30%;min-height:420px;opacity:.85}
+  .rhub-pub-echo{width:160px;height:140px}
+}
+/* Mobile: prioritise the headline and standfirst outright. The ribbon moves into normal
+   document flow below the text (no longer absolutely positioned over anything, so it cannot
+   cross or obscure text by construction) in a fixed, modestly-sized box, not a shrunk copy of
+   the desktop panel's proportions. The echo is hidden rather than shown at a size too small to
+   read as intentional. */
+@media(max-width:680px){
+  .rhub-hero-inner{display:flex;flex-direction:column}
+  .rhub-hero-text{max-width:none;padding-bottom:28px}
+  .rhub-hero-ribbon{position:relative;top:auto;right:auto;bottom:auto;width:100%;max-width:240px;min-height:0;height:210px;margin:0 auto;opacity:1}
+  .rhub-pub-echo{display:none}
 }
 </style>

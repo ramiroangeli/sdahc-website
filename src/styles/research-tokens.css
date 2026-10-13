@@ -1,0 +1,98 @@
+/* SDAHC Research design tokens, Stage 2 Identity System v2 (Route 1B + Expressive Layer).
+ *
+ * Scoped to Research pages and components only. Never used in place of, or to override, the
+ * corporate tokens in tokens.css (--navy, --blue, etc.), which stay exactly as they are. Import
+ * this file only from Research-specific components/pages, not from global.css.
+ *
+ * Values here are transcribed directly from the approved Stage 2 v2 source board (hex values,
+ * gradient stops, type scale, motion durations) rather than estimated, so they can be checked
+ * against that board directly. Where the source gives a desktop/mobile pair, both are folded
+ * into one fluid clamp() here; component CSS can still reference the fixed desktop/mobile
+ * variables directly if a non-fluid step is ever needed.
+ */
+:root{
+  /* ---- Core palette ---- */
+  --r-midnight-ink:#081B30;
+  --r-navy:#102E53;
+  --r-blue:#234B70;
+  --r-signal-deep:#286C9E;
+  --r-signal-blue:#69A8D4;
+  --r-cover-slate:#C3D1D6;
+  --r-graphite:#323C46;
+  --r-paper:#F2F0EA;
+  --r-signal-tint:#DCEAF4;
+
+  /* ---- Accent palette (restrained; core colours should dominate ~90% of a layout) ---- */
+  --r-ember:#E07033;
+  --r-ember-deep:#A9481A;
+  --r-ember-tint:#F7D9C6;
+  --r-wattle:#F0C23C;
+  --r-wattle-deep:#7E5A00;
+  --r-wattle-tint:#FBE7A6;
+
+  /* ---- Typography families ----
+     Set A (Editorial): reports, /research/ pages, figures.
+     Set C (Interface): landing pages, web heroes, service cards. Hero only in Phase 4A. */
+  --r-font-display:'Bricolage Grotesque', var(--serif), sans-serif;   /* Set A display/headings */
+  --r-font-serif-accent:'Source Serif 4', serif;                      /* Set A italic accent */
+  --r-font-interface:'Plus Jakarta Sans', var(--sans), sans-serif;    /* Set C hero display */
+  --r-font-body:'Source Sans 3', var(--sans), sans-serif;             /* body/UI, both sets */
+  --r-font-mono:'IBM Plex Mono', monospace;                           /* metadata, both sets */
+
+  /* ---- Type scale (Stage 2 v2 table: desktop / mobile px, folded into fluid clamps) ---- */
+  --r-size-display-xl: clamp(48px, 6vw + 20px, 88px);  /* Set A spec: 88/0.95 desktop, 48/1.0 mobile */
+  --r-size-h1: clamp(38px, 3.8vw + 20px, 60px);        /* 60/1.0 desktop, 38/1.05 mobile */
+  --r-size-h2: clamp(30px, 2.3vw + 17px, 40px);        /* 40/1.05 desktop, 30/1.1 mobile */
+  --r-size-h3: clamp(22px, 0.9vw + 17px, 26px);        /* 26/1.2 desktop, 22/1.25 mobile */
+  --r-size-kpi: clamp(52px, 5.3vw + 16px, 76px);       /* 76/0.95 desktop, 52/1.0 mobile */
+  --r-size-lead: clamp(19px, 0.7vw + 15px, 22px);      /* 22/1.5 desktop, 19/1.5 mobile */
+  --r-size-body: clamp(17px, 0.2vw + 16px, 18px);      /* 18/1.65 desktop, 17/1.6 mobile; max 68ch */
+  --r-size-ui: 15px;                                   /* ui/small: nav, labels, captions */
+  --r-size-meta: 12px;                                 /* meta: min 11px, caps, +8% tracking */
+
+  /* ---- Motion ---- */
+  --r-motion-fast: 160ms;
+  --r-motion-base: 320ms;
+  --r-motion-slow: 900ms;
+  --r-motion-ambient: 16s;
+  --r-ease-out: cubic-bezier(.2,.8,.2,1);
+  --r-ease-in-out: cubic-bezier(.65,0,.35,1);
+
+  /* ---- Geometry ----
+     Cards/covers are square (radius 0); editorial tags/inputs get a slight 2px radius; KPI
+     accent rules are 3px; structural dividers 1px. No decorative card shadows (the existing
+     ReportGate/ResearchFloatingCover cover-lift shadow is a separate, already-established
+     interaction this phase doesn't touch). */
+  --r-radius-card: 0;
+  --r-radius-tag: 2px;
+  --r-rule-kpi: 3px;
+  --r-rule-divider: 1px;
+
+  /* ---- Gradient fields ----
+     Expressive surfaces only: never behind long-form reading text, tables, charts, sources or
+     disclaimers. Stops transcribed directly from the Stage 2 v2 board. */
+  --r-grad-ink-field:
+    radial-gradient(circle at 20% 30%, rgba(35,75,112,.6), rgba(35,75,112,0) 55%),
+    radial-gradient(circle at 85% 80%, rgba(40,108,158,.45), rgba(40,108,158,0) 50%),
+    var(--r-midnight-ink);
+  --r-grad-paper-field:
+    radial-gradient(circle at 80% 20%, var(--r-signal-tint), rgba(220,234,244,0) 55%),
+    radial-gradient(circle at 15% 90%, rgba(251,231,166,.7), rgba(251,231,166,0) 50%),
+    var(--r-paper);
+  --r-grad-dawn: linear-gradient(165deg, var(--r-wattle) 0%, var(--r-signal-blue) 48%, var(--r-navy) 100%);
+  --r-grad-ember-glow:
+    radial-gradient(circle at 90% 10%, rgba(224,112,51,.35), rgba(224,112,51,0) 55%),
+    var(--r-midnight-ink);
+}
+
+/* Grain overlays for expressive gradient fields only (never flat UI surfaces), at the specified
+ * 8% dark / 5% light opacities. Reuses the exact feTurbulence noise technique already
+ * established site-wide as .bg-grain in global.css (which is already 5%, i.e. already the
+ * correct "light field" value) rather than inventing a second noise texture. */
+.r-grain-dark{position:relative;isolation:isolate}
+.r-grain-dark::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.08;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.r-grain-dark>*{position:relative;z-index:1}
+
+@media(prefers-reduced-motion:reduce){
+  [data-r-motion]{animation:none !important}
+}
