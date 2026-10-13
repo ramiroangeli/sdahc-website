@@ -11,17 +11,24 @@
 //
 // Styles are scoped under .rp- so the upcoming SDAHC Research Design System can restyle
 // publication cards without touching this component's markup or the hub page.
+//
+// `variant="hub"` is the opt-in Design System treatment (Stage 2 v2, Set A editorial + Cover
+// Slate framing), used only by the Hub's own call sites. Every report-landing-page call site
+// (each page's own "Related publications" section) omits it, so those keep rendering with the
+// original corporate styling untouched: Phase 4A restyles the Hub only.
+import '../styles/research-tokens.css';
 import { REPORTS } from '../data/research-reports';
 
-interface Props { id: string }
-const { id } = Astro.props;
+interface Props { id: string; variant?: 'hub' }
+const { id, variant } = Astro.props;
+const hub = variant === 'hub';
 const report = REPORTS[id];
 if (!report) throw new Error(`ResearchPublicationCard: unknown report id "${id}"`);
 
 const statusLabel = report.status === 'published' ? 'Published' : 'In development';
 const ctaLabel = report.mode === 'preregistration' ? 'Register your interest' : 'Explore report';
 ---
-<article class={`rp-card ${report.acceptsRegistration ? 'is-interactive' : ''} ${report.status === 'published' ? '' : 'is-pending'}`}>
+<article class={`rp-card ${hub ? 'rp-card-ds' : ''} ${report.acceptsRegistration ? 'is-interactive' : ''} ${report.status === 'published' ? '' : 'is-pending'}`}>
   <div class="rp-cover">
     <picture>
       <source srcset={report.cover.webp} type="image/webp" />
@@ -67,4 +74,18 @@ const ctaLabel = report.mode === 'preregistration' ? 'Register your interest' : 
 .rp-cta:hover{text-decoration:underline;text-underline-offset:3px}
 .rp-cta:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
 .rp-pending-note{font-family:var(--geo);font-size:12px;letter-spacing:.06em;color:var(--muted);margin:0}
+
+/* Design System (Set A editorial + Cover Slate framing). Square geometry, no card shadow. */
+.rp-card-ds{background:#FFFFFF;border-color:var(--r-cover-slate);border-radius:var(--r-radius-card)}
+.rp-card-ds.is-interactive:hover{border-color:var(--r-signal-deep)}
+.rp-card-ds .rp-cover{background:var(--r-cover-slate)}
+.rp-card-ds .rp-meta{font-family:var(--r-font-mono)}
+.rp-card-ds .rp-year{color:var(--r-graphite)}
+.rp-card-ds .rp-status-published{color:var(--r-signal-deep);background:var(--r-signal-tint)}
+.rp-card-ds .rp-status-coming-soon{color:var(--r-wattle-deep);background:var(--r-wattle-tint)}
+.rp-card-ds .rp-title{font-family:var(--r-font-display);font-weight:700;font-stretch:90%;color:var(--r-midnight-ink)}
+.rp-card-ds .rp-desc{font-family:var(--r-font-body);color:var(--r-graphite)}
+.rp-card-ds .rp-cta{font-family:var(--r-font-mono);color:var(--r-signal-deep)}
+.rp-card-ds .rp-cta:focus-visible{outline-color:var(--r-signal-deep)}
+.rp-card-ds .rp-pending-note{font-family:var(--r-font-mono);color:var(--r-graphite)}
 </style>
