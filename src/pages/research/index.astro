@@ -65,8 +65,8 @@ const breadcrumbs = {
     <div class="wrap rhub-hero-grid">
       <div class="rhub-hero-text">
         <p class="rhub-eyebrow">SDAHC Research</p>
-        <h1 class="rhub-h1">Commercial intelligence for Australia's Specialist Disability Accommodation <span class="rhub-h1-accent">market</span></h1>
-        <p class="rhub-standfirst">SDAHC Research produces market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, drawing on publicly available industry data alongside SDAHC's specialist commercial market experience.</p>
+        <h1 class="rhub-h1">Commercial intelligence for Australia's SDA <span class="rhub-h1-accent">market</span></h1>
+        <p class="rhub-standfirst">SDAHC Research delivers market analysis, transaction intelligence and evidence-based insights into Australia's SDA sector, combining public industry data with specialist commercial market experience.</p>
         <p class="rhub-tagline">Market research. Investment intelligence. Sector analysis.</p>
       </div>
       <div class="rhub-hero-graphic" aria-hidden="true">
@@ -230,7 +230,10 @@ const breadcrumbs = {
 /* White, not Signal Blue: grad-ink-field's own documented contrast note says Signal Blue only
    passes reliably at 24px+ near its glow zones, and this eyebrow sits in that zone at 12px. */
 .rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 22px}
-.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(36px,4.2vw,58px);line-height:1.05;margin:0;max-width:none}
+/* Larger, more confident scale than the prior copy allowed: the shorter headline wraps to
+   2 lines at this size within the text column instead of 3-4, so there's room to push the
+   display size up without it overwhelming the column or forcing awkward line breaks. */
+.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(40px,5.4vw,74px);line-height:1.02;margin:0;max-width:none}
 /* The one typographic accent: the final word, Source Serif 4 italic in Signal Blue, echoing the
    same bold-sans/italic-serif pairing the brand's own "SDAHC | Research" wordmark uses, rather
    than a generic highlight colour applied for its own sake. */
