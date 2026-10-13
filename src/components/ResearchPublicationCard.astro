@@ -28,7 +28,7 @@ if (!report) throw new Error(`ResearchPublicationCard: unknown report id "${id}"
 const statusLabel = report.status === 'published' ? 'Published' : 'In development';
 const ctaLabel = report.mode === 'preregistration' ? 'Register your interest' : 'Explore report';
 ---
-<article class={`rp-card ${hub ? 'rp-card-ds' : ''} ${report.acceptsRegistration ? 'is-interactive' : ''} ${report.status === 'published' ? '' : 'is-pending'}`}>
+<article class={`rp-card ${hub ? 'rp-card-ds' : ''} ${report.acceptsRegistration ? 'is-interactive' : ''} ${report.status === 'published' ? '' : 'is-pending'}`} data-report={hub ? id : undefined}>
   <div class="rp-cover">
     <picture>
       <source srcset={report.cover.webp} type="image/webp" />
@@ -75,9 +75,15 @@ const ctaLabel = report.mode === 'preregistration' ? 'Register your interest' : 
 .rp-cta:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
 .rp-pending-note{font-family:var(--geo);font-size:12px;letter-spacing:.06em;color:var(--muted);margin:0}
 
-/* Design System (Set A editorial + Cover Slate framing). Square geometry, no card shadow. */
-.rp-card-ds{background:#FFFFFF;border-color:var(--r-cover-slate);border-radius:var(--r-radius-card)}
+/* Design System (Set A editorial + Cover Slate framing). Square geometry, no card shadow. A
+   3px KPI-style top accent rule (Stage 2 v2's own "KPI accent rules: 3px" geometry token),
+   coloured per report rather than identically on all three, as one small branded colour detail:
+   Signal Deep for the two published reports (matching their own status-pill colour), Wattle for
+   the in-development Provider Report (matching its own pending-status colour). */
+.rp-card-ds{background:#FFFFFF;border-color:var(--r-cover-slate);border-radius:var(--r-radius-card);border-top-width:var(--r-rule-kpi);border-top-color:var(--r-signal-deep)}
+.rp-card-ds[data-report="providers"]{border-top-color:var(--r-wattle)}
 .rp-card-ds.is-interactive:hover{border-color:var(--r-signal-deep)}
+.rp-card-ds[data-report="providers"].is-interactive:hover{border-top-color:var(--r-wattle)}
 .rp-card-ds .rp-cover{background:var(--r-cover-slate)}
 .rp-card-ds .rp-meta{font-family:var(--r-font-mono)}
 .rp-card-ds .rp-year{color:var(--r-graphite)}
