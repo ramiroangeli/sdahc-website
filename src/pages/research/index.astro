@@ -53,22 +53,65 @@ const breadcrumbs = {
 ---
 <BaseLayout title={title} description={description} extraFontsHref={researchFontsHref}>
   <section class="rhub-hero r-grain-dark">
-    <div class="wrap rhub-hero-inner">
-      <!-- Decorative only (aria-hidden, no information conveyed): one controlled Dweller Line
-           gesture, per Stage 2 v2 section 8. This is a uniform scale (4.5x) plus translation of
-           the approved base curve M51 106 C49.5 92 50 82 55.5 77.5 C61 73 74 70 87 57.5, extended
-           a short straight distance past each endpoint along that endpoint's own tangent so the
-           line exits through the viewBox edges top and bottom, rather than floating mid-field.
-           Nothing is redrawn: every point here is that same curve, scaled, translated, or
-           extended in a straight line continuing its existing direction. -->
-      <svg class="rhub-hero-line" viewBox="150 -10 280 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-        <path d="M203.21 280 L200 250 C193.25 187 195.5 142 220.25 121.75 C245 101.5 303.5 88 362 31.75 L395 0" pathLength="1" fill="none" stroke="var(--r-signal-blue)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" class="rhub-hero-line-path" data-r-motion />
-        <circle cx="362" cy="31.75" r="12" fill="var(--r-signal-blue)" class="rhub-hero-line-dot" data-r-motion />
-      </svg>
+    <div class="wrap rhub-hero-text">
       <p class="rhub-eyebrow">SDAHC Research</p>
       <h1 class="rhub-h1">Commercial intelligence for Australia's Specialist Disability Accommodation market</h1>
       <p class="rhub-standfirst">SDAHC Research produces market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, drawing on publicly available industry data alongside SDAHC's specialist commercial market experience.</p>
       <p class="rhub-tagline">Market research. Investment intelligence. Sector analysis.</p>
+    </div>
+    <!-- Decorative band, entirely below the text in normal document flow (not absolutely
+         positioned over it): this guarantees the graphics can never cross or sit behind the H1
+         or standfirst regardless of how long the full-width H1 wraps, rather than relying on
+         z-index or a guessed-safe pixel zone. aria-hidden since it conveys no information.
+
+         Composition, each element traceable to Stage 2 v2:
+         - The Dweller Line + Dot: the exact approved curve (M51 106 C49.5 92 50 82 55.5 77.5
+           C61 73 74 70 87 57.5), uniformly scaled 4.5x and translated (the same operation used
+           in the source board's own "construction, scaled and extended" panel), viewed through
+           a wide crop window rather than redrawn or restretched. A soft blurred echo of the same
+           path sits behind it at low opacity, matching the dual-layer (crisp line + blurred
+           glow) treatment used in the source board's own "A - WEB HERO" specimen, rather than
+           the single flat stroke the previous version used.
+         - The Dweller Dot sits at (245,101.5), a real point already on the curve (one of its own
+           control points), not an arbitrary position.
+         - An Arch (M28 100 V50 A22 22 0 0 1 72 50 V100 Z) in Wattle, and a small Ember accent
+           dot, both using pairings from the source board's own "approved shape/ground" contrast
+           table (Wattle on Midnight Ink 10.3:1, Ember on Midnight Ink 5.4:1) rather than an
+           untested combination. -->
+    <div class="rhub-hero-band" aria-hidden="true">
+      <svg class="rhub-band-svg" viewBox="90 85 380 170" preserveAspectRatio="xMidYMid meet" focusable="false">
+        <defs>
+          <filter id="rhubLineGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
+        </defs>
+        <!-- Arch (Stage 2 v2 shape library: "M28 100 V50 A22 22 0 0 1 72 50 V100 Z"), uniformly
+             scaled and translated, unmodified otherwise, in the window's clear left margin so it
+             cannot touch the curve (whose visible portion in this crop sits at x >= ~193).
+             Wattle on Midnight Ink: 10.3:1, an approved pair from the source board's own
+             shape/ground contrast table. -->
+        <path d="M28 100 V50 A22 22 0 0 1 72 50 V100 Z" fill="var(--r-wattle)" transform="translate(100 100) scale(0.8)" />
+        <!-- Blurred echo of the Dweller Line (low opacity, Gaussian blur), then the crisp line
+             in Research Navy on top: the dual-layer glow treatment used in the source board's
+             own "A - WEB HERO" specimen, not a single flat stroke. -->
+        <path
+          d="M203.21 280 L200 250 C193.25 187 195.5 142 220.25 121.75 C245 101.5 303.5 88 362 31.75 L395 0"
+          fill="none" stroke="var(--r-signal-blue)" stroke-opacity=".5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
+          filter="url(#rhubLineGlow)" class="rhub-band-echo" data-r-motion
+        />
+        <path
+          d="M203.21 280 L200 250 C193.25 187 195.5 142 220.25 121.75 C245 101.5 303.5 88 362 31.75 L395 0"
+          pathLength="1" fill="none" stroke="var(--r-navy)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
+          class="rhub-band-line" data-r-motion
+        />
+        <!-- Dweller Dot, Signal Blue, at (220.25,121.75): a real point already on the curve, not
+             an arbitrary position. A separate, smaller Ember accent dot sits in the window's
+             clear right margin, for restrained colour variety (Ember on Midnight Ink: 5.4:1,
+             also from the approved pairing table), not pretending to be part of the Dweller
+             symbol itself, and not placed close enough to the line or Arch to crowd either. -->
+        <circle cx="220.25" cy="121.75" r="9" fill="var(--r-signal-blue)" class="rhub-band-dot" data-r-motion />
+        <circle cx="430" cy="205" r="6" fill="var(--r-ember)" class="rhub-band-accent" data-r-motion />
+      </svg>
     </div>
   </section>
 
@@ -76,6 +119,7 @@ const breadcrumbs = {
     <div class="wrap">
       <ResearchSectionHeader
         variant="hub"
+        number="01"
         eyebrow="Our publications"
         heading="Research Publications"
         lead="Three publications covering the national SDA market, administration and special situations, and the provider landscape."
@@ -92,6 +136,7 @@ const breadcrumbs = {
     <div class="wrap">
       <ResearchSectionHeader
         variant="hub"
+        number="02"
         eyebrow="Online research"
         heading="Explore the SDA Market"
         lead="Key findings from the SDA Market Report 2026, published as standalone pages."
@@ -125,6 +170,7 @@ const breadcrumbs = {
     <div class="wrap">
       <ResearchSectionHeader
         variant="hub"
+        number="03"
         eyebrow="Jurisdictional data"
         heading="State & Territory Intelligence"
         lead="State-level analysis drawn from the SDA Market Report 2026: enrolled dwellings, participant demand and funding committed by jurisdiction."
@@ -135,14 +181,14 @@ const breadcrumbs = {
 
   <section class="section rhub-approach rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader variant="hub" eyebrow="Methodology" heading="Research Approach" />
+      <ResearchSectionHeader variant="hub" number="04" eyebrow="Methodology" heading="Research Approach" />
       <p class="rhub-approach-copy">SDAHC Research draws on relevant public datasets, sector observations and SDAHC's own commercial transaction experience. Sources and methodology are stated where applicable, and not every publication necessarily draws on the same data or approach. Read the full <a href="/research/research-methodology/">research methodology</a> for sources and definitions.</p>
     </div>
   </section>
 
   <section class="section rhub-bridge rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader variant="hub" heading="From market intelligence to informed commercial decisions" />
+      <ResearchSectionHeader variant="hub" number="05" eyebrow="Next steps" heading="From market intelligence to informed commercial decisions" />
       <p class="rhub-bridge-copy">Sector-wide research provides useful context: where demand is concentrated, how supply is moving, and what the national picture looks like. An asset-specific decision, buying, selling or holding a particular SDA property, requires closer examination: sustainable income, contracts, enrolment, property condition and market evidence specific to that asset. That is where specialist commercial advice becomes useful.</p>
       <p class="rhub-bridge-links">
         <a class="btn b1" href="/our-services-and-expertise/">Explore our services</a>
@@ -153,7 +199,7 @@ const breadcrumbs = {
 
   <section class="section rhub-about rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader variant="hub" eyebrow="About" heading="About SDAHC Research" />
+      <ResearchSectionHeader variant="hub" number="06" eyebrow="About" heading="About SDAHC Research" />
       <p class="rhub-about-copy">SDAHC Research is the research and publications initiative of SDA Home Choices, an independent commercial advisory specialising in Specialist Disability Accommodation. It draws on the firm's specialist commercial market experience to produce evidence-based research for investors, providers and other sector participants. Read more <a href="/about/">about SDA Home Choices</a>.</p>
     </div>
   </section>
@@ -163,22 +209,14 @@ const breadcrumbs = {
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbs)} />
 </BaseLayout>
 <style>
-/* ---- Hero: expressive register, Set C, grad-ink-field ---- */
-.rhub-hero{position:relative;overflow:hidden;padding:calc(150px + var(--nav-top)) 0 72px;background:var(--r-grad-ink-field)}
-.rhub-hero-inner{position:relative;z-index:1}
-/* Positioned in the hero's upper-right only, not its full height, specifically so it sits clear
-   of where the standfirst/tagline text runs below; the H1 itself is left full-width (per PR #35)
-   rather than narrowed to guarantee clearance, so this should be re-checked against the actual
-   wrapped H1 in a real browser at common widths (see Phase 4A QA notes). */
-.rhub-hero-line{position:absolute;top:0;right:0;width:34%;max-width:320px;height:62%;z-index:0;opacity:.8}
-/* Line draw-on: a single, non-repeating reveal on load (the exact keyframe shape specified in
-   the source board: fully drawn by 37.5% of the animation's own duration, then holds). The dot
-   fades in once the line finishes drawing. Both skip straight to their finished state under
-   reduced motion, per the global [data-r-motion] rule in research-tokens.css. */
-.rhub-hero-line-path{stroke-dasharray:1;stroke-dashoffset:1;animation:r-draw-on 2400ms var(--r-ease-out) forwards}
-@keyframes r-draw-on{0%{stroke-dashoffset:1}37.5%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
-.rhub-hero-line-dot{opacity:0;animation:r-dot-in var(--r-motion-slow) var(--r-ease-out) 900ms forwards}
-@keyframes r-dot-in{to{opacity:1}}
+/* ---- Hero: expressive register, Set C, grad-ink-field ----
+   Text and decoration are two separate blocks stacked in normal document flow (text, then the
+   band below it) rather than the decoration being absolutely positioned behind/beside the text.
+   That is a deliberate structural choice, not a styling detail: it is what guarantees the band
+   can never visually cross or sit behind the H1 or standfirst, however the full-width H1 wraps
+   at a given viewport width, rather than relying on z-index or a guessed-safe pixel zone. */
+.rhub-hero{position:relative;overflow:hidden;padding:calc(150px + var(--nav-top)) 0 0;background:var(--r-grad-ink-field)}
+.rhub-hero-text{position:relative;z-index:1;padding-bottom:56px}
 /* White, not Signal Blue: grad-ink-field's own documented contrast note says Signal Blue only
    passes reliably at 24px+ near its glow zones, and this eyebrow sits in that zone at 12px. */
 .rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 22px}
@@ -186,12 +224,33 @@ const breadcrumbs = {
 .rhub-standfirst{font-family:var(--r-font-body);color:var(--r-signal-tint);font-size:var(--r-size-lead);line-height:1.5;max-width:70ch;margin:22px 0 0}
 .rhub-tagline{margin:28px 0 0;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.2em;text-transform:uppercase;color:var(--r-cover-slate)}
 
+/* Decorative band: full-width, fixed height, entirely below the text block above (see the
+   structural note above this rule). */
+/* max-width keeps the band's own aspect ratio (roughly 5:2) reasonably close to the artwork's
+   native aspect (380:170, about 2.2:1) at "meet" scaling: wide enough to read as a deliberate
+   band, not so wide the fitted graphic shrinks to a small island lost in empty space either
+   side, and never wide enough to risk the cropping that "slice" scaling would otherwise need
+   re-checking visually for (see the file-level note above the hero markup). */
+.rhub-hero-band{position:relative;z-index:1;height:140px;max-width:640px;margin:0 auto;border-top:var(--r-rule-divider) solid rgba(195,209,214,.14)}
+.rhub-band-svg{display:block;width:100%;height:100%}
+.rhub-band-line{stroke-dasharray:1;stroke-dashoffset:1;animation:r-draw-on 2400ms var(--r-ease-out) forwards}
+.rhub-band-echo{opacity:0;animation:r-echo-in var(--r-motion-slow) var(--r-ease-out) 600ms forwards}
+@keyframes r-draw-on{0%{stroke-dashoffset:1}37.5%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+@keyframes r-echo-in{to{opacity:1}}
+.rhub-band-dot,.rhub-band-accent{opacity:0;animation:r-dot-in var(--r-motion-slow) var(--r-ease-out) 900ms forwards}
+@keyframes r-dot-in{to{opacity:1}}
+
 /* ---- Editorial register: "Paper to read, Ink to frame" ----
    Every section after the hero reads on Warm Paper with Ink/Graphite text, so dark stays
    confined to the hero (roughly one section of seven on this page). Scoped to this page's own
    .rhub-* wrapper classes only: global.css's shared .section/.wrap are untouched, so every other
    page on the site keeps its existing navy background exactly as it is. */
 .rhub-paper{background:var(--r-paper);color:var(--r-graphite)}
+/* A deliberate editorial rule between sections, rather than every Paper section running directly
+   into the next with no visual rhythm: the Approach/bridge/About sections that follow another
+   Paper section get a top divider; the two sections right after the hero and state grid don't
+   need one, since the dark-to-paper and card-grid-to-rule transitions already read as a break. */
+.rhub-approach,.rhub-bridge,.rhub-about{border-top:var(--r-rule-divider) solid var(--r-cover-slate)}
 .rhub-approach-copy,.rhub-bridge-copy,.rhub-about-copy{max-width:68ch;font-family:var(--r-font-body);color:var(--r-graphite);font-size:var(--r-size-body);line-height:1.65;margin:0}
 .rhub-approach-copy a,.rhub-bridge-copy a,.rhub-about-copy a{color:var(--r-signal-deep);text-decoration:underline;text-underline-offset:2px}
 .rhub-bridge-links{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 0}
@@ -208,13 +267,16 @@ const breadcrumbs = {
 @media(max-width:980px){
   .rhub-pub-grid{grid-template-columns:1fr}
   .rhub-resource-grid{grid-template-columns:1fr}
-  .rhub-hero-line{width:70%;opacity:.5}
+  .rhub-hero-band{height:110px}
+}
+@media(max-width:600px){
+  .rhub-hero-band{height:88px}
 }
 @media(prefers-reduced-motion:reduce){
   /* Show the fully-drawn, fully-visible end state immediately rather than just freezing
-     mid-animation: the base rules set stroke-dashoffset:1 and opacity:0 as the pre-animation
-     starting point, so disabling the animation alone would leave the line and dot invisible. */
-  .rhub-hero-line-path{animation:none;stroke-dashoffset:0}
-  .rhub-hero-line-dot{animation:none;opacity:1}
+     mid-animation: the base rules set stroke-dashoffset:1/opacity:0 as the pre-animation
+     starting point, so disabling the animation alone would leave the whole band invisible. */
+  .rhub-band-line{animation:none;stroke-dashoffset:0}
+  .rhub-band-echo,.rhub-band-dot,.rhub-band-accent{animation:none;opacity:1}
 }
 </style>
