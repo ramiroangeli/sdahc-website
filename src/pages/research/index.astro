@@ -4,6 +4,7 @@ import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro'
 import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
 import ResearchResourceCard from '../../components/ResearchResourceCard.astro';
 import ResearchStateGrid from '../../components/ResearchStateGrid.astro';
+import ResearchDwellerRibbon from '../../components/ResearchDwellerRibbon.astro';
 import { REPORTS } from '../../data/research-reports';
 import '../../styles/research-tokens.css';
 
@@ -52,81 +53,41 @@ const breadcrumbs = {
 };
 ---
 <BaseLayout title={title} description={description} extraFontsHref={researchFontsHref}>
-  <!-- Hero: text and graphic are two SEPARATE grid columns (not one layered behind the other),
-       which is what guarantees the graphic can never cross or sit behind the H1 or standfirst at
-       any wrap width or viewport size, without narrowing the full-width H1 to dodge a zone. The
-       graphic is a single large composition, not several small isolated ornaments: three
-       layered copies of the one approved Dweller Line curve (back, soft and blurred; mid; front,
-       crisp, with a Navy -> Research Blue -> Signal Blue gradient stroke) plus a soft depth glow
-       behind them, the Dweller Dot on a real point of the curve, and one small Wattle accent dot
-       as restrained colour punctuation. Collapses to a single simplified layer below the text on
-       narrow viewports (see the responsive rules below). -->
+  <!-- Hero: the text column has a hard max-width (not a grid-column share), and the ribbon is
+       absolutely positioned to occupy only the remaining right-hand zone, clipped by the hero
+       section's own overflow:hidden. This is what lets the ribbon bleed beyond its own box
+       top/bottom ("enters from beyond the boundary") while still making it structurally
+       impossible for it to ever sit behind or cross the H1/standfirst: the two never share
+       horizontal space, regardless of z-index or how the full-width-capable H1 wraps. -->
   <section class="rhub-hero r-grain-dark">
-    <div class="wrap rhub-hero-grid">
+    <div class="wrap rhub-hero-inner">
       <div class="rhub-hero-text">
         <p class="rhub-eyebrow">SDAHC Research</p>
         <h1 class="rhub-h1">Commercial intelligence for Australia's SDA <span class="rhub-h1-accent">market</span></h1>
         <p class="rhub-standfirst">SDAHC Research delivers market analysis, transaction intelligence and evidence-based insights into Australia's SDA sector, combining public industry data with specialist commercial market experience.</p>
         <p class="rhub-tagline">Market research. Investment intelligence. Sector analysis.</p>
       </div>
-      <div class="rhub-hero-graphic" aria-hidden="true">
-        <svg class="rhub-graphic-svg" viewBox="170 -20 260 320" preserveAspectRatio="xMidYMid meet" focusable="false">
-          <defs>
-            <filter id="rhubRibbonBlur" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="9" />
-            </filter>
-            <linearGradient id="rhubRibbonGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="var(--r-navy)" />
-              <stop offset="55%" stop-color="var(--r-blue)" />
-              <stop offset="100%" stop-color="var(--r-signal-blue)" />
-            </linearGradient>
-            <radialGradient id="rhubDepthGlow" cx="55%" cy="55%" r="60%">
-              <stop offset="0%" stop-color="var(--r-blue)" stop-opacity=".30" />
-              <stop offset="100%" stop-color="var(--r-blue)" stop-opacity="0" />
-            </radialGradient>
-            <radialGradient id="rhubDotGrad" cx="35%" cy="35%" r="65%">
-              <stop offset="0%" stop-color="var(--r-signal-blue)" />
-              <stop offset="100%" stop-color="var(--r-signal-deep)" />
-            </radialGradient>
-          </defs>
-          <!-- Soft depth glow, centred behind the ribbon, not behind any text (the graphic
-               occupies its own grid column, see the structural note above). -->
-          <rect x="170" y="-20" width="260" height="320" fill="url(#rhubDepthGlow)" />
-          <!-- The one approved Dweller Line curve (M51 106 C49.5 92 50 82 55.5 77.5 C61 73 74 70
-               87 57.5), uniformly scaled 4.5x and translated, then extended a short straight
-               distance past each endpoint along that endpoint's own tangent so it exits through
-               the panel edges. Nothing here is redrawn or restretched: every layer below is the
-               identical path, only translated slightly (a rigid offset, not a reshape) and
-               restyled, to build a sense of depth rather than a single flat stroke. -->
-          <path
-            d="M203.21 280 L200 250 C193.25 187 195.5 142 220.25 121.75 C245 101.5 303.5 88 362 31.75 L395 0"
-            fill="none" stroke="var(--r-navy)" stroke-opacity=".4" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"
-            transform="translate(-10 9)" filter="url(#rhubRibbonBlur)" class="rhub-ribbon-back" data-r-motion
-          />
-          <path
-            d="M203.21 280 L200 250 C193.25 187 195.5 142 220.25 121.75 C245 101.5 303.5 88 362 31.75 L395 0"
-            fill="none" stroke="var(--r-blue)" stroke-opacity=".55" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"
-            transform="translate(-4 4)" class="rhub-ribbon-mid" data-r-motion
-          />
-          <path
-            d="M203.21 280 L200 250 C193.25 187 195.5 142 220.25 121.75 C245 101.5 303.5 88 362 31.75 L395 0"
-            pathLength="1" fill="none" stroke="url(#rhubRibbonGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"
-            class="rhub-ribbon-front" data-r-motion
-          />
-          <!-- Dweller Dot at (245,101.5), a real point already on the curve, not an arbitrary
-               position, given a subtle radial highlight for the same dimensional quality as the
-               ribbon rather than a flat fill. -->
-          <circle cx="245" cy="101.5" r="11" fill="url(#rhubDotGrad)" class="rhub-ribbon-dot" data-r-motion />
-          <!-- One small Wattle accent dot, restrained colour punctuation (Wattle on Midnight Ink:
-               10.3:1, from the source board's own approved shape/ground contrast table), clear of
-               the ribbon and the panel edges. -->
-          <circle cx="380" cy="260" r="6" fill="var(--r-wattle)" class="rhub-ribbon-accent" data-r-motion />
-        </svg>
+      <!-- Positioned relative to .rhub-hero-inner (same containing block as the text above), not
+           the full-bleed section: both this element's width and the text's max-width are then
+           percentages of the identical box, so the gap between them is exact at every viewport
+           width, not an estimate from two different reference widths. The trade-off is that the
+           ribbon can bleed past .wrap's own edge vertically (top/bottom, "beyond the boundary")
+           but is clipped horizontally to .wrap's own right edge rather than the viewport's. -->
+      <div class="rhub-hero-ribbon">
+        <ResearchDwellerRibbon size="large" />
       </div>
     </div>
   </section>
 
   <section class="section rhub-publications rhub-paper" id="publications">
+    <!-- Continuation cue: the hero's ribbon ends its visible arc at (574,213.5), the same point
+         this echo crops around, recoloured for the Paper ground. A direct crop of the identical
+         curve, not an independently drawn element, positioned in the same right-hand zone the
+         hero's ribbon occupied, so the two sections read as one composition rather than an
+         expressive hero followed by an unrelated flat one. -->
+    <div class="rhub-pub-echo" aria-hidden="true">
+      <ResearchDwellerRibbon size="echo" />
+    </div>
     <div class="wrap">
       <ResearchSectionHeader
         variant="hub"
@@ -225,8 +186,8 @@ const breadcrumbs = {
    deliberate structural choice, not a styling detail: it is what guarantees the graphic can
    never visually cross or sit behind the H1 or standfirst, however the full-width H1 wraps at a
    given viewport width, rather than relying on z-index or a guessed-safe pixel zone. */
-.rhub-hero{position:relative;overflow:hidden;padding:calc(150px + var(--nav-top)) 0 64px;background:var(--r-grad-ink-field)}
-.rhub-hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.3fr 1fr;gap:48px;align-items:center}
+.rhub-hero{position:relative;overflow:hidden;padding:calc(150px + var(--nav-top)) 0 0;background:var(--r-grad-ink-field)}
+.rhub-hero-inner{position:relative;z-index:1}
 /* White, not Signal Blue: grad-ink-field's own documented contrast note says Signal Blue only
    passes reliably at 24px+ near its glow zones, and this eyebrow sits in that zone at 12px. */
 .rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 22px}
@@ -240,19 +201,21 @@ const breadcrumbs = {
 .rhub-h1-accent{font-family:var(--r-font-serif-accent);font-style:italic;font-weight:400;letter-spacing:0;color:var(--r-signal-blue)}
 .rhub-standfirst{font-family:var(--r-font-body);color:var(--r-signal-tint);font-size:var(--r-size-lead);line-height:1.5;max-width:52ch;margin:22px 0 0}
 .rhub-tagline{margin:28px 0 0;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.2em;text-transform:uppercase;color:var(--r-cover-slate)}
-
-/* Graphic column: the dimensional Dweller Line ribbon. */
-/* max-width keeps the panel's height proportionate: the artwork's viewBox is portrait (260:320),
-   so left unconstrained in a wide 1fr grid column it would scale to an excessively tall hero. */
-.rhub-hero-graphic{position:relative;max-width:380px;margin-left:auto}
-.rhub-graphic-svg{display:block;width:100%;height:auto}
-.rhub-ribbon-front{stroke-dasharray:1;stroke-dashoffset:1;animation:r-draw-on 2600ms var(--r-ease-out) forwards}
-.rhub-ribbon-back,.rhub-ribbon-mid{opacity:0;animation:r-layer-in var(--r-motion-slow) var(--r-ease-out) forwards}
-.rhub-ribbon-back{animation-delay:0ms}
-.rhub-ribbon-mid{animation-delay:200ms}
-.rhub-ribbon-dot,.rhub-ribbon-accent{opacity:0;animation:r-layer-in var(--r-motion-slow) var(--r-ease-out) 1100ms forwards}
-@keyframes r-draw-on{0%{stroke-dashoffset:1}37.5%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
-@keyframes r-layer-in{to{opacity:1}}
+/* Text and ribbon are both percentages of the SAME containing block (.rhub-hero-inner, the
+   .wrap below), not two different reference widths (one of a padded wrap, one of the full
+   section) that would make a "safe gap" only an estimate: 56% + 34% leaves a guaranteed 10% gap
+   between them at every viewport width, not a z-index-dependent guess. */
+.rhub-hero-text{position:relative;z-index:1;max-width:56%;padding-bottom:96px}
+/* top:0/bottom:0 (not negative): overflow:hidden on .rhub-hero clips a child at the parent's own
+   edges regardless of which direction it overshoots, so a negative offset here would hide the
+   bleed rather than reveal it. The "enters/exits beyond the boundary" effect instead comes from
+   the artwork itself: ResearchDwellerRibbon's curve endpoints already touch its own viewBox's
+   top and bottom edges (y=0 and y=750 of 750), and preserveAspectRatio="slice" fills whatever
+   height this box actually ends up being, so the curve reads as running off both edges at any
+   height rather than floating inside a visibly bounded panel. min-height keeps it substantial
+   even where the text column itself is short; .rhub-hero's own overflow:hidden is what controls
+   any excess below the section, which is the deliberate, approved use of that clip. */
+.rhub-hero-ribbon{position:absolute;top:0;right:0;bottom:0;width:34%;min-height:560px;z-index:0}
 
 /* ---- Editorial register: "Paper to read, Ink to frame" ----
    Every section after the hero reads on Warm Paper with Ink/Graphite text, so dark stays
@@ -260,11 +223,15 @@ const breadcrumbs = {
    .rhub-* wrapper classes only: global.css's shared .section/.wrap are untouched, so every other
    page on the site keeps its existing navy background exactly as it is. */
 .rhub-paper{background:var(--r-paper);color:var(--r-graphite)}
-/* Publications transition: a thin gradient rule in the same Navy -> Research Blue -> Signal Blue
-   direction as the hero's ribbon, so the Hub reads as one continuous composition rather than an
-   expressive hero followed by an unrelated flat section, without one SVG spanning both. */
-.rhub-publications{position:relative}
-.rhub-publications::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--r-navy),var(--r-blue) 55%,var(--r-signal-blue))}
+/* Publications transition: the echo ribbon (a direct crop of the hero ribbon's own curve,
+   recoloured for Paper) sits in the same right-hand zone the hero's ribbon occupied, clipped by
+   this section's own overflow:hidden so it reads as a continuation peeking in from above rather
+   than a separate graphic. */
+.rhub-publications{position:relative;overflow:hidden}
+/* top:0, not negative: overflow:hidden on .rhub-publications (above) would clip a negative
+   offset away entirely rather than let it peek in from above. "Meet" scaling inside the fixed
+   box below keeps this predictable without needing to verify exact crop proportions visually. */
+.rhub-pub-echo{position:absolute;top:0;right:6%;width:220px;height:180px;opacity:.8}
 /* A deliberate editorial rule between sections, rather than every Paper section running directly
    into the next with no visual rhythm: the Approach/bridge/About sections that follow another
    Paper section get a top divider; the two sections right after the hero and state grid don't
@@ -283,22 +250,24 @@ const breadcrumbs = {
 .rhub-pub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .rhub-resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
 
+/* Tablet: simplify the placement (smaller, less visually loud) without restructuring the
+   side-by-side layout yet, so the ribbon stops competing with the title for attention. */
 @media(max-width:980px){
   .rhub-pub-grid{grid-template-columns:1fr}
   .rhub-resource-grid{grid-template-columns:1fr}
-  /* Simplify, don't just shrink: the graphic drops below the text (one column) and loses its
-     back/mid depth layers, down to the single gradient line, the dot, and the accent, so it
-     reads as a clean accent under the text rather than a crowded miniature of the desktop
-     version. */
-  .rhub-hero-grid{grid-template-columns:1fr;gap:28px}
-  .rhub-hero-graphic{max-width:280px;margin:0 auto}
-  .rhub-ribbon-back,.rhub-ribbon-mid{display:none}
+  .rhub-hero-text{max-width:62%}
+  .rhub-hero-ribbon{width:30%;min-height:420px;opacity:.85}
+  .rhub-pub-echo{width:160px;height:140px}
 }
-@media(prefers-reduced-motion:reduce){
-  /* Show the fully-drawn, fully-visible end state immediately rather than just freezing
-     mid-animation: the base rules set stroke-dashoffset:1/opacity:0 as the pre-animation
-     starting point, so disabling the animation alone would leave the whole graphic invisible. */
-  .rhub-ribbon-front{animation:none;stroke-dashoffset:0}
-  .rhub-ribbon-back,.rhub-ribbon-mid,.rhub-ribbon-dot,.rhub-ribbon-accent{animation:none;opacity:1}
+/* Mobile: prioritise the headline and standfirst outright. The ribbon moves into normal
+   document flow below the text (no longer absolutely positioned over anything, so it cannot
+   cross or obscure text by construction) in a fixed, modestly-sized box, not a shrunk copy of
+   the desktop panel's proportions. The echo is hidden rather than shown at a size too small to
+   read as intentional. */
+@media(max-width:680px){
+  .rhub-hero-inner{display:flex;flex-direction:column}
+  .rhub-hero-text{max-width:none;padding-bottom:28px}
+  .rhub-hero-ribbon{position:relative;top:auto;right:auto;bottom:auto;width:100%;max-width:240px;min-height:0;height:210px;margin:0 auto;opacity:1}
+  .rhub-pub-echo{display:none}
 }
 </style>
