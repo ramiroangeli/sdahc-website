@@ -1,14 +1,21 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHeader from '../../components/PageHeader.astro';
 import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro';
 import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
 import ResearchResourceCard from '../../components/ResearchResourceCard.astro';
 import ResearchStateGrid from '../../components/ResearchStateGrid.astro';
 import { REPORTS } from '../../data/research-reports';
+import '../../styles/research-tokens.css';
 
 const title = 'SDA Research Hub: Market Reports & Sector Analysis | SDA Home Choices';
 const description = "SDAHC Research publishes market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, including the SDA Market Report 2026 and state-by-state data.";
+
+// Set C (interface) fonts plus the Set A (editorial) and metadata faces this page needs beyond
+// the corporate set already loaded by BaseLayout. Opt-in via extraFontsHref so no other page
+// requests these. Query params copied directly from the approved Stage 2 v2 source document's
+// own (working) Google Fonts link, so the variable axes requested (Bricolage Grotesque's wdth,
+// Source Serif 4's italic-only opsz range) match what those fonts actually expose.
+const researchFontsHref = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,400&family=Plus+Jakarta+Sans:wght@800&family=IBM+Plex+Mono:wght@400;500&display=swap";
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const absolute = (path: string) => new URL(path, Astro.site).href;
@@ -44,33 +51,47 @@ const breadcrumbs = {
   ],
 };
 ---
-<BaseLayout title={title} description={description}>
-  <PageHeader
-    eyebrow="SDAHC Research"
-    title="Commercial intelligence for Australia's Specialist Disability Accommodation market"
-    standfirst="SDAHC Research produces market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, drawing on publicly available industry data alongside SDAHC's specialist commercial market experience."
-    wide
-  />
-  <p class="rhub-tagline wrap">Market research. Investment intelligence. Sector analysis.</p>
+<BaseLayout title={title} description={description} extraFontsHref={researchFontsHref}>
+  <section class="rhub-hero r-grain-dark">
+    <div class="wrap rhub-hero-inner">
+      <!-- Decorative only (aria-hidden, no information conveyed): one controlled Dweller Line
+           gesture, per Stage 2 v2 section 8. This is a uniform scale (4.5x) plus translation of
+           the approved base curve M51 106 C49.5 92 50 82 55.5 77.5 C61 73 74 70 87 57.5, extended
+           a short straight distance past each endpoint along that endpoint's own tangent so the
+           line exits through the viewBox edges top and bottom, rather than floating mid-field.
+           Nothing is redrawn: every point here is that same curve, scaled, translated, or
+           extended in a straight line continuing its existing direction. -->
+      <svg class="rhub-hero-line" viewBox="150 -10 280 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+        <path d="M203.21 280 L200 250 C193.25 187 195.5 142 220.25 121.75 C245 101.5 303.5 88 362 31.75 L395 0" pathLength="1" fill="none" stroke="var(--r-signal-blue)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" class="rhub-hero-line-path" data-r-motion />
+        <circle cx="362" cy="31.75" r="12" fill="var(--r-signal-blue)" class="rhub-hero-line-dot" data-r-motion />
+      </svg>
+      <p class="rhub-eyebrow">SDAHC Research</p>
+      <h1 class="rhub-h1">Commercial intelligence for Australia's Specialist Disability Accommodation market</h1>
+      <p class="rhub-standfirst">SDAHC Research produces market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, drawing on publicly available industry data alongside SDAHC's specialist commercial market experience.</p>
+      <p class="rhub-tagline">Market research. Investment intelligence. Sector analysis.</p>
+    </div>
+  </section>
 
-  <section class="section rhub-publications" id="publications">
+  <section class="section rhub-publications rhub-paper" id="publications">
     <div class="wrap">
       <ResearchSectionHeader
+        variant="hub"
         eyebrow="Our publications"
         heading="Research Publications"
         lead="Three publications covering the national SDA market, administration and special situations, and the provider landscape."
       />
       <div class="rhub-pub-grid">
-        <ResearchPublicationCard id="sda2026" />
-        <ResearchPublicationCard id="special" />
-        <ResearchPublicationCard id="providers" />
+        <ResearchPublicationCard id="sda2026" variant="hub" />
+        <ResearchPublicationCard id="special" variant="hub" />
+        <ResearchPublicationCard id="providers" variant="hub" />
       </div>
     </div>
   </section>
 
-  <section class="section rhub-explore">
+  <section class="section rhub-explore rhub-paper">
     <div class="wrap">
       <ResearchSectionHeader
+        variant="hub"
         eyebrow="Online research"
         heading="Explore the SDA Market"
         lead="Key findings from the SDA Market Report 2026, published as standalone pages."
@@ -100,9 +121,10 @@ const breadcrumbs = {
     </div>
   </section>
 
-  <section class="section rhub-states bg-glow-tl">
+  <section class="section rhub-states rhub-paper">
     <div class="wrap">
       <ResearchSectionHeader
+        variant="hub"
         eyebrow="Jurisdictional data"
         heading="State & Territory Intelligence"
         lead="State-level analysis drawn from the SDA Market Report 2026: enrolled dwellings, participant demand and funding committed by jurisdiction."
@@ -111,16 +133,16 @@ const breadcrumbs = {
     </div>
   </section>
 
-  <section class="section rhub-approach">
+  <section class="section rhub-approach rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader eyebrow="Methodology" heading="Research Approach" />
+      <ResearchSectionHeader variant="hub" eyebrow="Methodology" heading="Research Approach" />
       <p class="rhub-approach-copy">SDAHC Research draws on relevant public datasets, sector observations and SDAHC's own commercial transaction experience. Sources and methodology are stated where applicable, and not every publication necessarily draws on the same data or approach. Read the full <a href="/research/research-methodology/">research methodology</a> for sources and definitions.</p>
     </div>
   </section>
 
-  <section class="section rhub-bridge bg-glow-bc">
+  <section class="section rhub-bridge rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader heading="From market intelligence to informed commercial decisions" />
+      <ResearchSectionHeader variant="hub" heading="From market intelligence to informed commercial decisions" />
       <p class="rhub-bridge-copy">Sector-wide research provides useful context: where demand is concentrated, how supply is moving, and what the national picture looks like. An asset-specific decision, buying, selling or holding a particular SDA property, requires closer examination: sustainable income, contracts, enrolment, property condition and market evidence specific to that asset. That is where specialist commercial advice becomes useful.</p>
       <p class="rhub-bridge-links">
         <a class="btn b1" href="/our-services-and-expertise/">Explore our services</a>
@@ -129,9 +151,9 @@ const breadcrumbs = {
     </div>
   </section>
 
-  <section class="section rhub-about">
+  <section class="section rhub-about rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader eyebrow="About" heading="About SDAHC Research" />
+      <ResearchSectionHeader variant="hub" eyebrow="About" heading="About SDAHC Research" />
       <p class="rhub-about-copy">SDAHC Research is the research and publications initiative of SDA Home Choices, an independent commercial advisory specialising in Specialist Disability Accommodation. It draws on the firm's specialist commercial market experience to produce evidence-based research for investors, providers and other sector participants. Read more <a href="/about/">about SDA Home Choices</a>.</p>
     </div>
   </section>
@@ -141,14 +163,58 @@ const breadcrumbs = {
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbs)} />
 </BaseLayout>
 <style>
-.rhub-tagline{margin:-24px 0 0;padding-bottom:12px;font-family:var(--geo);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+/* ---- Hero: expressive register, Set C, grad-ink-field ---- */
+.rhub-hero{position:relative;overflow:hidden;padding:calc(150px + var(--nav-top)) 0 72px;background:var(--r-grad-ink-field)}
+.rhub-hero-inner{position:relative;z-index:1}
+/* Positioned in the hero's upper-right only, not its full height, specifically so it sits clear
+   of where the standfirst/tagline text runs below; the H1 itself is left full-width (per PR #35)
+   rather than narrowed to guarantee clearance, so this should be re-checked against the actual
+   wrapped H1 in a real browser at common widths (see Phase 4A QA notes). */
+.rhub-hero-line{position:absolute;top:0;right:0;width:34%;max-width:320px;height:62%;z-index:0;opacity:.8}
+/* Line draw-on: a single, non-repeating reveal on load (the exact keyframe shape specified in
+   the source board: fully drawn by 37.5% of the animation's own duration, then holds). The dot
+   fades in once the line finishes drawing. Both skip straight to their finished state under
+   reduced motion, per the global [data-r-motion] rule in research-tokens.css. */
+.rhub-hero-line-path{stroke-dasharray:1;stroke-dashoffset:1;animation:r-draw-on 2400ms var(--r-ease-out) forwards}
+@keyframes r-draw-on{0%{stroke-dashoffset:1}37.5%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+.rhub-hero-line-dot{opacity:0;animation:r-dot-in var(--r-motion-slow) var(--r-ease-out) 900ms forwards}
+@keyframes r-dot-in{to{opacity:1}}
+/* White, not Signal Blue: grad-ink-field's own documented contrast note says Signal Blue only
+   passes reliably at 24px+ near its glow zones, and this eyebrow sits in that zone at 12px. */
+.rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 22px}
+.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(36px,4.2vw,58px);line-height:1.05;margin:0;max-width:none}
+.rhub-standfirst{font-family:var(--r-font-body);color:var(--r-signal-tint);font-size:var(--r-size-lead);line-height:1.5;max-width:70ch;margin:22px 0 0}
+.rhub-tagline{margin:28px 0 0;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.2em;text-transform:uppercase;color:var(--r-cover-slate)}
+
+/* ---- Editorial register: "Paper to read, Ink to frame" ----
+   Every section after the hero reads on Warm Paper with Ink/Graphite text, so dark stays
+   confined to the hero (roughly one section of seven on this page). Scoped to this page's own
+   .rhub-* wrapper classes only: global.css's shared .section/.wrap are untouched, so every other
+   page on the site keeps its existing navy background exactly as it is. */
+.rhub-paper{background:var(--r-paper);color:var(--r-graphite)}
+.rhub-approach-copy,.rhub-bridge-copy,.rhub-about-copy{max-width:68ch;font-family:var(--r-font-body);color:var(--r-graphite);font-size:var(--r-size-body);line-height:1.65;margin:0}
+.rhub-approach-copy a,.rhub-bridge-copy a,.rhub-about-copy a{color:var(--r-signal-deep);text-decoration:underline;text-underline-offset:2px}
+.rhub-bridge-links{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 0}
+/* the shared .btn/.b1/.b2 utilities are corporate-navy-toned; on this light section they need
+   their own colours rather than inheriting defaults meant for a dark background */
+.rhub-bridge .btn.b1{background:var(--r-signal-deep);color:#FFFFFF}
+.rhub-bridge .btn.b1:hover{background:var(--r-navy)}
+.rhub-bridge .btn.b2{background:transparent;color:var(--r-midnight-ink);border-color:var(--r-cover-slate)}
+.rhub-bridge .btn.b2:hover{border-color:var(--r-signal-deep)}
+
 .rhub-pub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .rhub-resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
-.rhub-approach-copy,.rhub-bridge-copy,.rhub-about-copy{max-width:74ch;color:var(--pale);font-size:17px;line-height:1.7;margin:0}
-.rhub-approach-copy a,.rhub-bridge-copy a,.rhub-about-copy a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
-.rhub-bridge-links{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 0}
+
 @media(max-width:980px){
   .rhub-pub-grid{grid-template-columns:1fr}
   .rhub-resource-grid{grid-template-columns:1fr}
+  .rhub-hero-line{width:70%;opacity:.5}
+}
+@media(prefers-reduced-motion:reduce){
+  /* Show the fully-drawn, fully-visible end state immediately rather than just freezing
+     mid-animation: the base rules set stroke-dashoffset:1 and opacity:0 as the pre-animation
+     starting point, so disabling the animation alone would leave the line and dot invisible. */
+  .rhub-hero-line-path{animation:none;stroke-dashoffset:0}
+  .rhub-hero-line-dot{animation:none;opacity:1}
 }
 </style>
