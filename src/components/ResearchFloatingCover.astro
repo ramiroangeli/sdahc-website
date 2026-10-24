@@ -21,17 +21,32 @@
 // text unchanged; the link's aria-label takes precedence for this link's accessible name, which
 // is the standard pattern for a linked image whose destination needs more context than the bare
 // image description.
+//
+// `caption` is an opt-in addition (used only by the Research Hub's publication showcase): when
+// true, the title/status/CTA label render inside this SAME <a> rather than as separate markup,
+// so the cover, title and CTA stay one accessible link, not nested interactive elements. The
+// three individual report landing pages all omit it, so their own usage (image only, no caption,
+// href="#access") is completely unchanged.
+// `caption` styling borrows the Design System's own published/coming-soon colour pairing and
+// fonts from ResearchPublicationCard's `rp-card-ds` treatment (Signal Deep / Wattle Deep on
+// Warm Paper), since the Hub showcase that uses `caption` sits on the same Paper ground. This
+// file already shares its 4 call sites (3 landing pages + the Hub) with ResearchPublicationCard,
+// which already imports research-tokens.css unconditionally on all 4, so this import adds no new
+// page-scope exposure.
+import '../styles/research-tokens.css';
 import { REPORTS } from '../data/research-reports';
 
-interface Props { id: string; href?: string }
-const { id, href = '#access' } = Astro.props;
+interface Props { id: string; href?: string; caption?: boolean }
+const { id, href = '#access', caption = false } = Astro.props;
 const report = REPORTS[id];
 if (!report) throw new Error(`ResearchFloatingCover: unknown report id "${id}"`);
 
 const variants: Record<string, 'A' | 'B' | 'C'> = { sda2026: 'A', special: 'B', providers: 'C' };
 const variant = variants[id] ?? 'A';
+const statusLabel = report.status === 'published' ? 'Published' : 'In development';
+const ctaLabel = report.mode === 'preregistration' ? 'Register your interest' : 'Explore report';
 ---
-<a class={`rfc rfc-${variant}`} href={href} aria-label={report.ariaLabel}>
+<a class={`rfc rfc-${variant} ${caption ? 'rfc-captioned' : ''}`} href={href} aria-label={caption ? undefined : report.ariaLabel}>
   <picture>
     <source srcset={report.cover.webp} type="image/webp" />
     <img
@@ -42,11 +57,32 @@ const variant = variants[id] ?? 'A';
       fetchpriority="high"
     />
   </picture>
+  {caption && (
+    <span class="rfc-caption">
+      <span class="rfc-meta"><span class={`rfc-status rfc-status-${report.status}`}>{statusLabel}</span></span>
+      <span class="rfc-title">{report.title}</span>
+      <span class="rfc-cta">{ctaLabel} <span aria-hidden="true">&rarr;</span></span>
+    </span>
+  )}
 </a>
 <style>
 .rfc{display:flex;justify-content:center;text-decoration:none}
 .rfc img{width:100%;max-width:320px;height:auto;filter:drop-shadow(0 26px 50px rgba(0,10,25,.55))}
 .rfc:focus-visible{outline:2px solid var(--blue);outline-offset:8px;border-radius:4px}
+
+.rfc-captioned{flex-direction:column;align-items:center;text-align:center}
+.rfc-captioned:focus-visible{outline-color:var(--r-signal-deep)}
+.rfc-caption{margin-top:26px;display:flex;flex-direction:column;align-items:center;gap:9px;max-width:24ch}
+.rfc-meta{display:flex}
+.rfc-status{font-family:var(--r-font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px}
+.rfc-status-published{color:var(--r-signal-deep);background:var(--r-signal-tint)}
+.rfc-status-coming-soon{color:var(--r-wattle-deep);background:var(--r-wattle-tint)}
+.rfc-title{font-family:var(--r-font-display);font-weight:700;font-stretch:90%;color:var(--r-midnight-ink);font-size:17px;line-height:1.25;margin:0}
+.rfc-cta{font-family:var(--r-font-mono);font-size:12.5px;font-weight:600;letter-spacing:.04em;color:var(--r-signal-deep)}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .rfc-captioned:hover .rfc-cta{text-decoration:underline;text-underline-offset:3px}
+}
+.rfc-captioned:focus-visible .rfc-cta{text-decoration:underline;text-underline-offset:3px}
 
 .rfc-A img{animation:rfcFloatA 6s ease-in-out infinite;transform:rotate(-3deg)}
 .rfc-B img{animation:rfcFloatB 7s ease-in-out infinite;animation-delay:.35s;transform:rotate(0deg)}

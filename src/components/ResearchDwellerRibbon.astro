@@ -1,45 +1,43 @@
 ---
-// Simplified Research Hub line motif (Stage 2 v2, Route 1B). This is a deliberate interim
-// simplification pass, merged now with deeper art direction postponed to a later phase: simple
-// flat SVG strokes, no gradients, no blur/glow filters, no multi-layer "tube" rendering. The
-// graphic itself is unchanged from every prior version: the exact same approved Dweller Line
-// curve, scaled and positioned the same way. Only the RENDERING technique is simplified.
-//
-// Both sizes share the exact same base curve, Stage 2 v2's approved Dweller Line
-// (M51 106 C49.5 92 50 82 55.5 77.5 C61 73 74 70 87 57.5), uniformly scaled 9x and translated,
-// then extended a short straight distance past each endpoint along that endpoint's own tangent
-// so it runs off the panel edges rather than floating inside a small box. Nothing is redrawn,
-// restretched or arbitrarily reshaped:
-//   p1 (51,106)  -> (250,650)      p5 (61,73)   -> (340,353)
-//   p2 (49.5,92) -> (236.5,524)    p6 (74,70)   -> (457,326)
-//   p3 (50,82)   -> (241,434)      p7 (87,57.5) -> (574,213.5)
-//   p4 (55.5,77.5) -> (290.5,393.5)
-// extended start (continuing the p2->p1 tangent to y=750): (260.7,750)
-// extended end   (continuing the p6->p7 tangent to y=0):   (796,0)
-//
-// `size="large"`: a flat Signal Blue main line plus one thinner Wattle companion line (the same
-// curve, offset): "one main curved line and one thinner companion line".
-// `size="echo"`: a direct crop of the identical curve around its head point (574,213.5),
-// recoloured for the Paper ground, at the top of the Publications section, so the two read as
-// one simple motif continuing through the page rather than two separate graphics.
+// Shared Research Hub graphic motif (Stage 2 v2, Route 1B Dweller Line), reused across several
+// sections rather than drawn once in the hero: the same approved curve
+// (M51 106 C49.5 92 50 82 55.5 77.5 C61 73 74 70 87 57.5, uniformly scaled 9x and translated,
+// see prior revisions of this file for the full point-by-point derivation) is cropped and
+// recoloured per call site, so the two or three interventions across the page read as one
+// coherent system instead of unrelated illustrations. Every preset reads on the Warm Paper
+// ground (the hero itself no longer carries a graphic, per the compact-hero redesign), so all
+// colours here are the paper-toned half of the palette (Signal Deep, Wattle/Wattle Deep, Ember),
+// never the ink-ground Signal Blue used when this motif still lived on the dark hero.
 const RIBBON_D = "M260.7 750 L250 650 C236.5 524 241 434 290.5 393.5 C340 353 457 326 574 213.5 L796 0";
 
-interface Props { size?: 'large' | 'echo' }
-const { size = 'large' } = Astro.props;
-const large = size === 'large';
+type Variant = 'mark' | 'band' | 'close';
+
+interface Props { variant?: Variant }
+const { variant = 'mark' } = Astro.props;
+
+// Each preset is a different crop of the identical curve, so no new geometry is invented per
+// placement: only the viewBox window, colour and whether a companion line/dot is shown change.
+const presets: Record<Variant, { viewBox: string; main: string; companion?: string; dotCx?: number; dotCy?: number; dot?: string }> = {
+  // Head of the curve (574,213.5): a small corner mark for the publications callout.
+  mark: { viewBox: '420 150 280 230', main: 'var(--r-signal-deep)', dotCx: 574, dotCy: 213.5, dot: 'var(--r-signal-deep)' },
+  // Middle bend: a thin two-line band entering from a section's edge, Signal Deep + Wattle
+  // companion, the same pairing the hero's old "large" treatment used. Wide enough to keep the
+  // full (290.5,393.5)-(574,213.5) bend in frame rather than clipping it to a near-straight line.
+  band: { viewBox: '255 185 340 225', main: 'var(--r-signal-deep)', companion: 'var(--r-wattle)' },
+  // The curve's own S-bend just above its tail (250,650)-(290.5,393.5): a small closing
+  // flourish, Ember-toned for variety so it reads as a bookend rather than a repeat of the
+  // opening mark, and curved enough to read as part of the same family as the other two.
+  close: { viewBox: '195 370 180 300', main: 'var(--r-ember)', dotCx: 250, dotCy: 650, dot: 'var(--r-ember-deep)' },
+};
+const p = presets[variant];
 ---
-{large ? (
-  <svg class="rdr-svg rdr-large" viewBox="150 0 700 750" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
-    <path d={RIBBON_D} transform="translate(32 26)" fill="none" stroke="var(--r-wattle)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="rdr-companion" data-r-motion />
-    <path d={RIBBON_D} pathLength="1" fill="none" stroke="var(--r-signal-blue)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" class="rdr-main" data-r-motion />
-    <circle cx="574" cy="213.5" r="7" fill="var(--r-signal-blue)" class="rdr-dot" data-r-motion />
-  </svg>
-) : (
-  <svg class="rdr-svg rdr-echo" viewBox="420 150 280 230" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
-    <path d={RIBBON_D} fill="none" stroke="var(--r-signal-deep)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="rdr-echo-line" />
-    <circle cx="574" cy="213.5" r="5" fill="var(--r-wattle-deep)" />
-  </svg>
-)}
+<svg class={`rdr-svg rdr-${variant}`} viewBox={p.viewBox} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+  {p.companion && (
+    <path d={RIBBON_D} transform="translate(14 12)" fill="none" stroke={p.companion} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="rdr-companion" data-r-motion />
+  )}
+  <path d={RIBBON_D} pathLength="1" fill="none" stroke={p.main} stroke-width="6" stroke-linecap="round" stroke-linejoin="round" class="rdr-main" data-r-motion />
+  {p.dot && <circle cx={p.dotCx} cy={p.dotCy} r="5" fill={p.dot} class="rdr-dot" data-r-motion />}
+</svg>
 <style>
 .rdr-svg{display:block;width:100%;height:100%}
 /* One-time draw-on for the main line; the companion line and dot fade in shortly after. All

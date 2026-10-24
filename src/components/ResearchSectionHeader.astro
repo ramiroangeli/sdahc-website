@@ -28,9 +28,11 @@ const hub = variant === 'hub';
 <style>
 .rhub-head{margin:0 0 36px}
 
-/* Design System (Set A editorial): Bricolage Grotesque display heading, IBM Plex Mono eyebrow. */
-.r-eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.08em;text-transform:uppercase;color:var(--r-graphite);margin:0 0 14px}
-.r-eyebrow-rule{display:inline-block;width:var(--r-rule-kpi);height:16px;background:var(--r-signal-deep)}
+/* Design System (Set A editorial): Bricolage Grotesque display heading.
+   .r-eyebrow/.r-eyebrow-rule (the "NN · Label" treatment above the heading) now live in
+   research-tokens.css as shared global utility classes, not here, so the Publications section's
+   own hand-written eyebrow (which needs the label without this component's heading/lead) can
+   reuse the identical styling instead of duplicating these rules. */
 .r-sec-h{font-family:var(--r-font-display);font-weight:700;font-stretch:90%;color:var(--r-midnight-ink);font-size:var(--r-size-h2);line-height:1.05;margin:0;max-width:20ch}
 .r-sec-lead{font-family:var(--r-font-body);color:var(--r-graphite);font-size:var(--r-size-lead);line-height:1.5;max-width:66ch;margin:16px 0 0}
 </style>

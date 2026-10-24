@@ -85,6 +85,16 @@
     var(--r-midnight-ink);
 }
 
+/* Shared "numbered section eyebrow" treatment (Set A editorial: IBM Plex Mono label, Signal Deep
+ * accent rule). Lives here, not inside ResearchSectionHeader.astro's own scoped <style>, so that
+ * any Research Hub section can render "NN · Label" with byte-identical styling without each call
+ * site duplicating these rules: ResearchSectionHeader (sections 02-06) and the Publications
+ * section's own hand-written eyebrow (section 01, which needs the label without the component's
+ * accompanying heading/lead) both use these same global classes.
+ */
+.r-eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.08em;text-transform:uppercase;color:var(--r-graphite);margin:0 0 14px}
+.r-eyebrow-rule{display:inline-block;width:var(--r-rule-kpi);height:16px;background:var(--r-signal-deep)}
+
 /* Grain overlays for expressive gradient fields only (never flat UI surfaces), at the specified
  * 8% dark / 5% light opacities. Reuses the exact feTurbulence noise technique already
  * established site-wide as .bg-grain in global.css (which is already 5%, i.e. already the

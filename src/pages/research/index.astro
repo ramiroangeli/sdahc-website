@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro';
-import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
+import ResearchFloatingCover from '../../components/ResearchFloatingCover.astro';
 import ResearchResourceCard from '../../components/ResearchResourceCard.astro';
 import ResearchStateGrid from '../../components/ResearchStateGrid.astro';
 import ResearchDwellerRibbon from '../../components/ResearchDwellerRibbon.astro';
@@ -53,53 +53,32 @@ const breadcrumbs = {
 };
 ---
 <BaseLayout title={title} description={description} extraFontsHref={researchFontsHref}>
-  <!-- Hero: the text column has a hard max-width (not a grid-column share), and the ribbon is
-       absolutely positioned to occupy only the remaining right-hand zone, clipped by the hero
-       section's own overflow:hidden. This is what lets the ribbon bleed beyond its own box
-       top/bottom ("enters from beyond the boundary") while still making it structurally
-       impossible for it to ever sit behind or cross the H1/standfirst: the two never share
-       horizontal space, regardless of z-index or how the full-width-capable H1 wraps. -->
+  <!-- Compact hero: headline only. No standfirst/tagline and no graphic, so the floating report
+       covers in the Publications section below are the first screen's primary visual focus. -->
   <section class="rhub-hero r-grain-dark">
     <div class="wrap rhub-hero-inner">
-      <div class="rhub-hero-text">
-        <p class="rhub-eyebrow">SDAHC Research</p>
-        <h1 class="rhub-h1">Commercial intelligence for Australia's SDA <span class="rhub-h1-accent">market</span></h1>
-        <p class="rhub-standfirst">SDAHC Research delivers market analysis, transaction intelligence and evidence-based insights into Australia's SDA sector, combining public industry data with specialist commercial market experience.</p>
-        <p class="rhub-tagline">Market research. Investment intelligence. Sector analysis.</p>
-      </div>
-      <!-- Positioned relative to .rhub-hero-inner (same containing block as the text above), not
-           the full-bleed section: both this element's width and the text's max-width are then
-           percentages of the identical box, so the gap between them is exact at every viewport
-           width, not an estimate from two different reference widths. The trade-off is that the
-           ribbon can bleed past .wrap's own edge vertically (top/bottom, "beyond the boundary")
-           but is clipped horizontally to .wrap's own right edge rather than the viewport's. -->
-      <div class="rhub-hero-ribbon">
-        <ResearchDwellerRibbon size="large" />
-      </div>
+      <p class="rhub-eyebrow">SDAHC Research</p>
+      <h1 class="rhub-h1"><span class="rhub-h1-line">Commercial intelligence for</span><span class="rhub-h1-line rhub-h1-accent">Australia's SDA market</span></h1>
     </div>
   </section>
 
   <section class="section rhub-publications rhub-paper" id="publications">
-    <!-- Continuation cue: the hero's ribbon ends its visible arc at (574,213.5), the same point
-         this echo crops around, recoloured for the Paper ground. A direct crop of the identical
-         curve, not an independently drawn element, positioned in the same right-hand zone the
-         hero's ribbon occupied, so the two sections read as one composition rather than an
-         expressive hero followed by an unrelated flat one. -->
-    <div class="rhub-pub-echo" aria-hidden="true">
-      <ResearchDwellerRibbon size="echo" />
-    </div>
     <div class="wrap">
-      <ResearchSectionHeader
-        variant="hub"
-        number="01"
-        eyebrow="Our publications"
-        heading="Research Publications"
-        lead="Three publications covering the national SDA market, administration and special situations, and the provider landscape."
-      />
-      <div class="rhub-pub-grid">
-        <ResearchPublicationCard id="sda2026" variant="hub" />
-        <ResearchPublicationCard id="special" variant="hub" />
-        <ResearchPublicationCard id="providers" variant="hub" />
+      <!-- Compact intro: a small eyebrow label carries the section's own heading as a
+           visually-hidden h2 for semantics/a11y, since the Design System's large heading+lead
+           pattern (ResearchSectionHeader) cost too much vertical space before the covers. The
+           eyebrow markup/classes (.r-eyebrow/.r-eyebrow-rule) and their styling are shared with
+           ResearchSectionHeader via research-tokens.css (see that file), not duplicated here, so
+           this label is visually identical to "02 · Online research" and the other numbered
+           section labels below it. -->
+      <div class="rhub-pub-head">
+        <p class="r-eyebrow"><span class="r-eyebrow-rule" aria-hidden="true"></span>01 · Our publications</p>
+        <h2 class="rhub-sr-only">Research Publications</h2>
+      </div>
+      <div class="rhub-showcase">
+        <ResearchFloatingCover id="sda2026" href={REPORTS.sda2026.url} caption />
+        <ResearchFloatingCover id="special" href={REPORTS.special.url} caption />
+        <ResearchFloatingCover id="providers" href={REPORTS.providers.url} caption />
       </div>
     </div>
   </section>
@@ -139,6 +118,10 @@ const breadcrumbs = {
   </section>
 
   <section class="section rhub-states rhub-paper">
+    <!-- Second graphic intervention: the same curve's middle bend, entering from the section's
+         own top-right edge. Purely decorative (aria-hidden) and never covers the heading, lead
+         or state grid: it sits above and clear of the text column, not layered behind it. -->
+    <div class="rhub-states-band" aria-hidden="true"><ResearchDwellerRibbon variant="band" /></div>
     <div class="wrap">
       <ResearchSectionHeader
         variant="hub"
@@ -153,7 +136,13 @@ const breadcrumbs = {
 
   <section class="section rhub-approach rhub-paper">
     <div class="wrap">
-      <ResearchSectionHeader variant="hub" number="04" eyebrow="Methodology" heading="Research Approach" />
+      <!-- Third, closing intervention: a small Ember-toned flourish beside the heading, bookending
+           the opening mark in the publications callout. In normal document flow (flex row, not
+           absolute positioning), so it never overlaps text and reflows naturally on mobile. -->
+      <div class="rhub-approach-head">
+        <ResearchSectionHeader variant="hub" number="04" eyebrow="Methodology" heading="Research Approach" />
+        <span class="rhub-approach-mark" aria-hidden="true"><ResearchDwellerRibbon variant="close" /></span>
+      </div>
       <p class="rhub-approach-copy">SDAHC Research draws on relevant public datasets, sector observations and SDAHC's own commercial transaction experience. Sources and methodology are stated where applicable, and not every publication necessarily draws on the same data or approach. Read the full <a href="/research/research-methodology/">research methodology</a> for sources and definitions.</p>
     </div>
   </section>
@@ -182,40 +171,22 @@ const breadcrumbs = {
 </BaseLayout>
 <style>
 /* ---- Hero: expressive register, Set C, grad-ink-field ----
-   Text and graphic are two separate grid columns (not one layered behind the other). That is a
-   deliberate structural choice, not a styling detail: it is what guarantees the graphic can
-   never visually cross or sit behind the H1 or standfirst, however the full-width H1 wraps at a
-   given viewport width, rather than relying on z-index or a guessed-safe pixel zone. */
-.rhub-hero{position:relative;overflow:hidden;padding:calc(150px + var(--nav-top)) 0 0;background:var(--r-grad-ink-field)}
+   Compact by design: headline only, no standfirst/tagline and no graphic, so the floating
+   report covers in the Publications section are the page's first visual focus rather than
+   competing with a hero graphic above them. */
+.rhub-hero{position:relative;overflow:hidden;padding:calc(var(--nav-clearance) + 10px) 0 26px;background:var(--r-grad-ink-field)}
 .rhub-hero-inner{position:relative;z-index:1}
 /* White, not Signal Blue: grad-ink-field's own documented contrast note says Signal Blue only
    passes reliably at 24px+ near its glow zones, and this eyebrow sits in that zone at 12px. */
-.rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 22px}
-/* Larger, more confident scale than the prior copy allowed: the shorter headline wraps to
-   2 lines at this size within the text column instead of 3-4, so there's room to push the
-   display size up without it overwhelming the column or forcing awkward line breaks. */
-.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(40px,5.4vw,74px);line-height:1.02;margin:0;max-width:none}
-/* The one typographic accent: the final word, Source Serif 4 italic in Signal Blue, echoing the
-   same bold-sans/italic-serif pairing the brand's own "SDAHC | Research" wordmark uses, rather
-   than a generic highlight colour applied for its own sake. */
+.rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 16px}
+.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(28px,2vw + 22px,44px);line-height:1.18;margin:0}
+/* Each half of the headline is its own block-level line, not a natural wrap point: "Commercial
+   intelligence for" always renders as line one in the display sans; "Australia's SDA market"
+   always renders as line two, entirely in the Source Serif 4 italic accent (previously applied
+   only to the final word), in the same Signal Blue. Both share the h1's own font-size/line-height
+   for a coherent scale between the two treatments. */
+.rhub-h1-line{display:block}
 .rhub-h1-accent{font-family:var(--r-font-serif-accent);font-style:italic;font-weight:400;letter-spacing:0;color:var(--r-signal-blue)}
-.rhub-standfirst{font-family:var(--r-font-body);color:var(--r-signal-tint);font-size:var(--r-size-lead);line-height:1.5;max-width:52ch;margin:22px 0 0}
-.rhub-tagline{margin:28px 0 0;font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.2em;text-transform:uppercase;color:var(--r-cover-slate)}
-/* Text and ribbon are both percentages of the SAME containing block (.rhub-hero-inner, the
-   .wrap below), not two different reference widths (one of a padded wrap, one of the full
-   section) that would make a "safe gap" only an estimate: 56% + 34% leaves a guaranteed 10% gap
-   between them at every viewport width, not a z-index-dependent guess. */
-.rhub-hero-text{position:relative;z-index:1;max-width:56%;padding-bottom:96px}
-/* top:0/bottom:0 (not negative): overflow:hidden on .rhub-hero clips a child at the parent's own
-   edges regardless of which direction it overshoots, so a negative offset here would hide the
-   bleed rather than reveal it. The "enters/exits beyond the boundary" effect instead comes from
-   the artwork itself: ResearchDwellerRibbon's curve endpoints already touch its own viewBox's
-   top and bottom edges (y=0 and y=750 of 750), and preserveAspectRatio="slice" fills whatever
-   height this box actually ends up being, so the curve reads as running off both edges at any
-   height rather than floating inside a visibly bounded panel. min-height keeps it substantial
-   even where the text column itself is short; .rhub-hero's own overflow:hidden is what controls
-   any excess below the section, which is the deliberate, approved use of that clip. */
-.rhub-hero-ribbon{position:absolute;top:0;right:0;bottom:0;width:34%;min-height:560px;z-index:0}
 
 /* ---- Editorial register: "Paper to read, Ink to frame" ----
    Every section after the hero reads on Warm Paper with Ink/Graphite text, so dark stays
@@ -223,20 +194,31 @@ const breadcrumbs = {
    .rhub-* wrapper classes only: global.css's shared .section/.wrap are untouched, so every other
    page on the site keeps its existing navy background exactly as it is. */
 .rhub-paper{background:var(--r-paper);color:var(--r-graphite)}
-/* Publications transition: the echo ribbon (a direct crop of the hero ribbon's own curve,
-   recoloured for Paper) sits in the same right-hand zone the hero's ribbon occupied, clipped by
-   this section's own overflow:hidden so it reads as a continuation peeking in from above rather
-   than a separate graphic. */
-.rhub-publications{position:relative;overflow:hidden}
-/* top:0, not negative: overflow:hidden on .rhub-publications (above) would clip a negative
-   offset away entirely rather than let it peek in from above. "Meet" scaling inside the fixed
-   box below keeps this predictable without needing to verify exact crop proportions visually. */
-.rhub-pub-echo{position:absolute;top:0;right:6%;width:220px;height:180px;opacity:.8}
+/* Tight top/bottom padding (overriding .section's default 60px/90px): the Publications section
+   is the page's first-screen anchor, so it keeps as much of the floating covers as possible
+   above the fold without the showcase itself being shrunk to compensate. */
+.rhub-publications{padding-top:18px;padding-bottom:56px}
+/* Visually hidden but still in the accessibility tree and document order: the section keeps a
+   real h2 for semantics/outline even though its visible heading is now just the small eyebrow
+   label to its left. Standard clip-based sr-only technique (not display:none, which would also
+   remove it from the accessibility tree). */
+.rhub-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Compact publications intro: just the small eyebrow label (same shared .r-eyebrow styling as
+   every other numbered section below it), which is what recovers the vertical space the Design
+   System's stacked eyebrow+heading+lead used to cost. 36px bottom margin matches
+   ResearchSectionHeader's own .rhub-head spacing so the gap before the showcase reads the same
+   as the gap before every other section's content. */
+.rhub-pub-head{margin:0 0 36px}
 /* A deliberate editorial rule between sections, rather than every Paper section running directly
    into the next with no visual rhythm: the Approach/bridge/About sections that follow another
    Paper section get a top divider; the two sections right after the hero and state grid don't
    need one, since the dark-to-paper and card-grid-to-rule transitions already read as a break. */
 .rhub-approach,.rhub-bridge,.rhub-about{border-top:var(--r-rule-divider) solid var(--r-cover-slate)}
+/* Third intervention: a small Ember-toned flourish beside the Research Approach heading, in
+   normal flex flow (not absolute), so it reflows below the heading on narrow viewports instead
+   of risking overlap. */
+.rhub-approach-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.rhub-approach-mark{flex:0 0 auto;width:34px;height:52px;margin-top:6px;opacity:.65}
 .rhub-approach-copy,.rhub-bridge-copy,.rhub-about-copy{max-width:68ch;font-family:var(--r-font-body);color:var(--r-graphite);font-size:var(--r-size-body);line-height:1.65;margin:0}
 .rhub-approach-copy a,.rhub-bridge-copy a,.rhub-about-copy a{color:var(--r-signal-deep);text-decoration:underline;text-underline-offset:2px}
 .rhub-bridge-links{display:flex;flex-wrap:wrap;gap:14px;margin:30px 0 0}
@@ -247,27 +229,35 @@ const breadcrumbs = {
 .rhub-bridge .btn.b2{background:transparent;color:var(--r-midnight-ink);border-color:var(--r-cover-slate)}
 .rhub-bridge .btn.b2:hover{border-color:var(--r-signal-deep)}
 
-.rhub-pub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+/* Three independent floating covers (ResearchFloatingCover with `caption`), not a card grid:
+   a balanced horizontal row with generous gaps so each cover's float/rotation has room to read
+   as continuous motion rather than crowding its neighbours. */
+.rhub-showcase{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
+/* Slightly smaller than the component's own 320px default: still large enough to recognise each
+   cover (not a thumbnail), but the main lever that brings all three covers' full height inside a
+   typical 1440x900 first screen alongside the nav and compact hero. */
+.rhub-showcase :global(.rfc img){max-width:252px}
 .rhub-resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
 
-/* Tablet: simplify the placement (smaller, less visually loud) without restructuring the
-   side-by-side layout yet, so the ribbon stops competing with the title for attention. */
+/* Second intervention: the same curve's middle bend, bleeding in from the section's own top
+   edge. Clipped by this section's own overflow:hidden and kept clear of the text column (the
+   heading/lead/state grid all start at the .wrap's left edge; this sits top-right, well above
+   where ResearchStateGrid's cards begin), and pointer-events:none so it can never intercept
+   clicks or sit in the keyboard tab order. */
+.rhub-states{position:relative;overflow:hidden}
+.rhub-states-band{position:absolute;top:0;right:4%;width:260px;height:170px;opacity:.55;pointer-events:none}
+
 @media(max-width:980px){
-  .rhub-pub-grid{grid-template-columns:1fr}
   .rhub-resource-grid{grid-template-columns:1fr}
-  .rhub-hero-text{max-width:62%}
-  .rhub-hero-ribbon{width:30%;min-height:420px;opacity:.85}
-  .rhub-pub-echo{width:160px;height:140px}
+  .rhub-states-band{width:190px;height:125px}
 }
-/* Mobile: prioritise the headline and standfirst outright. The ribbon moves into normal
-   document flow below the text (no longer absolutely positioned over anything, so it cannot
-   cross or obscure text by construction) in a fixed, modestly-sized box, not a shrunk copy of
-   the desktop panel's proportions. The echo is hidden rather than shown at a size too small to
-   read as intentional. */
-@media(max-width:680px){
-  .rhub-hero-inner{display:flex;flex-direction:column}
-  .rhub-hero-text{max-width:none;padding-bottom:28px}
-  .rhub-hero-ribbon{position:relative;top:auto;right:auto;bottom:auto;width:100%;max-width:240px;min-height:0;height:210px;margin:0 auto;opacity:1}
-  .rhub-pub-echo{display:none}
+@media(max-width:860px){
+  .rhub-showcase{grid-template-columns:1fr;gap:52px;max-width:280px;margin:40px auto 0}
+}
+/* Mobile: the closing mark already sits in normal flex flow, so it wraps beneath the heading on
+   its own; the only change needed is retiring the state-grid band, since at this width it would
+   sit too close to the heading text to read as a clearly separate decorative layer. */
+@media(max-width:560px){
+  .rhub-states-band{display:none}
 }
 </style>
