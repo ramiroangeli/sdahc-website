@@ -58,7 +58,7 @@ const breadcrumbs = {
   <section class="rhub-hero r-grain-dark">
     <div class="wrap rhub-hero-inner">
       <p class="rhub-eyebrow">SDAHC Research</p>
-      <h1 class="rhub-h1">Commercial intelligence for Australia's SDA <span class="rhub-h1-accent">market</span></h1>
+      <h1 class="rhub-h1">Commercial intelligence for <span class="rhub-h1-accent">Australia's SDA market</span></h1>
     </div>
   </section>
 
@@ -72,11 +72,17 @@ const breadcrumbs = {
       <div class="rhub-pub-head">
         <p class="r-eyebrow rhub-pub-eyebrow"><span class="r-eyebrow-rule" aria-hidden="true"></span>01 · Our publications</p>
         <h2 class="rhub-sr-only">Research Publications</h2>
-        <aside class="rhub-pub-note">
-          <span class="rhub-pub-note-mark"><ResearchDwellerRibbon variant="mark" /></span>
-          <p class="rhub-pub-note-text">Three publications covering the national SDA market, administration and special situations, and the provider landscape.</p>
-        </aside>
       </div>
+      <!-- Circular editorial callout: positioned with top:0 + translateY(-50%) against this
+           section's own top edge, which IS the hero/Publications boundary, so its vertical
+           centre always sits exactly on that boundary (roughly half in each section) regardless
+           of the circle's own size, rather than a guessed pixel offset. It's a sibling of
+           .rhub-pub-head/.rhub-showcase, not nested in either, so it never affects their normal
+           flow; see the responsive rule for its mobile fallback into normal document flow. -->
+      <aside class="rhub-pub-circle">
+        <span class="rhub-pub-circle-mark"><ResearchDwellerRibbon variant="mark" /></span>
+        <p class="rhub-pub-circle-text">Three publications covering the national SDA market, administration and special situations, and the provider landscape.</p>
+      </aside>
       <div class="rhub-showcase">
         <ResearchFloatingCover id="sda2026" href={REPORTS.sda2026.url} caption />
         <ResearchFloatingCover id="special" href={REPORTS.special.url} caption />
@@ -176,17 +182,23 @@ const breadcrumbs = {
    Compact by design: headline only, no standfirst/tagline and no graphic, so the floating
    report covers in the Publications section are the page's first visual focus rather than
    competing with a hero graphic above them. */
-.rhub-hero{position:relative;overflow:hidden;padding:calc(var(--nav-clearance) + 10px) 0 26px;background:var(--r-grad-ink-field)}
+/* Bottom padding gives the H1 clearance from the hero/Publications boundary: the circular
+   callout straddles that exact boundary, so this gap is what keeps its upper arc clear of the
+   headline regardless of whether the headline wraps to one or two lines. */
+.rhub-hero{position:relative;overflow:hidden;padding:calc(var(--nav-clearance) + 10px) 0 54px;background:var(--r-grad-ink-field)}
 .rhub-hero-inner{position:relative;z-index:1}
 /* White, not Signal Blue: grad-ink-field's own documented contrast note says Signal Blue only
    passes reliably at 24px+ near its glow zones, and this eyebrow sits in that zone at 12px. */
 .rhub-eyebrow{font-family:var(--r-font-mono);font-size:var(--r-size-meta);letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;margin:0 0 16px}
-/* Fluid, not a fixed display size: scaled to fit the full headline on one line within .wrap's
-   1120px content width at standard desktop widths, rather than letting it wrap or overflow. */
-.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(26px,1.6vw + 22px,40px);line-height:1.1;margin:0;max-width:none}
-/* The one typographic accent: the final word, Source Serif 4 italic in Signal Blue, echoing the
-   same bold-sans/italic-serif pairing the brand's own "SDAHC | Research" wordmark uses, rather
-   than a generic highlight colour applied for its own sake. */
+/* max-width keeps the headline's box (and therefore every wrapped line) clear of the right-hand
+   column the circular callout occupies, on any viewport wide enough for that callout to render
+   as a circle: a layout-based guarantee against overlap rather than a hope that the text happens
+   to fall short of that column. Reset to full width once the callout drops into normal flow. */
+.rhub-h1{font-family:var(--r-font-interface);font-weight:800;letter-spacing:-.02em;color:#FFFFFF;font-size:clamp(26px,1.6vw + 22px,40px);line-height:1.15;margin:0;max-width:720px}
+/* Two-part typographic treatment: "Commercial intelligence for" stays the Bricolage/Plus Jakarta
+   display face above; the rest of the headline, "Australia's SDA market", takes the Source Serif
+   4 italic accent (previously applied only to the final word) in the same Signal Blue, so the
+   two treatments share one baseline/scale rather than reading as mismatched sizes. */
 .rhub-h1-accent{font-family:var(--r-font-serif-accent);font-style:italic;font-weight:400;letter-spacing:0;color:var(--r-signal-blue)}
 
 /* ---- Editorial register: "Paper to read, Ink to frame" ----
@@ -204,21 +216,25 @@ const breadcrumbs = {
    label to its left. Standard clip-based sr-only technique (not display:none, which would also
    remove it from the accessibility tree). */
 .rhub-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-/* Compact publications intro: eyebrow label (left) and editorial callout (right) share one row
-   instead of the Design System's stacked eyebrow+heading+lead, which is what recovers the
-   vertical space the hero's old standfirst/tagline and this section's heading+lead used to cost.
-   No absolute positioning: both children are normal flex items, so nothing can overlap text and
-   the row reflows to a column on narrow viewports. */
-.rhub-pub-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;margin:0 0 22px}
-.rhub-pub-eyebrow{margin:0;padding-top:4px}
-/* Editorial callout: a restrained Research-tint surface (not a messaging-app bubble), a Signal
-   Deep accent line standing in for the Design System's 3px "KPI" rule, and corners rounded
-   asymmetrically (sharp top-left/bottom-right, soft top-right/bottom-left) rather than a uniform
-   pill, per the brief's "subtle asymmetrical geometry, avoid heavy shadows/excessive rounding."
-   The small Dweller-mark crop stands in for a speech-bubble tail without literally drawing one. */
-.rhub-pub-note{display:flex;align-items:flex-start;gap:12px;max-width:340px;padding:14px 18px 14px 14px;background:var(--r-signal-tint);border-left:3px solid var(--r-signal-deep);border-radius:2px 14px 2px 14px}
-.rhub-pub-note-mark{flex:0 0 auto;width:34px;height:28px;margin-top:2px;opacity:.85}
-.rhub-pub-note-text{margin:0;font-family:var(--r-font-body);font-size:14px;line-height:1.5;color:var(--r-graphite)}
+/* Compact publications intro: just the small eyebrow label now (the lead copy moved into the
+   circular callout below), which is what recovers the vertical space the Design System's
+   stacked eyebrow+heading+lead used to cost. */
+.rhub-pub-head{margin:0 0 14px}
+.rhub-pub-eyebrow{margin:0}
+/* Positioning context for the circular callout: a page-scoped override of this one section's own
+   .wrap (Astro's component scoping means this never touches .wrap on any other section/page), so
+   the callout's position:absolute is relative to the same 1120px content column everything else
+   in this section uses, keeping it inside the page's horizontal bounds at any viewport width. */
+.rhub-publications .wrap{position:relative}
+/* Circular editorial callout: Signal Tint fill (contrasts against both the dark hero above and
+   the Warm Paper below) with a restrained 1.5px Signal Deep ring standing in for the Design
+   System's accent-line language, no shadow/glow. top:0 + translateY(-50%) centres it exactly on
+   the hero/Publications boundary regardless of its own size (see the comment on the element
+   itself); z-index:2 keeps it painting above both sections' backgrounds, and it is never
+   aria-hidden since the lead copy itself lives inside it. */
+.rhub-pub-circle{position:absolute;top:0;right:4%;transform:translateY(-50%);z-index:2;width:168px;height:168px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;text-align:center;background:var(--r-signal-tint);border:1.5px solid var(--r-signal-deep)}
+.rhub-pub-circle-mark{flex:0 0 auto;width:22px;height:18px;opacity:.85}
+.rhub-pub-circle-text{margin:0;font-family:var(--r-font-body);font-size:12px;line-height:1.42;color:var(--r-graphite)}
 /* A deliberate editorial rule between sections, rather than every Paper section running directly
    into the next with no visual rhythm: the Approach/bridge/About sections that follow another
    Paper section get a top divider; the two sections right after the hero and state grid don't
@@ -242,15 +258,18 @@ const breadcrumbs = {
 /* Three independent floating covers (ResearchFloatingCover with `caption`), not a card grid:
    a balanced horizontal row with generous gaps so each cover's float/rotation has room to read
    as continuous motion rather than crowding its neighbours. */
-.rhub-showcase{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
+/* margin-top is the circular callout's clearance: it extends half its own height (84px) below
+   the hero/Publications boundary, so without this gap it would sit on top of the first row of
+   covers instead of just the empty space above them. */
+.rhub-showcase{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start;margin-top:78px}
 /* Slightly smaller than the component's own 320px default: still large enough to recognise each
    cover (not a thumbnail), but the main lever that brings all three covers' full height inside a
    typical 1440x900 first screen alongside the nav and compact hero. */
 .rhub-showcase :global(.rfc img){max-width:252px}
 .rhub-resource-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
 
-/* First graphic intervention's small corner mark (in the publications callout, not full-bleed). */
-.rhub-pub-note-mark :global(.rdr-svg){display:block}
+/* First graphic intervention's small corner mark (inside the circular callout, not full-bleed). */
+.rhub-pub-circle-mark :global(.rdr-svg){display:block}
 
 /* Second intervention: the same curve's middle bend, bleeding in from the section's own top
    edge. Clipped by this section's own overflow:hidden and kept clear of the text column (the
@@ -264,14 +283,22 @@ const breadcrumbs = {
   .rhub-resource-grid{grid-template-columns:1fr}
   .rhub-states-band{width:190px;height:125px}
 }
+/* Below 860px there isn't reliable room for a 168px circle to straddle the boundary without
+   crowding the headline or the covers, so it drops out of the straddling layout entirely and
+   becomes a normal in-flow compact note (the same asymmetric-corner, left-accent-line treatment
+   used elsewhere in this redesign) between the eyebrow and the showcase, exactly where it sits
+   in the DOM. The h1's max-width constraint is also no longer needed once nothing floats beside
+   it on the right. */
 @media(max-width:860px){
-  .rhub-showcase{grid-template-columns:1fr;gap:52px;max-width:280px;margin:0 auto}
-  .rhub-pub-note{max-width:none}
+  .rhub-h1{max-width:none}
+  .rhub-showcase{grid-template-columns:1fr;gap:52px;max-width:280px;margin:40px auto 0}
+  .rhub-pub-circle{position:static;transform:none;width:auto;height:auto;max-width:420px;border-radius:2px 16px 2px 16px;flex-direction:row;align-items:flex-start;text-align:left;padding:14px 18px 14px 14px;gap:12px;margin:0 0 20px}
+  .rhub-pub-circle-mark{width:30px;height:24px;margin-top:2px;opacity:.85}
+  .rhub-pub-circle-text{font-size:14px;line-height:1.5}
 }
-/* Mobile: the callout and closing mark both already sit in normal flex flow, so they wrap to a
-   full-width column (note) or beneath the heading (mark) on their own; the only change needed is
-   retiring the state-grid band, since at this width it would sit too close to the heading text
-   to read as a clearly separate decorative layer. */
+/* Mobile: the closing mark already sits in normal flex flow, so it wraps beneath the heading on
+   its own; the only change needed is retiring the state-grid band, since at this width it would
+   sit too close to the heading text to read as a clearly separate decorative layer. */
 @media(max-width:560px){
   .rhub-states-band{display:none}
 }
