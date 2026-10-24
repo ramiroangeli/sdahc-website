@@ -10,11 +10,11 @@ import logoIcon from '../assets/logo-icon-white.png';
     <div class="nls">
       <a class="l" href="/our-services-and-expertise/">Services</a>
       <a class="l" href="/opportunities/">Opportunities</a>
-      <a class="l" href="/research/">Research</a>
       <a class="l" href="/about/">About</a>
       <a class="l" href="/contact-us/">Contact</a>
     </div>
     <div class="nav-right">
+      <a class="nav-cta" href="/research/">Research</a>
       <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
         <span></span><span></span><span></span>
       </button>
@@ -23,7 +23,6 @@ import logoIcon from '../assets/logo-icon-white.png';
   <div class="mobile-menu" id="mobile-menu">
     <a href="/our-services-and-expertise/">Services</a>
     <a href="/opportunities/">Opportunities</a>
-    <a href="/research/">Research</a>
     <a href="/about/">About</a>
     <a href="/contact-us/">Contact</a>
   </div>
@@ -37,7 +36,10 @@ header{position:fixed;top:var(--nav-top);left:24px;right:24px;max-width:1180px;m
 .nav a.l{font-family:var(--geo);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--pale);text-decoration:none}
 .nav a.l:hover{color:var(--white)}
 .nav-right{display:flex;align-items:center;gap:14px}
+.nav-cta{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--white);background:var(--blue);padding:9px 15px;border-radius:999px;text-decoration:none;white-space:nowrap;transition:background .2s}
+.nav-cta:hover{background:color-mix(in srgb,var(--blue) 82%,#000)}
 header a:focus-visible,.menu-toggle:focus-visible{outline:2px solid var(--pale);outline-offset:4px}
+.nav-cta:focus-visible{outline-offset:3px;border-radius:999px}
 /* hamburger: hidden on desktop */
 .menu-toggle{display:none;flex-direction:column;justify-content:center;gap:5px;width:40px;height:40px;padding:0;background:transparent;border:0;cursor:pointer}
 .menu-toggle span{display:block;width:22px;height:2px;background:var(--white);transition:transform .25s,opacity .25s}
