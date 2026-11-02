@@ -117,6 +117,32 @@ export function service(name: string, description: string, path: string) {
   };
 }
 
+/** @id of the SDA Market Report 2026 node (emitted on its own page). */
+export const REPORT_2026_ID = `${SITE}/research/sda-market-report-2026/#report`;
+
+/**
+ * An SDAHC Research page (state market pages, executive summary, national snapshot, methodology).
+ * `headline` must match the page's visible <h1>; the date comes from page-dates.json.
+ */
+export function researchArticle(headline: string, description: string, path: string) {
+  const url = new URL(path, SITE).href;
+  return {
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline,
+    description,
+    url,
+    mainEntityOfPage: url,
+    inLanguage: 'en-AU',
+    image: `${SITE}/images/og-brand.jpg`,
+    dateModified: updatedFor(path),
+    author: { '@id': ORG_ID },
+    publisher: { '@id': ORG_ID },
+    isBasedOn: { '@type': 'Report', '@id': REPORT_2026_ID, name: 'SDA Market Report 2026', url: `${SITE}/research/sda-market-report-2026/` },
+    about: { '@type': 'Thing', name: 'Specialist Disability Accommodation (SDA) market in Australia' },
+  };
+}
+
 /** FAQPage built from question/answer pairs that are ALSO shown on the page, word for word. */
 export function faqPage(items: { q: string; a: string }[]) {
   return {

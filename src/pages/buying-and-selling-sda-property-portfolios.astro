@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { service } from '../data/seo';
+const schema = [service('Buying and selling SDA property portfolios', 'Transaction management for SDA portfolio sales and acquisitions, from coordinating specialist valuations and exit strategy planning to complex off-market sales negotiations, connecting investors with opportunities.', '/buying-and-selling-sda-property-portfolios/')];
 ---
-<BaseLayout title="Buying and Selling SDA Property Portfolios | SDA Home Choices" description="We facilitate transactions, managing all aspects of SDA portfolio sales.">
+<BaseLayout title="Buying and Selling SDA Property Portfolios | SDA Home Choices" description="We facilitate transactions, managing all aspects of SDA portfolio sales." breadcrumbs={[{ name: 'Buying and selling SDA property portfolios', path: '/buying-and-selling-sda-property-portfolios/' }]} schema={schema}>
   <PageHeader
     eyebrow="Our services"
     title="Buying and Selling SDA Property Portfolios"

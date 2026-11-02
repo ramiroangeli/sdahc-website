@@ -1,8 +1,25 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { SITE, ORG_ID } from '../data/seo';
+const services = [
+  { name: 'SDA property and portfolio sales', path: '/sda-property-and-portfolio-sales/' },
+  { name: 'SDA strategic divestment advisory', path: '/sda-strategic-divestment-advisory/' },
+  { name: 'Buying and selling SDA property portfolios', path: '/buying-and-selling-sda-property-portfolios/' },
+];
+const schema = [{
+  '@type': 'OfferCatalog',
+  '@id': `${SITE}/our-services-and-expertise/#services`,
+  name: 'SDA advisory and transaction services',
+  url: `${SITE}/our-services-and-expertise/`,
+  provider: { '@id': ORG_ID },
+  itemListElement: services.map((s) => ({
+    '@type': 'Offer',
+    itemOffered: { '@type': 'Service', name: s.name, url: `${SITE}${s.path}`, provider: { '@id': ORG_ID } },
+  })),
+}];
 ---
-<BaseLayout title="Our services and expertise | SDA Home Choices" description="SDA advisory across the asset lifecycle: acquisition and divestment strategy, commercial due diligence, and portfolio transactions in Specialist Disability Accommodation.">
+<BaseLayout title="Our services and expertise | SDA Home Choices" description="SDA advisory across the asset lifecycle: acquisition and divestment strategy, commercial due diligence, and portfolio transactions in Specialist Disability Accommodation." breadcrumbs={[{ name: 'Our services', path: '/our-services-and-expertise/' }]} schema={schema}>
   <PageHeader
     eyebrow="SDA portfolio advisory"
     title="Our Services and Expertise"
