@@ -24,6 +24,11 @@ import PageHeader from '../components/PageHeader.astro';
           <p class="ci-label">Phone</p>
           <a href="tel:+61408550441">+61 408 550 441</a>
         </li>
+        <li class="contact-item">
+          <span class="card-mark" aria-hidden="true"></span>
+          <p class="ci-label">Victoria Office</p>
+          <address>Suite 34, Level 5<br />33-35 Stewart Street<br />Richmond VIC 3121<br />Australia</address>
+        </li>
       </ul>
 
       <div class="contact-chips">
@@ -108,6 +113,7 @@ import PageHeader from '../components/PageHeader.astro';
 .ci-label{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
 .contact-item a{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2vw,22px);color:#fff;text-decoration:none}
 .contact-item a:hover,.contact-item a:focus-visible{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.contact-item address{font-style:normal;font-family:var(--sans);font-size:17px;line-height:1.6;color:var(--white)}
 
 .contact-chips{display:flex;flex-wrap:wrap;gap:10px}
 .chip{display:inline-flex;align-items:center;font-family:var(--geo);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--pale);border:1px solid color-mix(in srgb,var(--pale) 24%,transparent);background:rgba(255,255,255,.05);border-radius:999px;padding:8px 16px}
