@@ -1,0 +1,199 @@
+---
+import ListingCard from './ListingCard.astro';
+import { getPublicListings } from '../data/listings';
+import { DESIGN_LABEL, STATUS_LABEL, STATES, TYPE_LABEL } from '../data/listings/schema';
+
+/*
+  "Available SDA Properties": searchable, filterable, sortable catalogue of published listings.
+  Always renders. With no published listing it shows a professional empty state that keeps the
+  off-market path in front of the visitor. Filtering is progressive enhancement: without JavaScript
+  every card simply stays visible.
+*/
+const listings = getPublicListings();
+const uniq = <T,>(v: T[]) => [...new Set(v)];
+const states = STATES.filter((s) => listings.some((l) => l.address.state === s));
+const types = uniq(listings.map((l) => l.type));
+const statuses = uniq(listings.map((l) => l.commercialStatus));
+const designs = uniq(listings.flatMap((l) => l.sda.designCategories ?? []));
+// a filter is only offered when it can change the result, i.e. the data has more than one value
+const showState = states.length > 1;
+const showType = types.length > 1;
+const showStatus = statuses.length > 1;
+const showDesign = designs.length > 0;
+---
+<section class="section lcat" id="listings" aria-labelledby="lcat-h">
+  <div class="wrap">
+    <h2 class="lcat-heading" id="lcat-h">Available SDA Properties</h2>
+    <p class="lcat-intro">SDA properties we can show publicly. Detail, documents and pricing beyond what is shown are released to registered parties under NDA.</p>
+
+    {listings.length > 0 ? (
+      <>
+        <form class="lcat-filters" aria-label="Search and filter properties" data-lcat-filters>
+          <div class="lcat-field lcat-field-search">
+            <label for="f-q">Search suburb or street</label>
+            <input type="search" id="f-q" name="q" placeholder="e.g. Shepparton" autocomplete="off" />
+          </div>
+          {showState && (
+            <div class="lcat-field">
+              <label for="f-state">State</label>
+              <select id="f-state" name="state">
+                <option value="">All states</option>
+                {states.map((s) => <option value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
+          {showDesign && (
+            <div class="lcat-field">
+              <label for="f-design">Design category</label>
+              <select id="f-design" name="design">
+                <option value="">Any category</option>
+                {designs.map((d) => <option value={d}>{DESIGN_LABEL[d]}</option>)}
+              </select>
+            </div>
+          )}
+          {showType && (
+            <div class="lcat-field">
+              <label for="f-type">Property type</label>
+              <select id="f-type" name="type">
+                <option value="">All types</option>
+                {types.map((t) => <option value={t}>{TYPE_LABEL[t]}</option>)}
+              </select>
+            </div>
+          )}
+          {showStatus && (
+            <div class="lcat-field">
+              <label for="f-status">Status</label>
+              <select id="f-status" name="status">
+                <option value="">Any status</option>
+                {statuses.map((s) => <option value={s}>{STATUS_LABEL[s]}</option>)}
+              </select>
+            </div>
+          )}
+          <div class="lcat-field">
+            <label for="f-sort">Sort by</label>
+            <select id="f-sort" name="sort">
+              <option value="newest">Newest first</option>
+              <option value="suburb">Suburb A to Z</option>
+              <option value="status">Availability</option>
+            </select>
+          </div>
+          <button type="reset" class="lcat-reset">Clear</button>
+        </form>
+
+        <p class="lcat-count" role="status" aria-live="polite" data-lcat-count>Showing {listings.length} of {listings.length} properties</p>
+
+        <ul class="lcat-grid" data-lcat-grid>
+          {listings.map((l, i) => <ListingCard listing={l} index={i} />)}
+        </ul>
+
+        <div class="lcat-empty" data-lcat-empty hidden>
+          <p>No properties match your search.</p>
+          <p>Try clearing a filter, or <a href="#access">access off-market opportunities</a>, most of which are never listed publicly.</p>
+        </div>
+      </>
+    ) : (
+      <div class="lcat-empty lcat-empty-solo">
+        <p class="lcat-empty-h">No properties are listed publicly right now.</p>
+        <p>New SDA properties are added as they are approved for public release. Most of what we hold is off-market and shared directly with qualified buyers.</p>
+        <p><a class="btn b1" href="#access">Access Off-Market Opportunities</a></p>
+      </div>
+    )}
+  </div>
+</section>
+
+<script>
+  const grid = document.querySelector<HTMLElement>('[data-lcat-grid]');
+  const form = document.querySelector<HTMLFormElement>('[data-lcat-filters]');
+  const count = document.querySelector<HTMLElement>('[data-lcat-count]');
+  const empty = document.querySelector<HTMLElement>('[data-lcat-empty]');
+
+  if (grid && form && count && empty) {
+    const cards = [...grid.querySelectorAll<HTMLElement>('.lc')];
+    const keys = ['q', 'state', 'design', 'type', 'status', 'sort'] as const;
+    const rank: Record<string, number> = { available: 0, under_offer: 1, sold: 2 };
+
+    const read = () => {
+      const fd = new FormData(form);
+      return Object.fromEntries(keys.map((k) => [k, String(fd.get(k) ?? '').trim()])) as Record<(typeof keys)[number], string>;
+    };
+
+    const apply = () => {
+      const f = read();
+      const q = f.q.toLowerCase();
+      let shown = 0;
+      for (const card of cards) {
+        const ok =
+          (!q || (card.dataset.search ?? '').includes(q)) &&
+          (!f.state || card.dataset.state === f.state) &&
+          (!f.type || card.dataset.type === f.type) &&
+          (!f.status || card.dataset.status === f.status) &&
+          (!f.design || (card.dataset.design ?? '').split(' ').includes(f.design));
+        card.hidden = !ok;
+        if (ok) shown += 1;
+      }
+      const by = f.sort || 'newest';
+      const ordered = [...cards].sort((a, b) => {
+        if (by === 'suburb') return (a.dataset.suburb ?? '').localeCompare(b.dataset.suburb ?? '');
+        if (by === 'status') return (rank[a.dataset.status ?? ''] ?? 9) - (rank[b.dataset.status ?? ''] ?? 9) || Number(a.dataset.index) - Number(b.dataset.index);
+        return Number(a.dataset.index) - Number(b.dataset.index);
+      });
+      ordered.forEach((c) => grid.append(c));
+      count.textContent = `Showing ${shown} of ${cards.length} properties`;
+      empty.hidden = shown > 0;
+      grid.hidden = shown === 0;
+      // keep the view shareable without adding history entries
+      const params = new URLSearchParams(Object.entries(f).filter(([k, v]) => v && !(k === 'sort' && v === 'newest')));
+      history.replaceState(null, '', params.size ? `?${params}${location.hash}` : `${location.pathname}${location.hash}`);
+    };
+
+    // restore a shared view from the URL; ignore select values that are not real options
+    const params = new URLSearchParams(location.search);
+    for (const k of keys) {
+      const el = form.elements.namedItem(k);
+      const v = params.get(k);
+      if (!v) continue;
+      if (el instanceof HTMLSelectElement && [...el.options].some((o) => o.value === v)) el.value = v;
+      else if (el instanceof HTMLInputElement) el.value = v.slice(0, 60);
+    }
+
+    form.addEventListener('input', apply);
+    form.addEventListener('change', apply);
+    form.addEventListener('submit', (e) => e.preventDefault());
+    // reset clears the controls after the event, so re-apply on the next tick
+    form.addEventListener('reset', () => window.setTimeout(apply, 0));
+    apply();
+  }
+</script>
+
+<style>
+.lcat{background:var(--navy)}
+.lcat-heading{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(26px,3.4vw,38px);line-height:1.15;margin:0 0 14px;text-align:center}
+.lcat-intro{font-family:var(--sans);color:var(--pale);font-size:16px;line-height:1.65;max-width:62ch;margin:0 auto 34px;text-align:center}
+
+.lcat-filters{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:16px;margin:0 0 20px}
+.lcat-field{min-width:160px}
+.lcat-field-search{flex:1 1 240px;max-width:340px}
+.lcat-field label{display:block;font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin-bottom:6px}
+.lcat-field select,.lcat-field input{width:100%;background-color:color-mix(in srgb,var(--white) 6%,transparent);border:1px solid color-mix(in srgb,var(--pale) 35%,transparent);border-radius:4px;padding:12px 14px;color:var(--white);font-family:var(--sans);font-size:16px}
+.lcat-field input::placeholder{color:var(--muted)}
+.lcat-field select{appearance:none;padding-right:40px;background-image:linear-gradient(45deg,transparent 50%,var(--pale) 50%),linear-gradient(135deg,var(--pale) 50%,transparent 50%);background-position:calc(100% - 20px) center,calc(100% - 15px) center;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.lcat-field select option{background:var(--navy);color:var(--white)}
+.lcat-field select:focus-visible,.lcat-field input:focus-visible,.lcat-reset:focus-visible{outline:2px solid var(--white);outline-offset:2px;border-color:var(--blue)}
+.lcat-reset{font-family:var(--sans);font-size:15px;font-weight:600;color:var(--white);background:transparent;border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:12px 18px;cursor:pointer;transition:.18s}
+.lcat-reset:hover{border-color:var(--white)}
+
+.lcat-count{font-family:var(--geo);font-size:13px;letter-spacing:.06em;color:var(--pale);text-align:center;margin:0 0 24px}
+.lcat-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
+.lcat-grid[hidden]{display:none}
+@media(max-width:980px){.lcat-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.lcat-grid{grid-template-columns:1fr}.lcat-field,.lcat-field-search{flex:1 1 100%;max-width:none}.lcat-filters{align-items:stretch}}
+
+.lcat-empty{max-width:54ch;margin:0 auto;text-align:center;font-family:var(--sans);color:var(--pale);padding:32px 28px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);border-radius:10px}
+.lcat-empty[hidden]{display:none}
+.lcat-empty p{margin:0 0 12px}
+.lcat-empty p:last-child{margin:0}
+.lcat-empty a:not(.btn){color:var(--white);text-underline-offset:3px}
+.lcat-empty-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(20px,2.4vw,26px);line-height:1.2}
+.lcat-empty-solo{background:color-mix(in srgb,var(--white) 4%,transparent)}
+.lcat-empty .btn{display:inline-block;margin-top:6px}
+</style>

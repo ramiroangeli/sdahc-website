@@ -1,0 +1,6 @@
+# Published listings and withdrawals change what the public sees. A named code owner must review them.
+# To make this binding, enable "Require review from Code Owners" in the branch protection for main.
+/src/data/listings/approved/   @ramiroangeli
+/src/data/listings/withdrawn/  @ramiroangeli
+/src/data/listings/approvers.json  @ramiroangeli
+/src/data/listings/compliance.json  @ramiroangeli

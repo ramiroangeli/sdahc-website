@@ -9,7 +9,17 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test:listings": "node scripts/test-listings.mjs",
+    "check:privacy": "node scripts/check-dist-privacy.mjs",
+    "listings:photos": "node scripts/prepare-listing-photos.mjs",
+    "listings:schema": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --schema",
+    "listings:preflight": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --preflight",
+    "listings:propose": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --propose",
+    "listings:withdraw": "node scripts/listings-sync.mjs --withdraw",
+    "check:withdrawal": "node scripts/check-withdrawal.mjs",
+    "check:readiness": "node scripts/check-readiness.mjs",
+    "listings:manifest": "node scripts/print-schema-manifest.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

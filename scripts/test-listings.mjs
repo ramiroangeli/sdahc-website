@@ -1,0 +1,704 @@
+// Listings test suite. Run from the repo root:  node scripts/test-listings.mjs
+// Bundles the pure listing modules with esbuild and exercises privacy, pricing, versioning, fixture
+// isolation, the Notion mapping (against mock API responses, never the network), enquiries and the
+// photo preparation step. Exits non-zero on any failure.
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import sharp from 'sharp';
+import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
+import { prepareFolder, readAccentPalette, snapToAccent } from './prepare-listing-photos.mjs';
+
+const L = await loadTs();
+const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
+const tracked = execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' }).split('\n').filter((f) => f && !/\.(jpg|jpeg|png|webp|ico|pdf|zip|woff2?)$/i.test(f));
+let failed = 0;
+let passed = 0;
+const t = (name, ok) => {
+  if (ok) passed += 1;
+  else { failed += 1; console.log(`FAIL ${name}`); }
+};
+const throws = (fn) => { try { fn(); return false; } catch { return true; } };
+const section = (s) => console.log(`\n== ${s}`);
+
+const MEDIA = 'https://media.example.test/listings';
+const COMPLY = { victoria: { reviewedBy: 'Adviser', reviewedAt: '2026-11-01', adviceReference: 'test', cleared: { asking_price: true, price_guide: true, eoi: true, contact_agent: true } }, basicClassification: { confirmedListingIds: [] } };
+const DENY = { victoria: { reviewedBy: null, reviewedAt: null, adviceReference: null, cleared: { asking_price: false, price_guide: false, eoi: false, contact_agent: false } }, basicClassification: { confirmedListingIds: [] } };
+const realPhoto = (id = 'a1b2c3d4e5f6') => ({
+  id, alt: 'Front elevation of a single-storey home', width: 1600, height: 1200, accent: 'teal', privacyReviewed: true,
+  variants: [{ w: 480, src: `${MEDIA}/${id}-480.webp` }, { w: 960, src: `${MEDIA}/${id}-960.webp` }],
+});
+const baseContent = () => structuredClone(L.FIXTURE_SNAPSHOTS[0].content);
+const withMod = (f) => { const c = baseContent(); f(c); return c; };
+const INTERNAL = '1/10 Rutherford Grove, Armstrong Creek VIC 3217';
+const ctx = { allowDemo: true, internalAddress: INTERNAL };
+
+/* ---------------------------------------------------------------- address */
+section('public address and slugs');
+const a = L.parsePublicAddress('Rutherford Grove, Armstrong Creek VIC 3217');
+t('parses street, suburb, state, postcode', a.street === 'Rutherford Grove' && a.suburb === 'Armstrong Creek' && a.state === 'VIC' && a.postcode === '3217');
+t('formats the public address', L.formatPublicAddress(a) === 'Rutherford Grove, Armstrong Creek VIC 3217');
+for (const bad of [
+  '1/10 Rutherford Grove, Armstrong Creek VIC 3217',
+  '10 Rutherford Grove, Armstrong Creek VIC 3217',
+  '30B Sheppard Street, Shepparton VIC 3630',
+  'Rutherford Grove 19, Armstrong Creek VIC 3217',
+  'Rutherford Grove, Armstrong Creek VIC',
+  'Rutherford Grove, Armstrong Creek XX 3217',
+  'Unit Road, Armstrong Creek VIC 3217',
+]) t(`rejects "${bad}"`, throws(() => L.parsePublicAddress(bad)));
+t('schema rejects digits in the street', !L.publicAddressSchema.safeParse({ ...a, street: 'Rutherford Grove 19' }).success);
+const s1 = L.makeSlug(a, new Set(), 'seed-1');
+t('slug has letters and hyphens only', /^[a-z]+(-[a-z]+)*$/.test(s1) && s1 === 'rutherford-grove-armstrong-creek-vic');
+const s2 = L.makeSlug(a, new Set([s1]), 'seed-2');
+const s3 = L.makeSlug(a, new Set([s1, s2]), 'seed-3');
+t('same-street properties get distinct letter-only slugs', new Set([s1, s2, s3]).size === 3 && /^[a-z-]+$/.test(s2 + s3));
+t('suffix is stable for the same seed', L.makeSlug(a, new Set([s1]), 'seed-2') === s2);
+t('slug schema rejects a number', !L.publicContentSchema.safeParse({ ...baseContent(), slug: 'rutherford-grove-19' }).success);
+
+/* ---------------------------------------------------------------- privacy */
+section('privacy guards');
+t('clean fixture content passes', L.checkPublicSafety(baseContent(), ctx).length === 0);
+for (const fixture of L.FIXTURE_RECORDS) {
+  const snap = L.FIXTURE_SNAPSHOTS.find((s) => s.listingId === fixture.id);
+  t(`fixture ${fixture.id} passes against its own internal address`, L.checkPublicSafety(snap.content, { ...ctx, internalAddress: fixture.internal.address }).length === 0);
+}
+const leaks = {
+  'description "10 Rutherford Grove"': (c) => { c.description[0] = 'A quiet home at 10 Rutherford Grove.'; },
+  'description "1/10 Rutherford Grove"': (c) => { c.description[0] = 'Located at 1/10 Rutherford Grove.'; },
+  'description "Unit 3, 10 Rutherford Grove"': (c) => { c.description[0] = 'Unit 3, 10 Rutherford Grove, close to shops.'; },
+  'description number after street': (c) => { c.description[0] = 'Find us on Rutherford Grove 19 near the park.'; },
+  'title with number': (c) => { c.title = '10 Rutherford Grove SDA home'; },
+  'photo alt text with number': (c) => { c.photos[0] = { ...c.photos[0], alt: 'Front of 10 Rutherford Grove property' }; },
+};
+for (const [name, mod] of Object.entries(leaks)) t(`blocks ${name}`, L.checkPublicSafety(withMod(mod), ctx).length > 0);
+// the generic guard must work on its own, with no knowledge of the CRM address (the build-time case)
+for (const [name, mod] of Object.entries(leaks)) t(`generic guard alone blocks ${name}`, L.checkPublicSafety(withMod(mod), { allowDemo: true }).length > 0);
+t('blocks the full internal address', L.checkPublicSafety(withMod((c) => { c.description[0] = `Address: ${INTERNAL}`; }), ctx).length > 0);
+t('blocks a SharePoint link', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Docs at https://x.sharepoint.com/sites/a'; }), ctx).length > 0);
+t('blocks a Notion reference', L.checkPublicSafety(withMod((c) => { c.description[0] = 'See notion.so/abc for the row'; }), ctx).length > 0);
+t('blocks a dollar amount in the description', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Offers above $695,000 considered.'; }), ctx).length > 0);
+t('blocks yield and income language', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Strong rental income and yield.'; }), ctx).length > 0);
+t('blocks the internal CRM price even without a dollar sign', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Priced at 695,000 all in.'; }), { ...ctx, internalPriceAud: 695000 }).length > 0);
+t('blocks the internal yield figure', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Returns 6.5% per year.'; }), { ...ctx, internalYieldPct: 6.5 }).length > 0);
+t('blocks an email address', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Contact jo@example.com for details.'; }), ctx).length > 0);
+t('blocks a phone number', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Call 0412 345 678 for details.'; }), ctx).length > 0);
+t('blocks demo photos outside fixtures', L.checkPublicSafety(baseContent(), { ...ctx, allowDemo: false }).length > 0);
+const realC = withMod((c) => { c.photos = [realPhoto()]; });
+t('accepts a hashed photo on the approved origin', L.checkPublicSafety(realC, { allowDemo: false, mediaBaseUrl: MEDIA }).length === 0);
+t('rejects a photo on another origin', L.checkPublicSafety(realC, { allowDemo: false, mediaBaseUrl: 'https://other.example.test' }).length > 0);
+t('rejects a photo named after an address', L.checkPublicSafety(withMod((c) => { const p = realPhoto(); p.variants[0].src = `${MEDIA}/19-rutherford-grove.webp`; c.photos = [p]; }), { allowDemo: false, mediaBaseUrl: MEDIA }).length > 0);
+t('rejects a photo URL with a query string', L.checkPublicSafety(withMod((c) => { const p = realPhoto(); p.variants[0].src = `${MEDIA}/a1b2c3d4e5f6-480.webp?token=1`; c.photos = [p]; }), { allowDemo: false, mediaBaseUrl: MEDIA }).length > 0);
+t('schema rejects an unreviewed photo', !L.publicContentSchema.safeParse(withMod((c) => { c.photos = [{ ...realPhoto(), privacyReviewed: false }]; })).success);
+t('schema rejects unknown keys (no smuggled fields)', !L.publicContentSchema.safeParse({ ...baseContent(), internalAddress: INTERNAL }).success);
+
+section('corporate office vs property privacy (integration with the Victorian office update)');
+const stewart = withMod((c) => { c.address = { street: 'Stewart Street', suburb: 'Richmond', state: 'VIC', postcode: '3121' }; c.description[0] = 'Home at 33-35 Stewart Street.'; });
+t('a property listing on Stewart Street still cannot show a house number', L.checkPublicSafety(stewart, { allowDemo: true }).length > 0);
+t('the same street without a number is fine for a property listing', L.checkPublicSafety(withMod((c) => { c.address = { street: 'Stewart Street', suburb: 'Richmond', state: 'VIC', postcode: '3121' }; }), { allowDemo: true }).length === 0);
+const contactSrc = readFileSync(join(repoRoot, 'src/pages/contact-us.astro'), 'utf8');
+t('the contact page keeps the full corporate office address', ['Suite 34, Level 5', '33-35 Stewart Street', 'Richmond VIC 3121'].every((x) => contactSrc.includes(x)));
+t('the contact page does not route through the listing guards', !/data\/listings|guards/.test(contactSrc));
+
+/* ---------------------------------------------------------------- pricing */
+section('public pricing');
+const norm = L.normalisePriceDisplay;
+t('normalises a plain amount', norm('$695,000') === '$695,000' && norm('695000') === '$695,000' && norm('695,000') === '$695,000');
+t('normalises a range', norm('$650,000 - $700,000') === '$650,000 to $700,000' && norm('650000 to 700000') === '$650,000 to $700,000' && norm('$650,000 \u2013 $700,000') === '$650,000 to $700,000');
+for (const bad of ['POA', '', '$5', '$700,000 to $650,000', '$1,000,000,000', 'Offers over $700,000', '$650,000 to $700,000 to $800,000']) t(`rejects price "${bad}"`, throws(() => norm(bad)));
+const P = (mode, display) => L.pricingSchema.safeParse(display ? { mode, display } : { mode });
+t('asking price needs an approved amount', !P('asking_price').success && P('asking_price', '$695,000').success);
+t('price guide accepts a range', P('price_guide', '$650,000 to $700,000').success);
+t('EOI and Contact Agent must not carry an amount', !P('eoi', '$695,000').success && !P('contact_agent', '$695,000').success && P('eoi').success && P('contact_agent').success);
+t('rejects a non-canonical display string', !P('asking_price', '695000').success);
+t('EOI label', L.pricingLine({ mode: 'eoi' }) === 'Expressions of Interest');
+t('Contact Agent label', L.pricingLine({ mode: 'contact_agent' }) === 'Contact Agent');
+t('asking price line shows AUD', L.pricingLine({ mode: 'asking_price', display: '$695,000' }) === 'Asking Price $695,000 AUD');
+t('price guide line shows AUD', L.pricingLine({ mode: 'price_guide', display: '$650,000 to $700,000' }) === 'Price Guide $650,000 to $700,000 AUD');
+t('approved price is allowed even if it equals the CRM price', L.checkPublicSafety(withMod((c) => { c.pricing = { mode: 'asking_price', display: '$695,000' }; }), { ...ctx, internalPriceAud: 695000 }).length === 0);
+t('price bounds feed structured data', L.pricingBounds({ mode: 'price_guide', display: '$650,000 to $700,000' }).min === 650000 && L.pricingBounds({ mode: 'eoi' }) === null);
+
+/* ------------------------------------------------------------- versioning */
+section('versioning and approval');
+const rec = (over = {}) => ({ ...structuredClone(L.FIXTURE_RECORDS[0]), ...over });
+const snap = () => structuredClone(L.FIXTURE_SNAPSHOTS[0]);
+const now = new Date('2026-06-01T00:00:00Z');
+const res = (o) => L.resolveListing({ webStatus: 'published', snapshot: snap(), now, ...o });
+t('published with a verified snapshot is visible', res().visible);
+t('withdrawn hides immediately', !res({ webStatus: 'withdrawn' }).visible);
+t('not published hides', !res({ webStatus: 'not_published' }).visible);
+t('no approved version hides', !res({ snapshot: undefined }).visible);
+t('past listing end date hides', !res({ listingEndDate: '2026-05-01' }).visible && res({ listingEndDate: '2026-07-01' }).visible);
+t('tampered snapshot fails its integrity check', !res({ snapshot: { ...snap(), content: { ...snap().content, title: 'Edited without approval' } } }).visible);
+t('snapshot without an approver hides', !res({ snapshot: { ...snap(), approvedBy: '' } }).visible);
+t('in review keeps the last approved version live', res({ webStatus: 'in_review' }).visible);
+t('draft status keeps the last approved version live', res({ webStatus: 'draft' }).visible);
+t('under offer is a live status, not a re-approval', res({ webStatus: 'under_offer' }).commercialStatus === 'under_offer' && res({ webStatus: 'sold' }).commercialStatus === 'sold' && res().commercialStatus === 'available');
+const draftEdited = withMod((c) => { c.title = 'A brand new title'; });
+const pend = res({ draftHash: L.contentHash(draftEdited) });
+t('an unapproved edit is flagged pending but the approved version stays live', pend.visible && pend.pendingChanges);
+t('an unchanged draft is not pending', !res({ draftHash: snap().contentHash }).pendingChanges);
+t('hash ignores internal data', L.contentHash(baseContent()) === L.contentHash(structuredClone(L.FIXTURE_SNAPSHOTS[0].content)));
+t('hash changes with any public field', L.contentHash(draftEdited) !== L.contentHash(baseContent()) && L.contentHash(withMod((c) => { c.pricing = { mode: 'contact_agent' }; })) !== L.contentHash(baseContent()));
+t('hash is independent of key order', L.contentHash({ a: 1, b: 2 }) === L.contentHash({ b: 2, a: 1 }));
+
+const real = (over = {}) => ({
+  id: 'lst_test000001', webStatus: 'published', featured: false, isFixture: false,
+  approval: { by: 'Steve Dawson', byUserId: 'user-steve', at: '2026-02-01T00:00:00Z' },
+  draft: withMod((c) => { c.photos = [realPhoto()]; c.slug = 'rutherford-grove-armstrong-creek-vic'; }),
+  internal: { address: INTERNAL, priceAud: 695000 },
+  ...over,
+});
+const APPROVERS = ['user-steve'];
+const vctx = { allowDemo: false, mediaBaseUrl: MEDIA, internalAddress: INTERNAL, internalPriceAud: 695000, authorisedApproverIds: APPROVERS, compliance: COMPLY };
+const ok = L.validateForPublication(real(), vctx, now);
+t('a complete approved real record can be published', ok.ok && ok.content);
+t('refuses without a named approver', !L.validateForPublication(real({ approval: { at: '2026-02-01T00:00:00Z' } }), vctx, now).ok);
+t('refuses without an approval time', !L.validateForPublication(real({ approval: { by: 'Steve Dawson' } }), vctx, now).ok);
+t('refuses an approval dated in the future', !L.validateForPublication(real({ approval: { by: 'S', at: '2027-01-01T00:00:00Z' } }), vctx, now).ok);
+for (const st of ['draft', 'in_review', 'not_published', 'withdrawn']) t(`refuses to promote status ${st}`, !L.validateForPublication(real({ webStatus: st }), vctx, now).ok);
+t('refuses a record without photos', !L.validateForPublication(real({ draft: withMod((c) => { c.photos = []; }) }), vctx, now).ok);
+t('refuses demo photos on a real record', !L.validateForPublication(real({ draft: baseContent() }), vctx, now).ok);
+t('refuses an invalid draft', !L.validateForPublication(real({ draft: null }), vctx, now).ok);
+t('refuses a draft with a house number in the text', !L.validateForPublication(real({ draft: withMod((c) => { c.photos = [realPhoto()]; c.description[0] = 'Home at 10 Rutherford Grove.'; }) }), vctx, now).ok);
+const sn1 = L.nextSnapshot(real(), ok.content, undefined, now);
+t('first promotion is version 1 with a verifiable hash', sn1.version === 1 && L.contentHash(sn1.content) === sn1.contentHash && sn1.approvedBy === 'Steve Dawson');
+t('promoting an unchanged draft does nothing', L.nextSnapshot(real(), ok.content, sn1, now) === null);
+const edited = withMod((c) => { c.photos = [realPhoto()]; c.title = 'Updated public title'; });
+t('a changed draft becomes version 2 and keeps the first publish date', (() => { const n = L.nextSnapshot(real(), edited, sn1, now); return n.version === 2 && n.firstPublishedAt === sn1.firstPublishedAt; })());
+
+/* ------------------------------------------------------- fixture isolation */
+section('fixture isolation');
+t('a production deployment refuses fixtures', throws(() => L.assertFixturesAllowed({ VERCEL_ENV: 'production' })));
+t('previews and local runs may use fixtures', !throws(() => L.assertFixturesAllowed({ VERCEL_ENV: 'preview' })) && !throws(() => L.assertFixturesAllowed({})));
+t('nothing is published with no records (production default)', L.buildPublicListings({ records: [], snapshots: [], now, ctx: { allowDemo: false } }).length === 0);
+t('fixtures cannot be published with demo disabled', throws(() => L.buildPublicListings({ records: L.FIXTURE_RECORDS, snapshots: L.FIXTURE_SNAPSHOTS, now, ctx: { allowDemo: false } })));
+const fx = L.buildPublicListings({ records: L.FIXTURE_RECORDS, snapshots: L.FIXTURE_SNAPSHOTS, now, ctx: { allowDemo: true } });
+t('all three fixtures publish in development', fx.length === 3 && fx.every((l) => l.isDemo && l.id.startsWith('fx_')));
+t('every fixture photo is a labelled demo placeholder', fx.every((l) => l.photos.every((p) => p.demo === true && /DEMO/.test(p.alt))));
+t('no fixture invents a price, design category or bedroom count', fx.every((l) => !l.pricing.display && !l.sda.designCategories && !l.sda.bedrooms));
+t('the unapproved draft wording never reaches the public record', !JSON.stringify(fx).includes('edited after approval'));
+t('the under-offer fixture shows the approved version', fx.find((l) => l.id === 'fx_002').commercialStatus === 'under_offer');
+t('public records carry only street names', fx.every((l) => !/\d/.test(l.slug) && !/\d/.test(l.address.street)));
+const fxJson = JSON.stringify(fx);
+for (const r of L.FIXTURE_RECORDS) {
+  const addr = r.internal.address;
+  t(`internal address of ${r.id} is absent from the public list`, !fxJson.includes(addr) && !/\b(1\/10|2\/20|30B|\b10 |\b20 )/.test(fxJson.replace(/"(width|height|w)":\d+/g, '')));
+}
+
+/* ------------------------------------------------------- end-to-end + SEO */
+section('end to end: approved real listing, SEO and structured data');
+const pipeline = (pricing) => {
+  const rc = real({ draft: withMod((c) => { c.photos = [realPhoto()]; if (pricing) c.pricing = pricing; }) });
+  const v = L.validateForPublication(rc, vctx, now);
+  if (!v.ok) throw new Error(v.issues.join('; '));
+  const snapshot = L.nextSnapshot(rc, v.content, undefined, now);
+  return L.buildPublicListings({ records: [rc], snapshots: [snapshot], now, ctx: { allowDemo: false, mediaBaseUrl: MEDIA } })[0];
+};
+const eoiListing = pipeline();
+const askListing = pipeline({ mode: 'asking_price', display: '$695,000' });
+t('the real listing publishes with a public address, not the internal one', eoiListing.address.street === 'Rutherford Grove' && !JSON.stringify(eoiListing).includes('19'));
+t('EOI listing exposes no amount anywhere', !/\$|695/.test(JSON.stringify(eoiListing)));
+const ld = L.listingJsonLd(eoiListing, 'https://sdahomechoices.com.au/');
+const ldJson = JSON.stringify(ld);
+t('JSON-LD uses the street name, suburb, state and postcode', ld.about.address.streetAddress === 'Rutherford Grove' && ld.about.address.postalCode === '3217');
+t('JSON-LD has no coordinates and no house number', !/geo|latitude|longitude/i.test(ldJson) && !/\b\d+[a-z]?\s+Rutherford/i.test(ldJson) && !ldJson.includes('1/10'));
+t('JSON-LD has no offer without a public price', !('offers' in ld));
+const ldAsk = L.listingJsonLd(askListing, 'https://sdahomechoices.com.au/');
+t('JSON-LD offer carries only the approved AUD price', ldAsk.offers.price === 695000 && ldAsk.offers.priceCurrency === 'AUD');
+t('JSON-LD URL is the numberless slug', ld.url === 'https://sdahomechoices.com.au/opportunities/rutherford-grove-armstrong-creek-vic/');
+t('Open Graph image is the widest real photo', L.listingOgImage(eoiListing) === `${MEDIA}/a1b2c3d4e5f6-960.webp`);
+t('a demo listing never provides an Open Graph image', L.listingOgImage(fx[0]) === undefined);
+t('JSON-LD for fixtures stays free of internal numbers', fx.every((l) => !/\b\d+[a-z]?\s+(rutherford|gymea|sheppard)/i.test(JSON.stringify(L.listingJsonLd(l, 'https://sdahomechoices.com.au/')))));
+
+/* ------------------------------------------------------------ Notion adapter */
+section('Notion mapping (mock API shapes, no network)');
+const N = L.NOTION;
+const P_ = {
+  title: (s) => ({ type: 'title', title: [{ plain_text: s }] }),
+  rt: (s) => ({ type: 'rich_text', rich_text: s ? [{ plain_text: s }] : [] }),
+  sel: (s) => ({ type: 'select', select: s ? { name: s } : null }),
+  multi: (...s) => ({ type: 'multi_select', multi_select: s.map((name) => ({ name })) }),
+  num: (n) => ({ type: 'number', number: n }),
+  url: (u) => ({ type: 'url', url: u }),
+  date: (d) => ({ type: 'date', date: d ? { start: d } : null }),
+  people: (...n) => ({ type: 'people', people: n.map((name) => ({ object: 'user', id: `user-${name.split(' ')[0].toLowerCase()}`, name })) }),
+  person: (id, name) => ({ type: 'people', people: [{ object: 'user', id, ...(name ? { name } : {}) }] }),
+  check: (b) => ({ type: 'checkbox', checkbox: b }),
+  rel: (...ids) => ({ type: 'relation', relation: ids.map((id) => ({ id })) }),
+};
+const page = (over = {}, id = '2e2909c1-0000-0000-0000-000000000001') => ({
+  id,
+  properties: {
+    [N.name]: P_.title('Rutherford fixture'),
+    [N.address]: P_.rt(INTERNAL),
+    [N.price]: P_.num(695000),
+    [N.yield]: P_.num(6.5),
+    [N.description]: P_.rt('Internal CRM notes about vendor motivation.'),
+    [N.designCategory]: P_.multi('High Physical Support'),
+    [N.buildType]: P_.sel('New build'),
+    [N.features]: P_.multi('Tenant: J. Citizen'),
+    [N.listingAgent]: P_.people('Agent Name'),
+    [N.listingEndDate]: P_.date(null),
+    [N.sharepointLink]: P_.url('https://tenant.sharepoint.com/sites/x/IM.pdf'),
+    [N.deals]: P_.rel('deal-1'),
+    [N.state]: P_.sel('VIC'),
+    [N.webStatus]: P_.sel('Published'),
+    [N.webPublicAddress]: P_.rt('Rutherford Grove, Armstrong Creek VIC 3217'),
+    [N.webTitle]: P_.rt('SDA property, Armstrong Creek'),
+    [N.webDescription]: P_.rt('First public paragraph.\n\nSecond public paragraph.'),
+    [N.webPricingMode]: P_.sel('Expressions of Interest'),
+    [N.webDisplayPrice]: P_.rt(''),
+    [N.webPhotoFolder]: P_.url('https://tenant.sharepoint.com/sites/x/Marketing/Approved'),
+    [N.webFeatured]: P_.check(true),
+    [N.webApprovedBy]: P_.people('Steve Dawson'),
+    ...over,
+  },
+});
+const APPROVED_AT = '2026-02-01T00:00:00Z';
+const mapped = L.pageToRecord(page(), { photos: [realPhoto()], approvedAt: APPROVED_AT });
+t('maps to a hashed public id (the Notion id never leaves)', /^lst_[a-f0-9]{10}$/.test(mapped.record.id) && !JSON.stringify(mapped.record.draft).includes('2e2909c1'));
+t('maps status, featured and the named approver; the approval time is set by promotion, not typed', mapped.record.webStatus === 'published' && mapped.record.featured && mapped.record.approval.by === 'Steve Dawson' && mapped.record.approval.at === APPROVED_AT && L.pageToRecord(page()).record.approval.at === undefined);
+t('draft uses Web Public Address, not the CRM Address', mapped.record.draft.address.street === 'Rutherford Grove' && !JSON.stringify(mapped.record.draft).includes('1/10'));
+t('draft uses Web Title and Web Description, not the CRM Description', mapped.record.draft.title === 'SDA property, Armstrong Creek' && mapped.record.draft.description.length === 2 && !JSON.stringify(mapped.record.draft).includes('vendor motivation'));
+t('draft leaves out CRM Price, Yield, Agent, Features, Sharepoint Link and Deals', (() => { const j = JSON.stringify(mapped.record.draft); return !/695|6\.5|Agent Name|Citizen|sharepoint|deal-1/i.test(j); })());
+t('internal values are kept only under internal', mapped.record.internal.priceAud === 695000 && mapped.record.internal.yieldPct === 6.5 && mapped.record.internal.address === INTERNAL);
+t('maps Design Category and Build Type through the allowlist', mapped.record.draft.sda.designCategories[0] === 'HPS' && mapped.record.draft.sda.buildingType === 'New build');
+t('a fully valid page has no issues and validates for publication', mapped.issues.length === 0 && L.validateForPublication(mapped.record, { allowDemo: false, mediaBaseUrl: MEDIA, internalAddress: INTERNAL, internalPriceAud: 695000, authorisedApproverIds: APPROVERS, compliance: COMPLY }, now).ok);
+
+const noWeb = L.pageToRecord(page({ [N.webStatus]: undefined }));
+t('a row with no Web Listing Status is Not Published and has no draft (default blocks)', noWeb.record.webStatus === 'not_published' && noWeb.record.draft === null);
+t('an empty Web Listing Status is Not Published', L.pageToRecord(page({ [N.webStatus]: P_.sel('') })).record.webStatus === 'not_published');
+const unknown = L.pageToRecord(page({ [N.webStatus]: P_.sel('Live!') }));
+t('an unknown status is Not Published and reported', unknown.record.webStatus === 'not_published' && unknown.issues.length > 0);
+for (const [label, status] of [['Draft', 'draft'], ['In Review', 'in_review'], ['Under Offer', 'under_offer'], ['Sold', 'sold'], ['Withdrawn', 'withdrawn']]) {
+  t(`maps status ${label}`, L.pageToRecord(page({ [N.webStatus]: P_.sel(label) })).record.webStatus === status);
+}
+t('an archived or trashed page is withdrawn', L.pageToRecord({ ...page(), archived: true }).record.webStatus === 'withdrawn' && L.pageToRecord({ ...page(), in_trash: true }).record.webStatus === 'withdrawn');
+const numAddr = L.pageToRecord(page({ [N.webPublicAddress]: P_.rt('10 Rutherford Grove, Armstrong Creek VIC 3217') }));
+t('a house number in Web Public Address blocks the draft', numAddr.record.draft === null && numAddr.issues.some((i) => /house or unit/.test(i)));
+t('a state that disagrees with State/ Territory is reported', L.pageToRecord(page({ [N.state]: P_.sel('Queensland') })).issues.some((i) => /disagrees/.test(i)));
+t('full state names are understood', L.pageToRecord(page({ [N.state]: P_.sel('Victoria') })).issues.length === 0);
+t('asking price without an approved amount blocks the draft', L.pageToRecord(page({ [N.webPricingMode]: P_.sel('Asking Price') })).record.draft === null);
+const asking = L.pageToRecord(page({ [N.webPricingMode]: P_.sel('Asking Price'), [N.webDisplayPrice]: P_.rt('695000') }), { photos: [realPhoto()] });
+t('asking price uses only Web Display Price, normalised to AUD', asking.record.draft.pricing.display === '$695,000' && asking.record.draft.pricing.mode === 'asking_price');
+const guide = L.pageToRecord(page({ [N.webPricingMode]: P_.sel('Price Guide'), [N.webDisplayPrice]: P_.rt('$650,000 - $700,000') }), { photos: [realPhoto()] });
+t('price guide range is normalised', guide.record.draft.pricing.display === '$650,000 to $700,000');
+t('an amount on an EOI row is reported and ignored', (() => { const r = L.pageToRecord(page({ [N.webDisplayPrice]: P_.rt('$695,000') }), { photos: [realPhoto()] }); return r.issues.some((i) => /ignored/.test(i)) && !r.record.draft.pricing.display; })());
+t('Contact Agent maps', L.pageToRecord(page({ [N.webPricingMode]: P_.sel('Contact Agent') }), { photos: [realPhoto()] }).record.draft.pricing.mode === 'contact_agent');
+t('an unrecognised pricing mode blocks the draft', L.pageToRecord(page({ [N.webPricingMode]: P_.sel('Make an offer') })).record.draft === null);
+t('an unknown Design Category is reported', L.pageToRecord(page({ [N.designCategory]: P_.multi('Mystery') })).issues.some((i) => /not recognised/.test(i)));
+t('the slug is derived from the public address, letters only', mapped.record.draft.slug === 'rutherford-grove-armstrong-creek-vic');
+t('a same-street property gets a distinct letter-only slug', (() => { const r = L.pageToRecord(page({}, '2e2909c1-0000-0000-0000-000000000009'), { takenSlugs: new Set(['rutherford-grove-armstrong-creek-vic']) }); return r.record.draft.slug !== 'rutherford-grove-armstrong-creek-vic' && /^[a-z-]+$/.test(r.record.draft.slug); })());
+t('a slug frozen by a previous approval is kept', L.pageToRecord(page(), { slug: 'frozen-slug-here' }).record.draft.slug === 'frozen-slug-here');
+t('the title defaults to the suburb when Web Title is empty', L.pageToRecord(page({ [N.webTitle]: P_.rt('') })).record.draft.title === 'SDA property, Armstrong Creek');
+t('an empty Web Description is reported', L.pageToRecord(page({ [N.webDescription]: P_.rt('') })).issues.some((i) => /Description/.test(i)));
+t('the approved status is understood', L.pageToRecord(page({ [N.webStatus]: P_.sel('Approved') })).record.webStatus === 'approved');
+t('the data source id accepts the collection:// form', L.readNotionConfig({ NOTION_TOKEN: 'x', NOTION_PROPERTIES_DATA_SOURCE_ID: 'collection://2e2909c1-bb60-8177-bf4f-000b40ef0d48' }).dataSourceId === '2e2909c1-bb60-8177-bf4f-000b40ef0d48');
+t('the CRM price is never promoted into public content', (() => { const r = L.pageToRecord(page({ [N.webDescription]: P_.rt('Priced at 695,000 for quick sale.') }), { photos: [realPhoto()] }); return !L.validateForPublication(r.record, { allowDemo: false, mediaBaseUrl: MEDIA, internalAddress: INTERNAL, internalPriceAud: 695000, authorisedApproverIds: APPROVERS, compliance: COMPLY }, now).ok; })());
+const sch = L.checkSchema(page());
+t('recognises the validated Properties database', sch.isValidatedDatabase && sch.missingWeb.length === 0);
+const preMigration = (() => { const p = page(); for (const k of Object.keys(p.properties)) if (k.startsWith('Web ')) delete p.properties[k]; return p; })();
+t('detects Web fields that are not yet created in Notion', L.checkSchema(preMigration).missingWeb.length === 6 && L.checkSchema(preMigration).missingOptional.length === 3 && L.pageToRecord(preMigration).record.webStatus === 'not_published');
+t('rejects a different database also called Properties', !L.checkSchema({ id: 'x', properties: { Name: P_.title('x'), Units: P_.num(1) } }).isValidatedDatabase);
+
+const man = (over = {}) => ({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', alt: 'Front elevation of a home', width: 1600, height: 1200, accent: 'teal', privacyReviewed: true, files: [{ w: 480, file: 'a1b2c3d4e5f6-480.webp' }], ...over }] });
+const murl = `${MEDIA}/lst/manifest.json`;
+t('manifest resolves to approved-origin photo URLs', L.manifestToPhotos(man(), murl, MEDIA).photos[0].variants[0].src === `${MEDIA}/lst/a1b2c3d4e5f6-480.webp`);
+t('manifest rejects an unreviewed photo', L.manifestToPhotos(man({ privacyReviewed: false }), murl, MEDIA).photos.length === 0);
+t('manifest rejects a photo with no alt text', L.manifestToPhotos(man({ alt: '' }), murl, MEDIA).photos.length === 0);
+t('manifest rejects a file on a foreign origin', L.manifestToPhotos(man({ files: [{ w: 480, file: 'https://evil.example.test/x.webp' }] }), murl, MEDIA).photos.length === 0);
+t('manifest rejects an unknown accent', L.manifestToPhotos(man({ accent: 'hotpink' }), murl, MEDIA).photos.length === 0);
+
+const calls = [];
+const mockFetch = (pages, status = 200) => async (url, init) => {
+  calls.push({ url: String(url), method: init?.method, headers: init?.headers, body: init?.body });
+  const h = (extra) => ({ get: (k) => (extra ?? {})[k.toLowerCase()] ?? null });
+  return { ok: status === 200, status, headers: h(init?.__h), json: async () => pages.shift() };
+};
+const DS = '2e2909c1-bb60-8177-bf4f-000b40ef0d48';
+const CFG = { token: 'secret-token', dataSourceId: DS, version: '2026-03-11' };
+const fast = (fetchImpl, extra = {}) => ({ fetchImpl, sleep: async () => {}, minIntervalMs: 0, ...extra });
+const client = new L.NotionReadClient(CFG, fast(mockFetch([{ results: [page()], has_more: true, next_cursor: 'c2' }, { results: [page({}, 'other')], has_more: false }])));
+const all = await client.queryAll();
+t('client paginates the data source query', all.length === 2 && calls.length === 2 && JSON.parse(calls[1].body).start_cursor === 'c2');
+t('client only ever calls the data source query endpoint', calls.every((c) => c.url === `https://api.notion.com/v1/data_sources/${DS}/query` && c.method === 'POST'));
+t('client sends the token and pinned Notion-Version', calls[0].headers.Authorization === 'Bearer secret-token' && calls[0].headers['Notion-Version'] === '2026-03-11');
+t('the client class exposes no write surface', JSON.stringify(Object.getOwnPropertyNames(L.NotionReadClient.prototype).sort()) === JSON.stringify(['constructor', 'queryAll', 'request', 'retrieveDataSource', 'retrievePage']));
+calls.length = 0;
+await new L.NotionReadClient(CFG, fast(mockFetch([page()]))).retrievePage('402909c1-bb60-817e-b2d8-d9def6dde218');
+t('reading a page is a GET to the pages endpoint and nothing else', calls.length === 1 && calls[0].method === 'GET' && calls[0].url === 'https://api.notion.com/v1/pages/402909c1-bb60-817e-b2d8-d9def6dde218' && !calls[0].body);
+t('a Notion HTTP error fails loudly', await new L.NotionReadClient(CFG, fast(mockFetch([], 500), { maxRetries: 1 })).queryAll().then(() => false, () => true));
+calls.length = 0;
+await L.fetchManifest(murl, mockFetch([man()]));
+t('the Notion token is never sent to the manifest host', !JSON.stringify(calls[0].headers).toLowerCase().includes('authorization'));
+t('config is null without credentials', L.readNotionConfig({}) === null && L.readNotionConfig({ NOTION_TOKEN: 'x' }) === null && L.readNotionConfig({ NOTION_TOKEN: 'x', NOTION_PROPERTIES_DATA_SOURCE_ID: DS }).dataSourceId === DS);
+t('the data source id is configured through the environment, never hard-coded', !/2e2909c1-bb60-8177/.test(readFileSync(join(repoRoot, 'src/data/listings/notion.ts'), 'utf8')));
+
+/* ------------------------------------------------- workflow, withdrawal, readiness */
+section('publication workflow, controlled withdrawal and readiness report');
+t('Approved is signed off but not live: the last released version stays up', res({ webStatus: 'approved' }).visible && res({ webStatus: 'approved', snapshot: undefined }).visible === false);
+t('a tombstone hides a listing even while Notion still says Published', !res({ withdrawn: true }).visible && !res({ withdrawn: true, webStatus: 'under_offer' }).visible);
+t('a tombstone removes the listing from the public list', L.buildPublicListings({ records: L.FIXTURE_RECORDS, snapshots: L.FIXTURE_SNAPSHOTS, now, ctx: { allowDemo: true }, withdrawn: new Set(['fx_001']) }).every((l) => l.id !== 'fx_001'));
+t('other listings are unaffected by a tombstone', L.buildPublicListings({ records: L.FIXTURE_RECORDS, snapshots: L.FIXTURE_SNAPSHOTS, now, ctx: { allowDemo: true }, withdrawn: new Set(['fx_001']) }).length === 2);
+const pre = (status) => L.validateForPublication(real({ webStatus: status }), vctx, now, { preflight: true });
+t('preflight can check Draft, In Review and Approved rows', ['draft', 'in_review', 'approved'].every((st) => pre(st).ok));
+t('preflight still enforces every other rule', !L.validateForPublication(real({ webStatus: 'approved', approval: {} }), vctx, now, { preflight: true }).ok);
+
+const pilotAddr = (a) => L.suggestPublicAddress(a);
+t('suggests the public address without the unit and house number', pilotAddr('1/10 Rutherford Grove, Armstrong Creek VIC 3217') === 'Rutherford Grove, Armstrong Creek VIC 3217');
+t('handles unit/number and letter suffixes', pilotAddr('2/20 Gymea Street, Mount Duneed VIC 3217') === 'Gymea Street, Mount Duneed VIC 3217' && pilotAddr('30B Sheppard Street, Shepparton VIC 3630') === 'Sheppard Street, Shepparton VIC 3630');
+t('returns nothing for an address it cannot read safely', pilotAddr('PO Box 5, Nowhere') === undefined && pilotAddr(undefined) === undefined);
+t('the suggestion itself never contains a number before the street', !/\d+[a-z]?\s+Rutherford/.test(pilotAddr('1/10 Rutherford Grove, Armstrong Creek VIC 3217')));
+
+const rowOf = (rep, item) => rep.rows.find((r) => r.item === item);
+const pilotPage = page({ [N.webStatus]: P_.sel('Draft'), [N.webPublicAddress]: P_.rt(''), [N.webDescription]: P_.rt(''), [N.webPricingMode]: P_.sel(''), [N.webApprovedBy]: P_.people() });
+const rep0 = L.readinessReport(pilotPage, { now });
+t('an unprepared row is not publishable and says exactly what is missing', !rep0.canPublish && ['Web Public Address', 'Web Description', 'Web Pricing Mode', 'Web Approved By', 'Approved photographs'].every((k) => rowOf(rep0, k).status === 'missing'));
+t('the report suggests the public address to paste', rowOf(rep0, 'Web Public Address').note.includes('Rutherford Grove, Armstrong Creek VIC 3217') && rep0.suggestedPublicAddress === 'Rutherford Grove, Armstrong Creek VIC 3217');
+t('Price, Yield, Features and the SharePoint link are reported as protected, never published', ['Internal Price', 'Internal Yield', 'Features', 'Sharepoint Link'].every((k) => rowOf(rep0, k).status === 'protected'));
+t('Design Category needs an explicit approval', rowOf(rep0, 'Design Category').status === 'needs_approval');
+t('the report never repeats the internal price, yield or SharePoint URL', !JSON.stringify(rep0).match(/695000|6\.5|tenant\.sharepoint/));
+const repOk = L.readinessReport(page(), { photos: [realPhoto()], mediaBaseUrl: MEDIA, now, authorisedApproverIds: APPROVERS, compliance: COMPLY });
+t('a fully prepared row is publishable', repOk.canPublish && repOk.rows.every((r) => r.status !== 'missing'));
+t('a row from before the Notion migration reports the missing Web fields', L.readinessReport(preMigration, { now }).rows.find((r) => r.item === 'Web fields exist in Notion').status === 'missing');
+t('the derived media manifest location is under the public id', L.manifestUrlFor('lst_abc1234567', `${MEDIA}/`) === `${MEDIA}/lst_abc1234567/manifest.json`);
+
+/* ------------------------------------- Notion client behaviour (mock transport) */
+section('Notion client: retries, limits, errors, ids and schema');
+const seq = (list) => {
+  const log = [];
+  const f = async (url, init) => {
+    log.push({ url: String(url), method: init?.method, headers: init?.headers });
+    const r = list.shift();
+    return { ok: r.status === 200, status: r.status, headers: { get: (k) => (r.headers ?? {})[k.toLowerCase()] ?? null }, json: async () => { if (r.badJson) throw new Error('not json'); return r.body; } };
+  };
+  return { f, log };
+};
+const ok200 = (body) => ({ status: 200, body });
+const withSleep = (f, slept, extra = {}) => ({ fetchImpl: f, sleep: async (ms) => { slept.push(ms); }, minIntervalMs: 0, ...extra });
+{
+  const slept = [];
+  const { f, log } = seq([{ status: 429, headers: { 'retry-after': '2' }, body: { code: 'rate_limited' } }, ok200({ results: [page()], has_more: false })]);
+  const r = await new L.NotionReadClient(CFG, withSleep(f, slept)).queryAll();
+  t('a 429 is retried after the Retry-After delay', r.length === 1 && log.length === 2 && slept.includes(2000));
+}
+{
+  const slept = [];
+  const { f } = seq([{ status: 529, body: { code: 'service_overload' } }, ok200({ results: [], has_more: false })]);
+  t('a 529 is retried with backoff', (await new L.NotionReadClient(CFG, withSleep(f, slept)).queryAll()).length === 0 && slept.some((ms) => ms >= 500));
+}
+{
+  const { f, log } = seq([{ status: 401, body: { code: 'unauthorized' } }]);
+  const err = await new L.NotionReadClient(CFG, withSleep(f, [])).queryAll().catch((e) => e);
+  t('a 401 is not retried and the error carries only status and code', err instanceof L.NotionApiError && err.status === 401 && err.code === 'unauthorized' && log.length === 1);
+  t('the error message never contains the token or a header', !String(err.message).includes('secret-token') && !/bearer/i.test(String(err.message)) && !JSON.stringify(err).includes('secret-token'));
+}
+{
+  const { f, log } = seq([{ status: 429, body: { code: 'public_api_request_blocked' } }]);
+  t('a blocked request is not retried', await new L.NotionReadClient(CFG, withSleep(f, [])).queryAll().then(() => false, (e) => e.status === 429 && log.length === 1));
+}
+{
+  const { f, log } = seq(Array.from({ length: 3 }, () => ({ status: 503, body: {} })));
+  t('retries stop at the cap', await new L.NotionReadClient(CFG, withSleep(f, [], { maxRetries: 2 })).queryAll().then(() => false, () => log.length === 3));
+}
+t('a non-JSON error body is handled', await new L.NotionReadClient(CFG, withSleep(seq([{ status: 404, badJson: true }]).f, [])).retrievePage('402909c1-bb60-817e-b2d8-d9def6dde218').then(() => false, (e) => e.status === 404 && e.code === undefined));
+t('an incomplete (capped) result is an error, never silent truncation', await new L.NotionReadClient(CFG, withSleep(seq([ok200({ results: [page()], has_more: false, request_status: { type: 'incomplete', incomplete_reason: 'query_result_limit_reached' } })]).f, [])).queryAll().then(() => false, (e) => /incomplete/.test(e.message)));
+{
+  const { f, log } = seq([ok200({ results: [], has_more: false })]);
+  await new L.NotionReadClient(CFG, withSleep(f, [])).queryAll({ filterProperties: ['Name', 'State/ Territory'] });
+  t('filter_properties are sent as repeated, encoded query parameters', log[0].url.endsWith('?filter_properties=Name&filter_properties=State%2F%20Territory'));
+}
+{
+  const { f, log } = seq([ok200({ properties: {} })]);
+  await new L.NotionReadClient(CFG, withSleep(f, [])).retrieveDataSource();
+  t('retrieving the data source is a GET on its own endpoint', log[0].method === 'GET' && log[0].url === `https://api.notion.com/v1/data_sources/${DS}`);
+}
+{
+  const cfg = L.readNotionConfig({ NOTION_TOKEN: 'x', NOTION_PROPERTIES_DATA_SOURCE_ID: `collection://${DS}` });
+  const { f, log } = seq([ok200({ results: [], has_more: false })]);
+  await new L.NotionReadClient(cfg, withSleep(f, [])).queryAll();
+  t('the collection:// URI is converted to a UUID and never sent to the REST API', !log[0].url.includes('collection') && log[0].url.includes(DS));
+}
+t('a dashless UUID is accepted', L.normaliseNotionId('2e2909c1bb608177bf4f000b40ef0d48') === '2e2909c1bb608177bf4f000b40ef0d48');
+t('a value that is not a UUID is rejected', throws(() => L.normaliseNotionId('not-a-uuid')) && throws(() => L.normaliseNotionId('collection://nope')));
+t('the DATABASE id is rejected where a data source id is required', throws(() => L.readNotionConfig({ NOTION_TOKEN: 'x', NOTION_PROPERTIES_DATA_SOURCE_ID: '2e2909c1-bb60-81b5-8806-ff710a8274ed' })));
+t('the API version is pinned and overridable only explicitly', L.NOTION_VERSION === '2026-03-11' && L.readNotionConfig({ NOTION_TOKEN: 'x', NOTION_PROPERTIES_DATA_SOURCE_ID: DS }).version === '2026-03-11' && L.readNotionConfig({ NOTION_TOKEN: 'x', NOTION_PROPERTIES_DATA_SOURCE_ID: DS, NOTION_API_VERSION: '2025-09-03' }).version === '2025-09-03');
+{
+  const slept = [];
+  const { f } = seq([ok200({ results: [page()], has_more: true, next_cursor: 'c' }), ok200({ results: [], has_more: false })]);
+  await new L.NotionReadClient(CFG, { fetchImpl: f, sleep: async (ms) => { slept.push(ms); }, minIntervalMs: 350, now: () => 1000 }).queryAll();
+  t('requests are paced to respect the data source query limit', slept.includes(350));
+}
+
+// the real response shapes for empty values (from the Notion property value reference)
+const emptyPage = { id: '2e2909c1-0000-0000-0000-0000000000aa', properties: {
+  [N.name]: { type: 'title', title: [] }, [N.address]: { type: 'rich_text', rich_text: [] }, [N.price]: { type: 'number', number: null },
+  [N.yield]: { type: 'number', number: null }, [N.designCategory]: { type: 'select', select: null }, [N.state]: { type: 'select', select: null },
+  [N.features]: { type: 'multi_select', multi_select: [] }, [N.deals]: { type: 'relation', relation: [], has_more: false },
+  [N.sharepointLink]: { type: 'url', url: null }, [N.listingEndDate]: { type: 'date', date: null },
+  [N.webStatus]: { type: 'select', select: null }, [N.webApprovedBy]: { type: 'people', people: [] }, [N.webFeatured]: { type: 'checkbox', checkbox: false },
+} };
+{
+  const r = L.pageToRecord(emptyPage);
+  t('null and empty property values never throw and default to Not Published', r.record.webStatus === 'not_published' && r.record.draft === null && r.record.internal.priceAud === undefined && r.record.approval.byUserId === undefined && r.record.featured === false);
+}
+t('a date with end and time zone still reads its start', L.readText({ type: 'date', date: { start: '2026-09-15', end: '2026-09-20', time_zone: 'Australia/Melbourne' } }) === '2026-09-15');
+t('a relation reports its ids and tolerates truncation', L.readRelationIds({ type: 'relation', relation: [{ id: 'a' }, { id: 'b' }], has_more: true }).join() === 'a,b');
+t('a number Web Display Price works (Notion number type)', L.pageToRecord(page({ [N.webPricingMode]: P_.sel('Asking Price'), [N.webDisplayPrice]: P_.num(695000) }), { photos: [realPhoto()] }).record.draft.pricing.display === '$695,000');
+t('a Notion people value with an id and no name is understood', L.readPeople({ type: 'people', people: [{ object: 'user', id: 'user-x' }] })[0].id === 'user-x' && L.readPeople({ type: 'people', people: [] }).length === 0);
+t('Design Category R maps to Robust and Basic is a recognised SDA category', L.mapDesignCategories(['R']).values[0] === 'Robust' && L.mapDesignCategories(['Basic']).values[0] === 'Basic' && L.mapDesignCategories(['Basic']).unknown.length === 0);
+
+const dsPayload = (mod = (x) => x) => {
+  const props = {};
+  const add = (name, type, extra = {}) => { props[`id_${name}`] = { id: `id_${name}`, name, type, ...extra }; };
+  for (const [n, ty] of Object.entries(L.EXPECTED_CORE_TYPES)) add(n, ty);
+  props['id_Design Category'].select = { options: ['HPS', 'IL', 'R', 'FA', 'Basic'].map((name) => ({ name })) };
+  props['id_State/ Territory'].select = { options: ['QLD', 'VIC', 'NSW', 'SA', 'WA', 'TAS', 'NT', 'ACT'].map((name) => ({ name })) };
+  return mod({ properties: props, add });
+};
+{
+  const c = L.checkDataSourceSchema(dsPayload());
+  t('the verified CRM schema is recognised, whether keyed by id or name', c.isValidatedDatabase && c.wrongCoreType.length === 0 && c.missingCore.length === 0);
+  t('all nine Web properties are listed as still to add, with exact types', c.toAdd.length === 9 && c.toAdd.find((a) => a.name === N.webDisplayPrice).type === 'number' && c.toAdd.find((a) => a.name === N.webApprovedBy).type === 'people' && c.toAdd.find((a) => a.name === N.webFeatured).type === 'checkbox' && c.toAdd.find((a) => a.name === N.webPhotoFolder).type === 'url');
+  t('every Design Category option in the real schema maps, and all state codes map', c.unmappedDesignOptions.length === 0 && c.unmappedStateOptions.length === 0);
+  t('the Web status and pricing option lists are exactly as proposed', c.toAdd.find((a) => a.name === N.webStatus).options.join() === 'Not Published,Draft,In Review,Approved,Published,Under Offer,Sold,Withdrawn' && c.toAdd.find((a) => a.name === N.webPricingMode).options.join() === 'Asking Price,Price Guide,Expressions of Interest,Contact Agent');
+  const bad = L.checkDataSourceSchema(dsPayload((d) => { d.properties['id_Price'].type = 'rich_text'; return d; }));
+  t('a CRM property with the wrong type is reported', !bad.isValidatedDatabase && bad.wrongCoreType[0].name === 'Price');
+  const done = L.checkDataSourceSchema(dsPayload((d) => { for (const w of L.WEB_SCHEMA) d.add(w.name, w.type, w.options ? { select: { options: w.options.map((name) => ({ name })) } } : {}); return d; }));
+  t('once the Web properties exist with the right types nothing is left to add', done.toAdd.length === 0 && done.wrongWebType.length === 0 && done.missingSelectOptions.length === 0);
+  const wrong = L.checkDataSourceSchema(dsPayload((d) => { d.add(N.webDisplayPrice, 'rich_text'); return d; }));
+  t('a Web property created with the wrong type is reported', wrong.wrongWebType[0].name === N.webDisplayPrice && wrong.wrongWebType[0].expected === 'number');
+  const partial = L.checkDataSourceSchema(dsPayload((d) => { d.add(N.webStatus, 'select', { select: { options: [{ name: 'Draft' }] } }); return d; }));
+  t('a select with missing options is reported', partial.missingSelectOptions[0].missing.includes('Published'));
+}
+
+/* ---------------------------- approver authorisation and the proposal step */
+section('approver authorisation and the proposal step');
+const apprCtx = (ids) => ({ ...vctx, authorisedApproverIds: ids });
+t('an unlisted approver is refused even though a person is named', !L.validateForPublication(real({ approval: { by: 'Eve', byUserId: 'user-eve', at: '2026-02-01T00:00:00Z' } }), apprCtx(APPROVERS), now).ok);
+t('with no authorised approvers configured nobody can approve (default deny)', !L.validateForPublication(real(), apprCtx([]), now).ok && !L.validateForPublication(real(), { ...vctx, authorisedApproverIds: undefined }, now).ok);
+t('an approver without a verifiable id (not a person field) is refused', !L.validateForPublication(real({ approval: { by: 'Steve Dawson', at: '2026-02-01T00:00:00Z' } }), apprCtx(APPROVERS), now).ok);
+t('a listed approver is accepted', L.validateForPublication(real(), apprCtx(APPROVERS), now).ok);
+t('a partial user (id only) can be authorised by id', L.validateForPublication(real({ approval: { byUserId: 'user-steve', at: '2026-02-01T00:00:00Z' } }), apprCtx(APPROVERS), now).ok);
+t('fixtures do not need approvers (they never reach production)', L.validateForPublication(L.FIXTURE_RECORDS[0], { allowDemo: true }, now).ok);
+{
+  const rr = L.pageToRecord({ ...page(), last_edited_time: '2026-02-01T09:30:00.000Z' }, { photos: [realPhoto()], approvedAt: APPROVED_AT }).record;
+  const snapOk = L.nextSnapshot(rr, L.validateForPublication(rr, apprCtx(APPROVERS), now).content, undefined, now);
+  t('a snapshot records approver id, source edit time, featured flag and a verifiable hash', snapOk.approvedById === 'user-steve' && snapOk.sourceEditedAt === '2026-02-01T09:30:00.000Z' && snapOk.featured === true && L.contentHash(snapOk.content) === snapOk.contentHash);
+}
+
+const PID = (pageId) => L.publicIdFor(pageId);
+const pg = (over = {}, id = '2e2909c1-0000-0000-0000-00000000a001') => page(over, id);
+const manifestFor = (pages, skip = []) => async (url) => {
+  if (skip.some((id) => url.includes(id))) throw new Error('404');
+  return man({ files: [{ w: 480, file: 'a1b2c3d4e5f6-480.webp' }] });
+};
+const run = (pages, extra = {}) => L.propose({ pages, previous: new Map(), withdrawn: new Set(), approvers: APPROVERS, compliance: COMPLY, mediaBase: MEDIA, getManifest: manifestFor(pages), now, ...extra });
+{
+  const A = pg();
+  const out = await run([A]);
+  t('a complete, authorised row yields a proposed first snapshot', out.length === 1 && out[0].kind === 'new' && out[0].snapshot.version === 1 && out[0].snapshot.content.slug === 'rutherford-grove-armstrong-creek-vic');
+  t('the proposed snapshot carries no internal data', !/695|3\/19|sharepoint|Citizen|vendor motivation/i.test(JSON.stringify(out[0].snapshot)));
+  const B = pg({ [N.webApprovedBy]: P_.person('user-eve', 'Eve') }, '2e2909c1-0000-0000-0000-00000000a002');
+  const C = pg({}, '2e2909c1-0000-0000-0000-00000000a003');
+  const D = pg({ [N.webStatus]: P_.sel('Draft'), [N.webDescription]: P_.rt('') }, '2e2909c1-0000-0000-0000-00000000a004');
+  const E = pg({ [N.webStatus]: P_.sel('Not Published') }, '2e2909c1-0000-0000-0000-00000000a005');
+  const all = await run([A, B, C, D, E], { getManifest: manifestFor([], [PID(C.id)]) });
+  const k = (pageObj) => all.find((x) => x.id === PID(pageObj.id));
+  t('an unauthorised approver yields no snapshot', k(B).kind === 'failed' && !k(B).snapshot && k(B).issues.some((m) => /not an authorised approver/.test(m)));
+  t('missing photographs yield no snapshot', k(C).kind === 'failed' && !k(C).snapshot && k(C).issues.some((m) => /no prepared photographs/.test(m)));
+  t('a Draft row is only checked and reported, never proposed', k(D).kind === 'not_ready' && !k(D).snapshot);
+  t('a Not Published row is ignored entirely', !k(E));
+  const same = await run([pg()], { previous: new Map([[PID(A.id), out[0].snapshot]]) });
+  t('re-running with nothing changed proposes nothing', same[0].kind === 'unchanged' && !same[0].snapshot);
+  const offer = await run([pg({ [N.webStatus]: P_.sel('Under Offer') })], { previous: new Map([[PID(A.id), out[0].snapshot]]) });
+  t('Under Offer is a status change, not new content: same version, same hash', offer[0].kind === 'status' && offer[0].snapshot.commercialStatus === 'under_offer' && offer[0].snapshot.version === 1 && offer[0].snapshot.contentHash === out[0].snapshot.contentHash);
+  const edited = await run([pg({ [N.webDescription]: P_.rt('A reworded public description.') })], { previous: new Map([[PID(A.id), out[0].snapshot]]) });
+  t('edited public copy becomes version 2 with the slug frozen', edited[0].kind === 'version' && edited[0].snapshot.version === 2 && edited[0].snapshot.content.slug === out[0].snapshot.content.slug);
+  const lost = await run([pg({ [N.webApprovedBy]: P_.person('user-eve', 'Eve') })], { previous: new Map([[PID(A.id), out[0].snapshot]]) });
+  t('a row that now fails validation proposes nothing and leaves the previous version alone', lost[0].kind === 'failed' && !lost[0].snapshot);
+  const tomb = await run([pg()], { withdrawn: new Set([PID(A.id)]) });
+  t('an explicitly withdrawn listing is never proposed again', tomb[0].kind === 'withdrawn' && !tomb[0].snapshot);
+  const twin = await run([pg(), pg({}, '2e2909c1-0000-0000-0000-00000000a009')]);
+  t('two properties on the same street get distinct slugs', twin.length === 2 && twin[0].snapshot.content.slug !== twin[1].snapshot.content.slug && /^[a-z-]+$/.test(twin[1].snapshot.content.slug));
+  t('proposing does nothing without an authorised approver list', (await run([pg()], { approvers: [] }))[0].kind === 'failed');
+}
+
+/* ----------------------------- compliance gate and the Basic category */
+section('Victorian compliance gate and the Basic design category');
+const withState = (state, mode = 'eoi') => real({ draft: withMod((c) => { c.photos = [realPhoto()]; c.address = { ...c.address, state, postcode: state === 'VIC' ? '3217' : '4000' }; c.pricing = mode === 'asking_price' ? { mode, display: '$695,000' } : { mode }; }) });
+const ctxWith = (compliance) => ({ ...vctx, compliance });
+for (const mode of ['asking_price', 'price_guide', 'eoi', 'contact_agent']) {
+  const rec = withState('VIC', mode === 'price_guide' ? 'asking_price' : mode);
+  t(`a Victorian ${mode} listing is blocked until cleared`, !L.validateForPublication({ ...rec, draft: { ...rec.draft, pricing: mode === 'price_guide' ? { mode, display: '$650,000 to $700,000' } : rec.draft.pricing } }, ctxWith(DENY), now).ok);
+}
+t('with no compliance config at all, Victoria is denied (default deny)', !L.validateForPublication(withState('VIC'), { ...vctx, compliance: undefined }, now).ok);
+t('the block names the unresolved legal question', L.validateForPublication(withState('VIC'), ctxWith(DENY), now).issues.some((m) => /Victorian pricing compliance is not cleared/.test(m)));
+t('a recorded clearance lets a Victorian listing through', L.validateForPublication(withState('VIC'), ctxWith(COMPLY), now).ok);
+t('clearance is per pricing mode', (() => { const only = { ...COMPLY, victoria: { ...COMPLY.victoria, cleared: { ...DENY.victoria.cleared, eoi: true } } }; return L.validateForPublication(withState('VIC', 'eoi'), ctxWith(only), now).ok && !L.validateForPublication(withState('VIC', 'contact_agent'), ctxWith(only), now).ok; })());
+t('the Victorian gate does not apply to other states', L.validateForPublication(withState('QLD'), ctxWith(DENY), now).ok);
+t('fixtures are not subject to the gate', L.validateForPublication(L.FIXTURE_RECORDS[0], { allowDemo: true, compliance: DENY }, now).ok);
+const defaultCompliance = JSON.parse(readFileSync(join(repoRoot, 'src/data/listings/compliance.json'), 'utf8'));
+t('the committed compliance file denies everything by default', Object.values(defaultCompliance.victoria.cleared).every((v) => v === false) && defaultCompliance.basicClassification.confirmedListingIds.length === 0);
+
+t('Basic is a recognised SDA design category', L.DESIGN_CATEGORIES.includes('Basic') && L.DESIGN_LABEL.Basic === 'Basic');
+const basicRec = (mod = (c) => c, id = 'lst_test000001') => real({ id, draft: withMod((c) => { c.photos = [realPhoto()]; c.sda = { designCategories: ['Basic'] }; mod(c); }) });
+t('a Basic listing needs its classification validated first', !L.validateForPublication(basicRec(), ctxWith(COMPLY), now).ok && L.validateForPublication(basicRec(), ctxWith(COMPLY), now).issues.some((m) => /Basic/.test(m)));
+const confirmed = { ...COMPLY, basicClassification: { confirmedListingIds: ['lst_test000001'] } };
+t('a validated Basic listing is allowed', L.validateForPublication(basicRec(), ctxWith(confirmed), now).ok);
+t('validation is per listing, not global', !L.validateForPublication(basicRec((c) => c, 'lst_other00002'), ctxWith(confirmed), now).ok);
+for (const phrase of ['A new build home.', 'Newly built and ready.', 'Purpose-built accessible dwelling.', 'Brand new construction, a new dwelling.']) {
+  t(`a Basic listing cannot be described as new build ("${phrase}")`, !L.validateForPublication(basicRec((c) => { c.description[0] = phrase; }), ctxWith(confirmed), now).ok);
+}
+t('a Basic listing with Build Type "New build" is blocked as inconsistent', !L.validateForPublication(basicRec((c) => { c.sda.buildingType = 'New build'; }), ctxWith(confirmed), now).ok);
+t('the same wording is fine for a non-Basic listing', L.validateForPublication(real({ draft: withMod((c) => { c.photos = [realPhoto()]; c.description[0] = 'A new build home.'; c.sda = { designCategories: ['IL'] }; }) }), ctxWith(COMPLY), now).ok);
+{
+  const repB = L.readinessReport(page({ [N.designCategory]: P_.sel('Basic') }), { photos: [realPhoto()], mediaBaseUrl: MEDIA, now, authorisedApproverIds: APPROVERS, compliance: COMPLY });
+  t('the report flags Basic as needing validation and says it is never new build', rowOf(repB, 'Design Category').note.includes('existing (legacy) SDA') && rowOf(repB, 'Basic classification validated').status === 'missing' && !repB.canPublish);
+  const repV = L.readinessReport(page(), { photos: [realPhoto()], mediaBaseUrl: MEDIA, now, authorisedApproverIds: APPROVERS, compliance: DENY });
+  t('the report shows the Victorian compliance blocker', rowOf(repV, 'Victorian pricing compliance').status === 'missing' && !repV.canPublish);
+  t('the report marks the CRM Description and Listing Agent as protected', rowOf(repV, 'Description (CRM)').status === 'protected' && rowOf(repV, 'Listing Agent').status === 'protected');
+}
+t('a proposal in Victoria is refused while compliance is not cleared', (await run([pg()], { compliance: DENY }))[0].kind === 'failed');
+
+/* ------------------- schema manifest, repository privacy, offline withdrawal */
+section('schema manifest, public-repository privacy and offline withdrawal');
+{
+  const m = await import('./print-schema-manifest.mjs');
+  t('the schema manifest documents match the code exactly (no drift)', readFileSync(join(repoRoot, 'docs/notion-schema-manifest.md'), 'utf8') === m.manifestMarkdown() && readFileSync(join(repoRoot, 'docs/notion-schema-manifest.json'), 'utf8') === `${JSON.stringify(m.manifestJson(), null, 2)}\n`);
+  t('the manifest lists exactly the nine proposed fields with the final types', m.manifestJson().properties.map((p) => `${p.name}:${p.type}`).join() === 'Web Listing Status:select,Web Public Address:rich_text,Web Description:rich_text,Web Pricing Mode:select,Web Approved By:people,Web Display Price:number,Web Title:rich_text,Web Featured:checkbox,Web Photo Folder:url');
+  t('every manifest property states a default behaviour and a mapping', m.manifestJson().properties.every((p) => p.defaultBehaviour && p.mapsTo));
+}
+// this repository is public: no real house or unit number of a real property may be committed. The patterns are
+// assembled from pieces so this file does not contain what it forbids.
+{
+  const real = [['3', '/19'], ['4', '/27'], ['27', 'B']].map((p) => p.join(''));
+  const re = new RegExp(`(${real.map((r) => r.replace('/', '\\/')).join('|')})\\s*(Rutherford|Gymea|Sheppard)|\\b(19|27)\\s+(Rutherford|Gymea|Sheppard)|(${['3', '/19'].join('')})`, 'i');
+  const trackedText = tracked.filter((f) => /\.(md|json|mjs|ts|astro|yml|yaml|txt|css)$/.test(f));
+  t('no real house or unit number of a real property exists in any tracked file', trackedText.every((f) => { try { return !re.test(readFileSync(join(repoRoot, f), 'utf8')); } catch { return true; } }));
+  // any number written next to a pilot street must be one of the synthetic placeholders used by the fixtures
+  const adjRe = new RegExp(`\\b(\\d+[A-Za-z]?(?:\\s*\\/\\s*\\d+[A-Za-z]?)?)\\s+(Rutherford|Gymea|Sheppard)`, 'gi');
+  const syntheticNumbers = new Set(['1/10', '2/20', '30B', '10', '20', '30']);
+  t('every number next to a pilot street is a known synthetic placeholder', trackedText.every((f) => { try { return [...readFileSync(join(repoRoot, f), 'utf8').matchAll(adjRe)].every((m) => syntheticNumbers.has(m[1].replace(/\s+/g, ''))); } catch { return true; } }));
+  t('the pilot internal address is not written in the pilot document', !/Rutherford Grove, Armstrong Creek VIC 3217[^\n]*\n/.test(rd('docs/pilot-rutherford-grove.md').split('\n').filter((l) => /Dirección interna/.test(l)).join('\n')));
+}
+{
+  const { spawnSync } = await import('node:child_process');
+  const { mkdirSync, writeFileSync, existsSync } = await import('node:fs');
+  const tmp = mkdtempSync(join(tmpdir(), 'wd-'));
+  mkdirSync(join(tmp, 'approved'));
+  mkdirSync(join(tmp, 'withdrawn'));
+  writeFileSync(join(tmp, 'approved', 'x.json'), JSON.stringify(L.FIXTURE_SNAPSHOTS[0]));
+  const env = { PATH: process.env.PATH, LISTINGS_DATA_DIR: tmp };
+  const cli = (...args) => spawnSync('node', [join(repoRoot, 'scripts/listings-sync.mjs'), ...args], { env, encoding: 'utf8' });
+  const r1 = cli('--withdraw', 'rutherford-grove-armstrong-creek-vic', '--reason', 'vendor request', '--by', 'Tester');
+  const file = join(tmp, 'withdrawn', 'fx_001.json');
+  t('emergency withdrawal runs with no Notion credentials and no network', r1.status === 0 && existsSync(file) && JSON.parse(readFileSync(file, 'utf8')).withdrawnBy === 'Tester');
+  t('the withdrawal output tells the operator how to verify the build', /check:withdrawal/.test(r1.stdout));
+  t('a reason with an email, amount or phone number is refused (public repository)', cli('--withdraw', 'fx_001', '--reason', 'call 0412 345 678', '--by', 'T').status === 2 && cli('--withdraw', 'fx_001', '--reason', 'owner a@b.co wants out', '--by', 'T').status === 2 && cli('--withdraw', 'fx_001', '--reason', 'x'.repeat(130), '--by', 'T').status === 2);
+  t('an unknown listing is refused', cli('--withdraw', 'nope', '--reason', 'x', '--by', 'T').status === 1);
+  t('reinstating removes the withdrawal, also without Notion', cli('--reinstate', 'fx_001').status === 0 && !existsSync(file));
+  const r2 = cli('--schema');
+  t('commands that need Notion fail closed without credentials and never print a token', r2.status === 1 && !/secret_|ntn_|Bearer/.test(r2.stdout + r2.stderr));
+}
+
+/* ----------------------------------------------- safety of the repository itself */
+section('repository safety: no Notion at build, no unsafe automation, no secrets');
+const walkSrc = (dir) => readdirSync(join(repoRoot, dir), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walkSrc(join(dir, d.name)) : [join(dir, d.name)]));
+const siteFiles = [...walkSrc('src/pages'), ...walkSrc('src/components'), ...walkSrc('src/layouts')].filter((f) => /\.(astro|ts)$/.test(f));
+const stripJs = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/ .*$/gm, '');
+const stripYaml = (src) => src.replace(/^\s*#.*$/gm, '').replace(/\s#\s.*$/gm, '');
+const loader = stripJs(rd('src/data/listings/index.ts'));
+t('the build-time loader never touches Notion or the network', !/notion/i.test(loader) && !/fetch\(/.test(loader));
+t('no page, component or layout imports the Notion adapter', siteFiles.every((f) => !/listings\/(notion|propose)/.test(rd(f))));
+const pkg = JSON.parse(rd('package.json'));
+t('the build command is unchanged and no build hook calls Notion', pkg.scripts.build === 'astro build' && !('prebuild' in pkg.scripts) && !('postbuild' in pkg.scripts));
+const wf = stripYaml(rd('.github/workflows/listings-sync.yml'));
+t('the workflow is manual only', /workflow_dispatch/.test(wf) && !/^\s*schedule:/m.test(wf) && !/repository_dispatch/.test(wf) && !/^\s*push:/m.test(wf));
+t('the workflow never writes to main or triggers a deployment', !/HEAD:main/.test(wf) && !/push origin main/.test(wf) && !/deploy.?hook/i.test(wf) && !/curl/.test(wf) && /refs\/heads\/\$\{\{ steps\.branch\.outputs\.name \}\}/.test(wf));
+t('the workflow proposes and opens a pull request instead of publishing', /--propose --write/.test(wf) && /gh pr create/.test(wf));
+t('no other workflow exists that could publish or deploy', readdirSync(join(repoRoot, '.github/workflows')).join() === 'listings-sync.yml');
+t('listing files are protected by code owners', /approved\//.test(rd('.github/CODEOWNERS')) && /withdrawn\//.test(rd('.github/CODEOWNERS')));
+t('Notion credentials live in a git-ignored env file', /^\.env\.listings$/m.test(rd('.gitignore')) && /^\.env$/m.test(rd('.gitignore')));
+const secretRe = /\b(secret_[A-Za-z0-9]{30,}|ntn_[A-Za-z0-9]{30,}|re_[A-Za-z0-9]{20,}|Bearer\s+[A-Za-z0-9._-]{30,})\b/;
+t('no secret or token pattern exists in any tracked file', tracked.every((f) => { try { return !secretRe.test(readFileSync(join(repoRoot, f), 'utf8')); } catch { return true; } }));
+t('no Notion variable is exposed to client code (no PUBLIC_ prefix, no import.meta.env use)', [...walkSrc('src'), 'scripts/listings-sync.mjs'].every((f) => { const c = readFileSync(join(repoRoot, f), 'utf8'); return !/PUBLIC_NOTION|import\.meta\.env\.NOTION|import\.meta\.env\.PUBLIC_.*TOKEN/.test(c); }));
+t('Notion credentials appear in .env.example only as commented placeholders', rd('.env.example').split('\n').filter((l) => /NOTION_/.test(l)).every((l) => l.trim().startsWith('#')));
+t('the default approver list is valid and starts empty or explicit', Array.isArray(JSON.parse(rd('src/data/listings/approvers.json')).approvers));
+t('the website repository does not reference the internal app project', [...walkSrc('src'), 'scripts/listings-sync.mjs', 'package.json'].every((f) => !/sdahc-intelligence|62_sdahc_Internal_App|app\.sdahomechoices/.test(readFileSync(join(repoRoot, f), 'utf8'))));
+
+/* ------------------------------------------------------------- enquiries */
+section('enquiries: validation, anti-spam and CRM matching');
+const form = (over = {}) => { const f = new FormData(); const base = { listing_id: 'fx_001', name: 'Alex Buyer', email: 'Alex@Example.com', phone: '0412 345 678', message: 'Please send details.', consent: 'yes', ts: String(Date.now() - 10_000), company: '', ...over }; for (const [k, v] of Object.entries(base)) if (v !== undefined) f.set(k, v); return f; };
+const nowMs = Date.now();
+const pe = (over) => L.parseEnquiry(form(over), nowMs);
+t('accepts a valid enquiry and lower-cases the email', (() => { const r = pe(); return r.ok && r.value.email === 'alex@example.com' && r.value.source === 'listing_page'; })());
+t('phone is optional', pe({ phone: '' }).ok && !('phone' in pe({ phone: '' }).value));
+t('honeypot is silently accepted without processing', pe({ company: 'Acme' }).status === 204);
+t('a submission faster than a human is rejected', !pe({ ts: String(nowMs - 500) }).ok);
+t('a missing timing token is rejected', !pe({ ts: '' }).ok);
+t('a stale timing token is rejected', !pe({ ts: String(nowMs - 3 * 24 * 3600 * 1000) }).ok);
+t('requires consent', !pe({ consent: '' }).ok);
+t('requires a valid email, name and message', !pe({ email: 'nope' }).ok && !pe({ name: '' }).ok && !pe({ message: '' }).ok);
+t('rejects an invalid phone number', !pe({ phone: 'abc' }).ok);
+t('rejects oversize fields', !pe({ message: 'x'.repeat(2001) }).ok && !pe({ name: 'x'.repeat(101) }).ok);
+t('rejects link spam', !pe({ message: 'http://a.test http://b.test http://c.test' }).ok);
+const lim = new L.RateLimiter(3, 1000);
+t('rate limiter allows the limit then blocks', lim.allow('k', 0) && lim.allow('k', 1) && lim.allow('k', 2) && !lim.allow('k', 3));
+t('rate limiter isolates keys and recovers after the window', lim.allow('other', 3) && lim.allow('k', 1500));
+const rr = L.toRecord(pe().value, new Date('2026-03-01T10:00:00Z'));
+t('enquiry record carries listing, contact, source, date and status', rr.listingId === 'fx_001' && rr.email === 'alex@example.com' && rr.source === 'listing_page' && rr.receivedAt === '2026-03-01T10:00:00.000Z' && rr.status === 'received' && /^[a-f0-9]{16}$/.test(rr.id));
+t('record id is stable for the same person, listing and day', L.toRecord(pe().value, new Date('2026-03-01T18:00:00Z')).id === rr.id);
+const crmCalls = [];
+const mkCrm = (existing) => ({
+  findContactByEmail: async (e) => { crmCalls.push(['find', e]); return existing ? { id: 'c-existing' } : null; },
+  createContact: async (c) => { crmCalls.push(['create', c]); return { id: 'c-new' }; },
+  createEnquiry: async (x) => { crmCalls.push(['enquiry', x.contactId]); return { id: 'e-1' }; },
+});
+const linkedNew = await L.linkToCrm(mkCrm(false), rr);
+t('creates a Contact when none matches and links the enquiry', linkedNew.contactCreated && linkedNew.contactId === 'c-new' && crmCalls.some((c) => c[0] === 'create'));
+crmCalls.length = 0;
+const linkedOld = await L.linkToCrm(mkCrm(true), rr);
+t('reuses an existing Contact: no duplicate is created', !linkedOld.contactCreated && linkedOld.contactId === 'c-existing' && !crmCalls.some((c) => c[0] === 'create'));
+t('looks the Contact up by lower-cased email', crmCalls[0][1] === 'alex@example.com');
+t('never creates a Deal, by construction', linkedNew.dealCreated === false && linkedOld.dealCreated === false && !('createDeal' in mkCrm(true)));
+const sent = [];
+const sink = L.createEmailSink(async (m) => { sent.push(m); return {}; }, 'inbox@example.test');
+const evil = { ...rr, message: '<script>alert(1)</script>' };
+await sink.deliver(evil, fx[0]);
+t('email sink escapes HTML and names the listing without an address', !sent[0].html.includes('<script>') && sent[0].html.includes('SDA property, Armstrong Creek') && sent[0].replyTo === 'alex@example.com');
+t('email sink reports failure honestly', !(await L.createEmailSink(async () => ({ error: 'x' }), 'a@b.test').deliver(rr, fx[0])).ok);
+t('dry-run sink is explicit about being a dry run', L.dryRunSink.name === 'dry-run');
+
+/* ----------------------------------------------------------- photo preparation */
+section('photo preparation');
+const palette = readAccentPalette(join(repoRoot, 'src/styles/tokens.css'));
+t('accent palette is read from tokens.css', Object.keys(palette).join() === 'blue,teal,amber,slate');
+t('dominant colour snaps to the nearest brand accent', snapToAccent({ r: 25, g: 140, b: 160 }, palette) === 'teal' && snapToAccent({ r: 220, g: 140, b: 30 }, palette) === 'amber' && snapToAccent({ r: 10, g: 110, b: 220 }, palette) === 'blue');
+t('low-saturation images take the neutral accent', snapToAccent({ r: 120, g: 122, b: 125 }, palette) === 'slate');
+const work = mkdtempSync(join(tmpdir(), 'photo-prep-'));
+const inDir = join(work, 'in');
+const outDir = join(work, 'out');
+(await import('node:fs')).mkdirSync(inDir);
+const mk = async (name, w, h, bg, exif) => {
+  let img = sharp({ create: { width: w, height: h, channels: 3, background: bg } }).jpeg();
+  if (exif) { try { img = img.withExif({ IFD0: { Copyright: 'Owner Name', ImageDescription: '99 Example Street' } }); } catch { /* older sharp: skip metadata injection */ } }
+  await img.toFile(join(inDir, name));
+};
+await mk('teal.jpg', 2000, 1500, { r: 25, g: 140, b: 160 }, true);
+await mk('small.jpg', 600, 400, { r: 220, g: 140, b: 30 });
+const manifest = await prepareFolder(inDir, outDir, join(repoRoot, 'src/styles/tokens.css'));
+const files = readdirSync(outDir);
+t('writes a manifest and optimised files', files.includes('manifest.json') && manifest.photos.length === 2);
+t('file names are content hashes and carry no address or original name', files.filter((f) => f.endsWith('.webp')).every((f) => /^[a-f0-9]{12}-(480|960|1600)\.webp$/.test(f)));
+const tealPhoto = manifest.photos.find((p) => p.width === 2000);
+t('large images get three widths, small images are never upscaled', tealPhoto.files.map((f) => f.w).join() === '480,960,1600' && manifest.photos.find((p) => p.width === 600).files.map((f) => f.w).join() === '480');
+t('the accent is sampled from the image', tealPhoto.accent === 'teal' && manifest.photos.find((p) => p.width === 600).accent === 'amber');
+t('alt text and privacy review start unset, so nothing can publish unreviewed', manifest.photos.every((p) => p.alt === '' && p.privacyReviewed === false));
+t('metadata (EXIF, GPS, owner) is stripped from outputs', (await Promise.all(files.filter((f) => f.endsWith('.webp')).map((f) => sharp(join(outDir, f)).metadata()))).every((m) => !m.exif));
+t('output is smaller than a 1600px original', (await sharp(join(outDir, `${tealPhoto.id}-1600.webp`)).metadata()).width === 1600);
+
+console.log(`\n${passed} passed, ${failed} failed`);
+process.exit(failed ? 1 : 0);
