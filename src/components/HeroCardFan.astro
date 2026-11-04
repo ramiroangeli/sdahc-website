@@ -8,7 +8,7 @@ import { localityLine, streetLine } from '../data/listings/address';
   Animated property-card fan for the /opportunities/ hero. Reusable: give it published listings.
 
   Desktop: three or five cards fanned around a featured one, each with its own rotation, depth and a
-  slow idle float. Hovering or focusing a card, or using the arrow buttons, brings it forward. A click
+  slow idle float. Hovering a card lifts it in place; focusing it or using the arrow buttons makes it the featured card. A click
   or Enter on a card always goes to that property, so there is never a hidden step before the link.
   Mobile: the same cards become a native swipe carousel (scroll-snap). No hover is needed anywhere.
 
@@ -33,12 +33,15 @@ for (const idx of order) {
   slots[idx] = r < reals.length ? { kind: 'listing', l: reals[r++] } : { kind: 'locked', state: lockedStates[k++ % lockedStates.length] };
 }
 const interactive = slots.filter((s) => s.kind === 'listing').length;
+// each card glows in the brand accent of its own photograph (the same accent as the image mask)
+const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amber)', slate: 'var(--pale)' } as const;
 ---
 <div class="hf" data-hf data-n={N}>
   <div class="hf-stage" role="group" aria-label="Featured SDA properties">
     {slots.map((s, i) => {
       const o = i - centre;
-      const vars = `--o:${o};--a:${Math.abs(o)};--i:${i}`;
+      const accent = s.kind === 'listing' ? ACCENT_VAR[s.l.photos[0]?.accent ?? 'blue'] : 'var(--amber)';
+      const vars = `--o:${o};--a:${Math.abs(o)};--i:${i};--hf-accent:${accent}`;
       if (s.kind === 'locked') {
         return (
           <div class="hf-card hf-locked" data-hf-card data-active={o === 0 ? 'true' : 'false'} style={vars} aria-hidden="true">
@@ -110,7 +113,6 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
     };
 
     linkIdx.forEach((i) => {
-      cards[i].addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && desktop.matches) set(i); });
       cards[i].addEventListener('focus', () => { if (desktop.matches) set(i, true); });
     });
 
@@ -130,17 +132,29 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
 /* five cards need a tighter spread and slightly smaller cards to stay inside the column */
 .hf[data-n="5"] .hf-stage{--w:clamp(180px,17vw,250px);--step:calc(var(--w) * .34)}
 
-.hf-card{display:block;position:absolute;left:50%;top:50%;width:var(--w);aspect-ratio:4/5;margin:calc(var(--w) * -.625) 0 0 calc(var(--w) * -.5);color:var(--white);text-decoration:none;border-radius:14px;
+.hf-card{--hf-accent:var(--blue);display:block;position:absolute;left:50%;top:50%;width:var(--w);aspect-ratio:4/5;margin:calc(var(--w) * -.625) 0 0 calc(var(--w) * -.5);color:var(--white);text-decoration:none;border-radius:14px;
   transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px)) rotate(calc(var(--o) * 7deg)) scale(calc(1 - var(--a) * .07));
   z-index:calc(10 - var(--a));
-  transition:transform .7s cubic-bezier(.2,.8,.2,1),box-shadow .5s ease;
+  transition:transform .55s cubic-bezier(.22,.8,.24,1),box-shadow .45s ease;
   box-shadow:0 18px 40px color-mix(in srgb,var(--navy) 55%,transparent);
   animation:hfIn .9s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i) * 90ms + 200ms)}
-.hf-card[data-active="true"]{transform:translate(0,-8px) rotate(0deg) scale(1.04);box-shadow:0 30px 60px color-mix(in srgb,var(--navy) 80%,transparent)}
-.hf-card:focus-visible{outline:3px solid var(--white);outline-offset:4px}
+/* the featured card: lifted and softly ringed in its own accent */
+.hf-card[data-active="true"]{transform:translate(0,-10px) rotate(0deg) scale(1.05);box-shadow:0 0 0 1px color-mix(in srgb,var(--hf-accent) 45%,transparent),0 0 26px color-mix(in srgb,var(--hf-accent) 20%,transparent),0 32px 60px color-mix(in srgb,var(--navy) 80%,transparent)}
+.hf-card:focus-visible{outline:3px solid var(--white);outline-offset:5px}
+/* hover: the card pops in place. It never reorders the fan (a card that moves out from under a still pointer
+   would hand the hover to its neighbour and loop), so the pointer always stays on the card it is over. It rises
+   above its neighbours, straightens a little, takes a crisp accent border, and a restrained accent glow sits
+   behind a deeper shadow. One smooth transition, no jumps. */
+.hf-card:focus-visible,.hf-card[data-active="true"]:focus-visible{z-index:30;transform:translate(0,-18px) rotate(0deg) scale(1.08);box-shadow:0 0 0 2px var(--hf-accent),0 0 44px color-mix(in srgb,var(--hf-accent) 46%,transparent),0 44px 80px color-mix(in srgb,var(--navy) 88%,transparent)}
+@media(hover:hover){
+  a.hf-card:hover{z-index:30;transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px - 18px)) rotate(calc(var(--o) * 3.5deg)) scale(calc(1.07 - var(--a) * .04));box-shadow:0 0 0 2px var(--hf-accent),0 0 44px color-mix(in srgb,var(--hf-accent) 46%,transparent),0 44px 80px color-mix(in srgb,var(--navy) 88%,transparent)}
+  a.hf-card[data-active="true"]:hover{transform:translate(0,-18px) rotate(0deg) scale(1.08)}
+  a.hf-card:hover .hf-float{border-color:var(--hf-accent)}
+}
+.hf-card:focus-visible .hf-float{border-color:var(--hf-accent)}
 
 /* idle drift lives on an inner layer so it never fights the card's own transform */
-.hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);animation:hfFloat 9s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -1.7s)}
+.hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);transition:border-color .3s ease;animation:hfFloat 9s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -1.7s)}
 .hf-photo{position:absolute;inset:0}
 .hf-shade{position:absolute;inset:0;background:linear-gradient(0deg,color-mix(in srgb,var(--navy) 92%,transparent) 0%,color-mix(in srgb,var(--navy) 50%,transparent) 32%,transparent 62%)}
 .hf-top{position:absolute;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
@@ -172,12 +186,15 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
 @media(max-width:899px){
   .hf-stage{display:flex;gap:14px;height:auto;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 24px 22px;margin:0 -24px;scrollbar-width:none;--w:min(72vw,290px)}
   .hf-stage::-webkit-scrollbar{display:none}
-  .hf-card,.hf-card[data-active="true"]{position:relative;left:auto;top:auto;margin:0;flex:0 0 var(--w);transform:none;scroll-snap-align:center;z-index:auto;animation:none;box-shadow:0 14px 30px color-mix(in srgb,var(--navy) 55%,transparent)}
+  .hf-card,.hf-card[data-active="true"],a.hf-card:hover,a.hf-card[data-active="true"]:hover,.hf-card:focus-visible{position:relative;left:auto;top:auto;margin:0;flex:0 0 var(--w);transform:none;scroll-snap-align:center;z-index:auto;animation:none;box-shadow:0 14px 30px color-mix(in srgb,var(--navy) 55%,transparent)}
   .hf-float{animation:none}
   .hf-ctrl{display:none}
 }
 @media(prefers-reduced-motion:reduce){
   .hf-card,.hf-float{animation:none}
   .hf-card{transition:box-shadow .2s ease}
+  /* no lift on hover or focus: each card keeps its resting pose and the emphasis is the accent border and glow only */
+  a.hf-card:hover{transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px)) rotate(calc(var(--o) * 7deg)) scale(calc(1 - var(--a) * .07))}
+  .hf-card:focus-visible,.hf-card[data-active="true"]:focus-visible,a.hf-card[data-active="true"]:hover{transform:translate(0,-10px) rotate(0deg) scale(1.05)}
 }
 </style>
