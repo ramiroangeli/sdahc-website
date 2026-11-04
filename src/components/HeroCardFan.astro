@@ -1,8 +1,7 @@
 ---
-import ListingImage from './ListingImage.astro';
 import ListingStatusBadge from './ListingStatusBadge.astro';
-import { DESIGN_LABEL, STATUS_LABEL, type PublicListing } from '../data/listings/schema';
-import { localityLine, streetLine } from '../data/listings/address';
+import { STATUS_LABEL, type PublicListing } from '../data/listings/schema';
+import { streetLine } from '../data/listings/address';
 
 /*
   Animated property-card fan for the /opportunities/ hero. Reusable: give it published listings.
@@ -11,6 +10,11 @@ import { localityLine, streetLine } from '../data/listings/address';
   slow idle float. Hovering a card lifts it in place; focusing it or using the arrow buttons makes it the featured card. A click
   or Enter on a card always goes to that property, so there is never a hidden step before the link.
   Mobile: the same cards become a native swipe carousel (scroll-snap). No hover is needed anywhere.
+
+  Every card is a photograph-free icon card, so the hero looks the same whether or not a property has
+  photographs (those stay on the listing page and in the catalogue). A real property shows a house icon, its
+  state, its public status and its approved public address (street and suburb: never a house or unit number).
+  The whole card is one link to that property's page on this site.
 
   The fan is padded with locked "Off-market" cards when there are fewer than three listings. Those are
   decorative: they carry a state code only and invent no property. They move, tilt and glow on hover exactly
@@ -35,14 +39,13 @@ for (const idx of order) {
   slots[idx] = r < reals.length ? { kind: 'listing', l: reals[r++] } : { kind: 'locked', state: lockedStates[k++ % lockedStates.length] };
 }
 const interactive = slots.filter((s) => s.kind === 'listing').length;
-// each card glows in the brand accent of its own photograph (the same accent as the image mask)
-const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amber)', slate: 'var(--pale)' } as const;
 ---
 <div class="hf" data-hf data-n={N}>
   <div class="hf-stage" role="group" aria-label="Featured SDA properties">
     {slots.map((s, i) => {
       const o = i - centre;
-      const accent = s.kind === 'listing' ? ACCENT_VAR[s.l.photos[0]?.accent ?? 'blue'] : 'var(--amber)';
+      // real properties glow blue and placeholders orange, so the two are always visibly different
+      const accent = s.kind === 'listing' ? 'var(--blue)' : 'var(--amber)';
       const vars = `--o:${o};--a:${Math.abs(o)};--i:${i};--hf-accent:${accent}`;
       if (s.kind === 'locked') {
         return (
@@ -61,21 +64,15 @@ const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amb
       const l = s.l;
       const label = `${streetLine(l.address)}, ${l.address.suburb} ${l.address.state}. ${STATUS_LABEL[l.commercialStatus]}. View property.`;
       return (
-        <a class="hf-card" href={`/opportunities/${l.slug}/`} data-hf-card data-hf-link data-active={o === 0 ? 'true' : 'false'} data-name={`${streetLine(l.address)}, ${l.address.suburb}`} style={vars} aria-label={label}>
+        <a class="hf-card hf-listing" href={`/opportunities/${l.slug}/`} data-hf-card data-hf-link data-active={o === 0 ? 'true' : 'false'} data-name={`${streetLine(l.address)}, ${l.address.suburb}`} style={vars} aria-label={label}>
           <div class="hf-float">
-            <div class="hf-photo"><ListingImage photo={l.photos[0]} sizes="(min-width: 900px) 300px, 74vw" loading={i === centre ? 'eager' : 'lazy'} demoTag={false} /></div>
-            <div class="hf-shade"></div>
-            <div class="hf-top">
-              <span class="hf-pill">{l.address.state}</span>
+            <div class="hf-house">
+              <svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /><path d="M10 19.5v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg>
+              <p class="hf-street">{streetLine(l.address)}</p>
+              <p class="hf-loc">{l.address.suburb}</p>
               <ListingStatusBadge status={l.commercialStatus} />
             </div>
-            <div class="hf-bottom">
-              <p class="hf-street">{streetLine(l.address)}</p>
-              <p class="hf-loc">{localityLine(l.address)}</p>
-              {(l.sda.designCategories?.length ?? 0) > 0 && (
-                <p class="hf-chips">{l.sda.designCategories!.map((d) => <span title={DESIGN_LABEL[d]}>{d}</span>)}</p>
-              )}
-            </div>
+            <div class="hf-top"><span class="hf-pill">{l.address.state}</span></div>
             {l.isDemo && <span class="hf-demo">Demo</span>}
           </div>
         </a>
@@ -157,16 +154,15 @@ const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amb
 
 /* idle drift lives on an inner layer so it never fights the card's own transform */
 .hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);transition:border-color .3s ease;animation:hfFloat 7.5s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -2.1s)}
-.hf-photo{position:absolute;inset:0}
-.hf-shade{position:absolute;inset:0;background:linear-gradient(0deg,color-mix(in srgb,var(--navy) 92%,transparent) 0%,color-mix(in srgb,var(--navy) 50%,transparent) 32%,transparent 62%)}
 .hf-top{position:absolute;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .hf-pill{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--white);background:color-mix(in srgb,var(--navy) 72%,transparent);border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:4px 8px}
-.hf-bottom{position:absolute;left:16px;right:16px;bottom:16px}
-.hf-street{font-family:var(--serif);font-weight:600;font-size:clamp(18px,1.7vw,22px);line-height:1.15;margin:0 0 4px}
-.hf-loc{font-family:var(--geo);font-size:12px;letter-spacing:.05em;color:var(--pale);margin:0}
-.hf-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
-.hf-chips span{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.1em;border:1px solid color-mix(in srgb,var(--blue) 75%,transparent);background:color-mix(in srgb,var(--navy) 60%,transparent);border-radius:2px;padding:3px 7px}
-.hf-demo{position:absolute;left:12px;top:48px;font-family:var(--geo);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:3px 6px}
+.hf-street{font-family:var(--serif);font-weight:600;font-size:clamp(19px,1.8vw,23px);line-height:1.15;margin:14px 0 4px;color:var(--white)}
+.hf-loc{font-family:var(--geo);font-size:13px;letter-spacing:.05em;color:var(--pale);margin:0 0 14px}
+/* a real property: a house icon over a blue SDAHC surface, address and status stacked beneath it */
+.hf-listing .hf-float{background:linear-gradient(160deg,color-mix(in srgb,var(--blue) 30%,var(--navy)) 0%,var(--navy) 100%);border-color:color-mix(in srgb,var(--blue) 45%,transparent)}
+.hf-house{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 16px 24px;text-align:center;color:color-mix(in srgb,var(--blue) 55%,var(--white))}
+.hf-house svg{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--blue) 55%,transparent))}
+.hf-demo{position:absolute;right:12px;top:12px;font-family:var(--geo);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:3px 6px}
 
 /* locked off-market card: darker, exclusive, never a link and never a real property */
 .hf-locked{cursor:default}
