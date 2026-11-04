@@ -604,6 +604,26 @@ section('schema manifest, public-repository privacy and offline withdrawal');
   t('commands that need Notion fail closed without credentials and never print a token', r2.status === 1 && !/secret_|ntn_|Bearer/.test(r2.stdout + r2.stderr));
 }
 
+/* ---------------------------------------------------- hero card fan: interaction contract */
+section('hero card fan: decorative cards react to hover without becoming actions');
+{
+  const fan = rd('src/components/HeroCardFan.astro');
+  const css = fan.slice(fan.indexOf('<style>'));
+  const markup = fan.slice(0, fan.indexOf('<script>'));
+  const locked = /<div class="hf-card hf-locked"[^>]*>/.exec(markup)?.[0] ?? '';
+  t('hover and focus styles are not restricted to link cards (decorative cards must respond too)', !/a\.hf-card/.test(css) && /\.hf-card:hover\{/.test(css) && /\.hf-card\[data-active="true"\]:hover\{/.test(css));
+  t('a decorative card is a plain div: no link, no tabindex, no role, hidden from assistive technology', locked.startsWith('<div') && !/href=|tabindex|role=|onclick/.test(locked) && /aria-hidden="true"/.test(locked));
+  t('a decorative card shows no pointer cursor and never blocks pointer events', /\.hf-locked\{cursor:default\}/.test(css) && !/pointer-events\s*:\s*none/.test(css) && !/\.hf-locked[^{]*\{[^}]*cursor:pointer/.test(css));
+  t('every card has the same idle float on its own inner layer, so hover transforms never fight it', /\.hf-float\{[^}]*animation:hfFloat/.test(css) && /@keyframes hfFloat/.test(css));
+  t('the idle float is subtle but visible (more than 8px, under 16px) and staggered per card', (() => { const m = /@keyframes hfFloat\{[\s\S]*?translateY\(-(\d+)px\)/.exec(css); return m && +m[1] > 8 && +m[1] < 16 && /animation-delay:calc\(var\(--i\) \* -/.test(css); })());
+  t('hover never reorders the fan: the script has no pointer or mouse handler on cards', !/pointerenter|pointerover|mouseenter|mouseover|pointermove/.test(fan.slice(fan.indexOf('<script>'), fan.indexOf('</script>'))));
+  const rm = css.slice(css.lastIndexOf('@media(prefers-reduced-motion:reduce)'));
+  t('reduced motion stops the idle float and the entrance but keeps a static highlight', /\.hf-card,\.hf-float\{animation:none\}/.test(rm) && !/box-shadow\s*:\s*none/.test(rm) && /\.hf-card:hover\{transform:translate/.test(rm));
+  t('on touch screens nothing depends on hover (the hover rules sit behind (hover:hover))', /@media\(hover:hover\)\{\s*\.hf-card:hover\{/.test(css));
+  t('the carousel on small screens never lifts a card on hover', /@media\(max-width:899px\)[\s\S]*\.hf-card:hover[\s\S]*transform:none/.test(css));
+  t('the property page link is only on real listing cards', (markup.match(/href=\{`\/opportunities\//g) ?? []).length === 1 && !/href/.test(locked));
+}
+
 /* ----------------------------------------------- safety of the repository itself */
 section('repository safety: no Notion at build, no unsafe automation, no secrets');
 const walkSrc = (dir) => readdirSync(join(repoRoot, dir), { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walkSrc(join(dir, d.name)) : [join(dir, d.name)]));

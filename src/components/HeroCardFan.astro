@@ -12,8 +12,10 @@ import { localityLine, streetLine } from '../data/listings/address';
   or Enter on a card always goes to that property, so there is never a hidden step before the link.
   Mobile: the same cards become a native swipe carousel (scroll-snap). No hover is needed anywhere.
 
-  The fan is padded with locked "Off-market" cards when there are fewer than three listings. Those
-  are decorative and non-interactive: they carry a state code only and invent no property.
+  The fan is padded with locked "Off-market" cards when there are fewer than three listings. Those are
+  decorative: they carry a state code only and invent no property. They move, tilt and glow on hover exactly
+  like real cards (that is purely visual), but they are not links, not focusable, not announced to assistive
+  technology and show no pointer cursor, so they never present themselves as available properties.
   Everything shown comes from PublicListing, so no private data can reach this component.
 */
 interface Props { listings: PublicListing[]; lockedStates: string[] }
@@ -147,14 +149,14 @@ const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amb
    behind a deeper shadow. One smooth transition, no jumps. */
 .hf-card:focus-visible,.hf-card[data-active="true"]:focus-visible{z-index:30;transform:translate(0,-18px) rotate(0deg) scale(1.08);box-shadow:0 0 0 2px var(--hf-accent),0 0 44px color-mix(in srgb,var(--hf-accent) 46%,transparent),0 44px 80px color-mix(in srgb,var(--navy) 88%,transparent)}
 @media(hover:hover){
-  a.hf-card:hover{z-index:30;transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px - 18px)) rotate(calc(var(--o) * 3.5deg)) scale(calc(1.07 - var(--a) * .04));box-shadow:0 0 0 2px var(--hf-accent),0 0 44px color-mix(in srgb,var(--hf-accent) 46%,transparent),0 44px 80px color-mix(in srgb,var(--navy) 88%,transparent)}
-  a.hf-card[data-active="true"]:hover{transform:translate(0,-18px) rotate(0deg) scale(1.08)}
-  a.hf-card:hover .hf-float{border-color:var(--hf-accent)}
+  .hf-card:hover{z-index:30;transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px - 18px)) rotate(calc(var(--o) * 3.5deg)) scale(calc(1.07 - var(--a) * .04));box-shadow:0 0 0 2px var(--hf-accent),0 0 44px color-mix(in srgb,var(--hf-accent) 46%,transparent),0 44px 80px color-mix(in srgb,var(--navy) 88%,transparent)}
+  .hf-card[data-active="true"]:hover{transform:translate(0,-18px) rotate(0deg) scale(1.08)}
+  .hf-card:hover .hf-float{border-color:var(--hf-accent)}
 }
 .hf-card:focus-visible .hf-float{border-color:var(--hf-accent)}
 
 /* idle drift lives on an inner layer so it never fights the card's own transform */
-.hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);transition:border-color .3s ease;animation:hfFloat 9s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -1.7s)}
+.hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);transition:border-color .3s ease;animation:hfFloat 7.5s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -2.1s)}
 .hf-photo{position:absolute;inset:0}
 .hf-shade{position:absolute;inset:0;background:linear-gradient(0deg,color-mix(in srgb,var(--navy) 92%,transparent) 0%,color-mix(in srgb,var(--navy) 50%,transparent) 32%,transparent 62%)}
 .hf-top{position:absolute;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
@@ -167,6 +169,7 @@ const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amb
 .hf-demo{position:absolute;left:12px;top:48px;font-family:var(--geo);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:3px 6px}
 
 /* locked off-market card: darker, exclusive, never a link and never a real property */
+.hf-locked{cursor:default}
 .hf-locked .hf-float{background:linear-gradient(160deg,var(--navy) 0%,color-mix(in srgb,var(--navy2) 70%,var(--navy)) 100%);border-color:color-mix(in srgb,var(--amber) 38%,transparent)}
 .hf-lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--amber);text-align:center}
 .hf-lock-k{font-family:var(--serif);font-weight:600;font-size:20px;color:var(--white);margin:8px 0 0}
@@ -180,13 +183,13 @@ const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amb
 .hf-now{margin:0;min-width:22ch;text-align:center;font-family:var(--geo);font-size:12px;letter-spacing:.08em;color:var(--pale)}
 
 @keyframes hfIn{from{opacity:0;transform:translate(0,56px) rotate(0deg) scale(.86)}}
-@keyframes hfFloat{from{transform:translateY(0) rotate(0deg)}to{transform:translateY(-7px) rotate(.4deg)}}
+@keyframes hfFloat{from{transform:translateY(0) rotate(-.4deg)}to{transform:translateY(-11px) rotate(.6deg)}}
 
 /* mobile: the fan becomes a native swipe carousel. Nothing depends on hover; the arrows are hidden. */
 @media(max-width:899px){
   .hf-stage{display:flex;gap:14px;height:auto;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 24px 22px;margin:0 -24px;scrollbar-width:none;--w:min(72vw,290px)}
   .hf-stage::-webkit-scrollbar{display:none}
-  .hf-card,.hf-card[data-active="true"],a.hf-card:hover,a.hf-card[data-active="true"]:hover,.hf-card:focus-visible{position:relative;left:auto;top:auto;margin:0;flex:0 0 var(--w);transform:none;scroll-snap-align:center;z-index:auto;animation:none;box-shadow:0 14px 30px color-mix(in srgb,var(--navy) 55%,transparent)}
+  .hf-card,.hf-card[data-active="true"],.hf-card:hover,.hf-card[data-active="true"]:hover,.hf-card:focus-visible{position:relative;left:auto;top:auto;margin:0;flex:0 0 var(--w);transform:none;scroll-snap-align:center;z-index:auto;animation:none;box-shadow:0 14px 30px color-mix(in srgb,var(--navy) 55%,transparent)}
   .hf-float{animation:none}
   .hf-ctrl{display:none}
 }
@@ -194,7 +197,7 @@ const ACCENT_VAR = { blue: 'var(--blue)', teal: 'var(--teal)', amber: 'var(--amb
   .hf-card,.hf-float{animation:none}
   .hf-card{transition:box-shadow .2s ease}
   /* no lift on hover or focus: each card keeps its resting pose and the emphasis is the accent border and glow only */
-  a.hf-card:hover{transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px)) rotate(calc(var(--o) * 7deg)) scale(calc(1 - var(--a) * .07))}
-  .hf-card:focus-visible,.hf-card[data-active="true"]:focus-visible,a.hf-card[data-active="true"]:hover{transform:translate(0,-10px) rotate(0deg) scale(1.05)}
+  .hf-card:hover{transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px)) rotate(calc(var(--o) * 7deg)) scale(calc(1 - var(--a) * .07))}
+  .hf-card:focus-visible,.hf-card[data-active="true"]:focus-visible,.hf-card[data-active="true"]:hover{transform:translate(0,-10px) rotate(0deg) scale(1.05)}
 }
 </style>
