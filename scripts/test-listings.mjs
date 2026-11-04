@@ -464,6 +464,9 @@ const dsPayload = (mod = (x) => x) => {
   t('all nine Web properties are listed as still to add, with exact types', c.toAdd.length === 9 && c.toAdd.find((a) => a.name === N.webDisplayPrice).type === 'number' && c.toAdd.find((a) => a.name === N.webApprovedBy).type === 'people' && c.toAdd.find((a) => a.name === N.webFeatured).type === 'checkbox' && c.toAdd.find((a) => a.name === N.webPhotoFolder).type === 'url');
   t('every Design Category option in the real schema maps, and all state codes map', c.unmappedDesignOptions.length === 0 && c.unmappedStateOptions.length === 0);
   t('the Web status and pricing option lists are exactly as proposed', c.toAdd.find((a) => a.name === N.webStatus).options.join() === 'Not Published,Draft,In Review,Approved,Published,Under Offer,Sold,Withdrawn' && c.toAdd.find((a) => a.name === N.webPricingMode).options.join() === 'Asking Price,Price Guide,Expressions of Interest,Contact Agent');
+  t('a hidden Deals relation (the integration must not see the Deals database) is not a schema failure', !('Deals' in L.EXPECTED_CORE_TYPES) && L.OPTIONAL_CORE_TYPES.Deals === 'relation' && c.isValidatedDatabase && c.missingCore.length === 0);
+  t('a visible Deals property of the wrong type is still reported', !L.checkDataSourceSchema(dsPayload((d) => { d.add('Deals', 'rich_text'); return d; })).isValidatedDatabase);
+  t('a visible Deals relation is accepted', L.checkDataSourceSchema(dsPayload((d) => { d.add('Deals', 'relation'); return d; })).isValidatedDatabase);
   const bad = L.checkDataSourceSchema(dsPayload((d) => { d.properties['id_Price'].type = 'rich_text'; return d; }));
   t('a CRM property with the wrong type is reported', !bad.isValidatedDatabase && bad.wrongCoreType[0].name === 'Price');
   const done = L.checkDataSourceSchema(dsPayload((d) => { for (const w of L.WEB_SCHEMA) d.add(w.name, w.type, w.options ? { select: { options: w.options.map((name) => ({ name })) } } : {}); return d; }));
