@@ -621,6 +621,14 @@ section('hero card fan: decorative cards react to hover without becoming actions
   t('reduced motion stops the idle float and the entrance but keeps a static highlight', /\.hf-card,\.hf-float\{animation:none\}/.test(rm) && !/box-shadow\s*:\s*none/.test(rm) && /\.hf-card:hover\{transform:translate/.test(rm));
   t('on touch screens nothing depends on hover (the hover rules sit behind (hover:hover))', /@media\(hover:hover\)\{\s*\.hf-card:hover\{/.test(css));
   t('the carousel on small screens never lifts a card on hover', /@media\(max-width:899px\)[\s\S]*\.hf-card:hover[\s\S]*transform:none/.test(css));
+  // hero cards are photo-free icon cards built only from approved public fields
+  const body = fan.slice(0, fan.indexOf('<script>'));
+  t('hero cards never use photographs (those stay on the listing page and in the catalogue)', !/ListingImage|\.photos|<img|srcset|<picture/.test(fan));
+  t('a real card shows the house icon, the state, the status, the street and the suburb', /class="hf-house"/.test(body) && /M3\.5 11 12 4l8\.5 7/.test(body) && /class="hf-pill">\{l\.address\.state\}/.test(body) && /<ListingStatusBadge status=\{l\.commercialStatus\}/.test(body) && /\{streetLine\(l\.address\)\}/.test(body) && /\{l\.address\.suburb\}/.test(body));
+  t('the whole real card is one internal link to its listing page, never an external portal', /<a class="hf-card hf-listing" href=\{`\/opportunities\/\$\{l\.slug\}\/`\}/.test(body) && !/https?:\/\//.test(body.replace(/viewBox|xmlns/g, '')));
+  t('the hero reads only approved public fields of a listing', (() => { const used = new Set([...body.matchAll(/\b(?:s\.l|l|a|b)\.(address|slug|commercialStatus|featured|isDemo|sda|photos|title|summary|description|pricing|id|version|publishedAt|updatedAt|type)\b/g)].map((m) => m[1])); return [...used].every((f) => ['address', 'slug', 'commercialStatus', 'featured', 'isDemo'].includes(f)); })());
+  t('the hero never shows a postcode, so the card carries street, suburb and state only', !/postcode|localityLine/.test(body));
+  t('real properties glow blue and placeholders orange, so the two are always distinguishable', /s\.kind === 'listing' \? 'var\(--blue\)' : 'var\(--amber\)'/.test(body) && /\.hf-locked \.hf-float\{[^}]*amber/.test(css) && /\.hf-listing \.hf-float\{[^}]*blue/.test(css));
   t('the property page link is only on real listing cards', (markup.match(/href=\{`\/opportunities\//g) ?? []).length === 1 && !/href/.test(locked));
 }
 
