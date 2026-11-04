@@ -19,7 +19,8 @@
     "listings:withdraw": "node scripts/listings-sync.mjs --withdraw",
     "check:withdrawal": "node scripts/check-withdrawal.mjs",
     "check:readiness": "node scripts/check-readiness.mjs",
-    "listings:manifest": "node scripts/print-schema-manifest.mjs"
+    "listings:manifest": "node scripts/print-schema-manifest.mjs",
+    "indexnow": "node scripts/indexnow.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

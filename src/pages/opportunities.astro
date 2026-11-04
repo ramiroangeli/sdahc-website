@@ -32,7 +32,7 @@ const refImages = [
   { src: '/images/opportunities/ref-3.jpg', alt: 'Aerial view of an Australian residential neighbourhood', caption: 'Communities across Australia', w: 800, h: 800 },
 ];
 ---
-<BaseLayout title="SDA Investment Opportunities | SDA Home Choices" description="Explore available SDA properties and discover exclusive off-market Specialist Disability Accommodation investment opportunities. Register your buyer mandate or speak to us about selling.">
+<BaseLayout title="SDA Investment Opportunities | SDA Home Choices" description="Explore available SDA properties and discover exclusive off-market Specialist Disability Accommodation investment opportunities. Register your buyer mandate or speak to us about selling." breadcrumbs={[{ name: 'Opportunities', path: '/opportunities/' }]}>
   <OpportunitiesHero listings={listings} lockedStates={statesCovered.slice(0, 3)} />
 
   <!-- Available properties. Dark band directly under the dark hero, so the states band's existing

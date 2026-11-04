@@ -1,8 +1,20 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { service, faqPage } from '../data/seo';
+
+// The FAQ is rendered from this list and repeated in the FAQPage schema, so the two never drift.
+const faqs = [
+  { q: 'Is this service only for distressed or underperforming assets?', a: 'No. It is also relevant to owners of performing assets who are considering capital recycling, portfolio changes or a planned exit. The service is driven by the decision required, not only by financial pressure.' },
+  { q: 'Is this a formal property valuation?', a: 'No. Our work provides commercial assessment, market positioning and strategic advice within the agreed scope. A formal valuation, legal opinion, tax advice or insolvency advice must be provided by the appropriately qualified professional.' },
+  { q: 'Can SDAHC help implement the recommendation?', a: 'Where agreed, we can assist with sale preparation, coordinate relevant specialist input and manage a subsequent sales process under a separate mandate. Operational, legal and funding-related actions remain with the appropriate providers and advisers.' },
+];
+const schema = [
+  service('SDA strategic divestment advisory', 'Independent commercial assessment for owners, boards, lenders and appointed advisers deciding whether to hold, improve, reposition or sell an SDA property or portfolio, comparing realistic options and a practical way forward.', '/sda-strategic-divestment-advisory/'),
+  faqPage(faqs),
+];
 ---
-<BaseLayout title="SDA Strategic Divestment Advisory | SDA Home Choices" description="We help owners, boards, lenders and appointed advisers assess the commercial position of an SDA property or portfolio and determine a practical way forward.">
+<BaseLayout title="SDA Strategic Divestment Advisory | SDA Home Choices" description="We help owners, boards, lenders and appointed advisers assess the commercial position of an SDA property or portfolio and determine a practical way forward." breadcrumbs={[{ name: 'Our services', path: '/our-services-and-expertise/' }, { name: 'SDA strategic divestment advisory', path: '/sda-strategic-divestment-advisory/' }]} schema={schema}>
   <PageHeader
     eyebrow="SDA Strategic Divestment Advisory"
     title="Know where you stand. Decide what comes next."
@@ -120,18 +132,12 @@ import PageHeader from '../components/PageHeader.astro';
     <div class="prose">
       <h2>Common questions about SDA advisory.</h2>
       <div class="faq">
-        <details>
-          <summary>Is this service only for distressed or underperforming assets?</summary>
-          <p>No. It is also relevant to owners of performing assets who are considering capital recycling, portfolio changes or a planned exit. The service is driven by the decision required, not only by financial pressure.</p>
-        </details>
-        <details>
-          <summary>Is this a formal property valuation?</summary>
-          <p>No. Our work provides commercial assessment, market positioning and strategic advice within the agreed scope. A formal valuation, legal opinion, tax advice or insolvency advice must be provided by the appropriately qualified professional.</p>
-        </details>
-        <details>
-          <summary>Can SDAHC help implement the recommendation?</summary>
-          <p>Where agreed, we can assist with sale preparation, coordinate relevant specialist input and manage a subsequent sales process under a separate mandate. Operational, legal and funding-related actions remain with the appropriate providers and advisers.</p>
-        </details>
+        {faqs.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
       </div>
     </div>
   </section>

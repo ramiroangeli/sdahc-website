@@ -1,9 +1,44 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { SITE, ORG_ID, updatedFor } from '../data/seo';
+
+// Describes the figures table below as a dataset, so search and AI engines can cite it with its
+// period and source. When the page moves to a new NDIA quarter, update temporalCoverage and the
+// page's date in page-dates.json together with the figures.
+const schema = [{
+  '@type': 'Dataset',
+  '@id': `${SITE}/sda-statistics/#dataset`,
+  name: 'Australian SDA Statistics',
+  description: 'Key Specialist Disability Accommodation (SDA) figures for Australia, maintained by SDAHC Research: enrolled SDA dwellings nationally and by state and territory, participants living in SDA, participants with SDA funding, active SDA providers, design category share and annualised SDA funding. Latest period Q3 2025-26 (data as at 31 March 2026), with Q4 2022-23 as the baseline. Drawn from NDIS Supplement P, the NDIA quarterly public dataset.',
+  url: `${SITE}/sda-statistics/`,
+  inLanguage: 'en-AU',
+  creator: { '@id': ORG_ID },
+  publisher: { '@id': ORG_ID },
+  dateModified: updatedFor('/sda-statistics/'),
+  temporalCoverage: '2023-06-30/2026-03-31',
+  spatialCoverage: { '@type': 'Place', name: 'Australia' },
+  isBasedOn: {
+    '@type': 'Dataset',
+    name: 'NDIS Supplement P: Specialist Disability Accommodation',
+    creator: { '@type': 'GovernmentOrganization', name: 'National Disability Insurance Agency', url: 'https://www.ndis.gov.au/' },
+  },
+  variableMeasured: [
+    'Enrolled SDA dwellings',
+    'Enrolled SDA dwellings by state and territory',
+    'Participants living in SDA',
+    'Participants with SDA funding',
+    'Participants not utilising SDA funding',
+    'Active SDA providers',
+    'High Physical Support share of supply',
+    'Annualised SDA funding in participant plans',
+  ],
+  keywords: ['Specialist Disability Accommodation', 'SDA', 'NDIS', 'SDA dwellings', 'SDA statistics', 'Australia'],
+}];
 ---
-<BaseLayout title="Australian SDA Statistics | SDA Home Choices" description="Australia had 13,779 enrolled Specialist Disability Accommodation dwellings as at 31 March 2026 (NDIA, Q3 2025-26; analysis: SDAHC Research).">
+<BaseLayout title="Australian SDA Statistics | SDA Home Choices" description="Australia had 13,779 enrolled Specialist Disability Accommodation dwellings as at 31 March 2026 (NDIA, Q3 2025-26; analysis: SDAHC Research)." breadcrumbs={[{ name: 'Research', path: '/research/' }, { name: 'Australian SDA Statistics', path: '/sda-statistics/' }]} schema={schema}>
   <PageHeader
+    updated
     eyebrow="SDAHC Research"
     title="Australian SDA Statistics"
   />

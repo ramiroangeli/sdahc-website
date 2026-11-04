@@ -22,6 +22,16 @@ Rules for every change in this repo.
 - If a result is unexpected or a decision is ambiguous, STOP and report back. Do not make autonomous compensating changes (spacing, colours, layout).
 - Commit after each self-contained block of work with a clear, descriptive message.
 
+## Search and AI visibility (SEO, AEO, GEO)
+- AI crawlers (GPTBot, ClaudeBot, PerplexityBot) do not run JavaScript. Every figure, heading and answer must be in the server-rendered HTML. Animated counters ship their final value as text; scripts may animate it, never fill it in.
+- Exactly one `<h1>` per page.
+- Structured data: `BaseLayout` emits one JSON-LD `@graph` per page. Add page nodes through its `breadcrumbs` and `schema` props, using the helpers and `@id` constants in `src/data/seo.ts`. Never put a fact in schema that is not visible on the page; FAQ schema must be built from the same list that renders the FAQ.
+- Business details (phone, email, offices, LinkedIn) live only in `src/data/seo.ts`. Change them there.
+- When a page's content changes, update its date in `src/data/page-dates.json` in the same commit. It drives the sitemap `<lastmod>`, the Article/Dataset `dateModified` and the visible "Updated" line. Do not bump dates for code-only changes. New pages need an entry.
+- Utility pages (thank-you and similar) get `noindex` on `BaseLayout` and are excluded from the sitemap in `astro.config.mjs`.
+- Keep `public/llms.txt` in step with new pages and key figures.
+- After a production deploy that changes content, run `npm run indexnow` (or `npm run indexnow -- /path/`) to notify Bing and Copilot.
+
 ## Stack
 - Astro, static output, deployed on Vercel via git push. No database. The only server-side pieces (added in a later step) are serverless handlers for the contact form and the report gate.
 

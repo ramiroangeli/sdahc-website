@@ -1,9 +1,12 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
+import { researchArticle } from '../../data/seo';
+const schema = [researchArticle("Executive Summary", "A performance-led market is following the construction-led cycle. Australia's new-build SDA market has moved into its next phase.", "/research/executive-summary/")];
 ---
-<BaseLayout title="Executive Summary | SDA Home Choices" description="A performance-led market is following the construction-led cycle. Australia's new-build SDA market has moved into its next phase.">
+<BaseLayout title="Executive Summary | SDA Home Choices" description="A performance-led market is following the construction-led cycle. Australia's new-build SDA market has moved into its next phase." breadcrumbs={[{ name: 'Research', path: '/research/' }, { name: "Executive Summary", path: '/research/executive-summary/' }]} schema={schema}>
   <PageHeader
+    updated
     eyebrow="SDAHC Research"
     title="Executive Summary"
   />

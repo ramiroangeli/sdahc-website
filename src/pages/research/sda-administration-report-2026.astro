@@ -6,6 +6,7 @@ import ResearchSectionHeader from '../../components/ResearchSectionHeader.astro'
 import ResearchFeatureGrid from '../../components/ResearchFeatureGrid.astro';
 import ResearchPublicationCard from '../../components/ResearchPublicationCard.astro';
 import { REPORTS } from '../../data/research-reports';
+import { ORG_ID } from '../../data/seo';
 
 const report = REPORTS.special;
 const title = 'SDA Administration & Special Situations Report 2026 | SDA Home Choices';
@@ -24,12 +25,15 @@ const webPage = {
 const reportSchema = {
   '@context': 'https://schema.org',
   '@type': 'Report',
+  '@id': `${canonical}#report`,
   name: report.fullTitle,
   description: report.description,
   url: canonical,
   image: absolute(report.cover.png),
   copyrightYear: report.year,
-  publisher: { '@type': 'Organization', name: 'SDA Home Choices', url: Astro.site?.href },
+  author: { '@id': ORG_ID },
+  publisher: { '@id': ORG_ID },
+  inLanguage: 'en-AU',
 };
 const breadcrumbs = {
   '@context': 'https://schema.org',
