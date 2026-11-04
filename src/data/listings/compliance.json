@@ -1,0 +1,16 @@
+{
+  "victoria": {
+    "reviewedBy": null,
+    "reviewedAt": null,
+    "adviceReference": null,
+    "cleared": {
+      "asking_price": false,
+      "price_guide": false,
+      "eoi": false,
+      "contact_agent": false
+    }
+  },
+  "basicClassification": {
+    "confirmedListingIds": []
+  }
+}

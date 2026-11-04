@@ -1,0 +1,74 @@
+---
+import ListingStatusBadge from './ListingStatusBadge.astro';
+import ListingImage from './ListingImage.astro';
+import { DESIGN_LABEL, TYPE_LABEL, type PublicListing } from '../data/listings/schema';
+import { localityLine, streetLine } from '../data/listings/address';
+import { pricingLine } from '../data/listings/pricing';
+
+interface Props { listing: PublicListing; index?: number }
+const { listing, index = 0 } = Astro.props;
+const designs = listing.sda.designCategories ?? [];
+const a = listing.address;
+// lower-cased haystack for the catalogue search box; public fields only
+const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase();
+---
+<li
+  class="lc"
+  data-state={a.state}
+  data-type={listing.type}
+  data-status={listing.commercialStatus}
+  data-design={designs.join(' ')}
+  data-search={search}
+  data-suburb={a.suburb.toLowerCase()}
+  data-published={listing.publishedAt}
+  data-index={index}
+>
+  <article class="lc-card">
+    <div class="lc-media">
+      <ListingImage photo={listing.photos[0]} sizes="(min-width: 980px) 360px, (min-width: 620px) 50vw, 100vw" demoTag={false} />
+      <span class="lc-state">{a.state}</span>
+      {listing.isDemo && <span class="lc-demo">Demo listing</span>}
+    </div>
+    <div class="lc-body">
+      <div class="lc-badges">
+        <ListingStatusBadge status={listing.commercialStatus} />
+        <span class="lc-type">{TYPE_LABEL[listing.type]}</span>
+      </div>
+      <h3 class="lc-title"><a class="lc-link" href={`/opportunities/${listing.slug}/`}>{streetLine(a)}</a></h3>
+      <p class="lc-loc">{localityLine(a)}</p>
+      {designs.length > 0 && (
+        <ul class="lc-chips" aria-label="SDA design category">
+          {designs.map((d) => <li title={DESIGN_LABEL[d]}>{d}</li>)}
+        </ul>
+      )}
+      <p class="lc-sum">{listing.summary}</p>
+      <p class="lc-foot"><span>{pricingLine(listing.pricing)}</span><span class="lc-more" aria-hidden="true">View details &rarr;</span></p>
+    </div>
+  </article>
+</li>
+<style>
+.lc[hidden]{display:none}
+.lc{margin:0;padding:0}
+.lc-card{position:relative;display:flex;flex-direction:column;height:100%;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 5%,transparent);overflow:hidden;transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.lc-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:color-mix(in srgb,var(--white) 8%,transparent)}
+.lc-card:focus-within{border-color:var(--white)}
+.lc-media{position:relative;aspect-ratio:4/3}
+.lc-state{position:absolute;left:12px;top:12px;font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--white);background:color-mix(in srgb,var(--navy) 72%,transparent);border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:4px 8px}
+.lc-demo{position:absolute;left:12px;bottom:12px;font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:4px 8px}
+.lc-body{display:flex;flex-direction:column;flex:1;padding:22px 22px 24px}
+.lc-badges{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.lc-type{font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--pale)}
+.lc-title{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(19px,1.9vw,22px);line-height:1.2;margin:0 0 6px}
+/* the whole card is one tap target: the heading link stretches over the card */
+.lc-link{color:inherit;text-decoration:none}
+.lc-link::after{content:"";position:absolute;inset:0;z-index:1}
+.lc-link:focus-visible{outline:none}
+.lc-link:focus-visible::after{outline:2px solid var(--white);outline-offset:-4px;border-radius:10px}
+.lc-loc{font-family:var(--geo);font-size:13px;letter-spacing:.04em;color:var(--pale);margin:0 0 12px}
+.lc-chips{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.lc-chips li{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--white);border:1px solid color-mix(in srgb,var(--blue) 70%,transparent);border-radius:2px;padding:3px 8px}
+.lc-sum{font-family:var(--sans);font-size:14.5px;line-height:1.6;color:var(--white);margin:0 0 18px}
+.lc-foot{display:flex;justify-content:space-between;gap:12px;margin:auto 0 0;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent);font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--pale)}
+.lc-more{color:var(--white);white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.lc-card{transition:background .22s ease,border-color .22s ease}.lc-card:hover{transform:none}}
+</style>

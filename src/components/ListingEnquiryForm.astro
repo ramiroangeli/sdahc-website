@@ -1,0 +1,76 @@
+---
+interface Props { listingId: string; listingTitle: string }
+const { listingId, listingTitle } = Astro.props;
+---
+<form class="form le-form" data-le-form data-endpoint="/api/listing-enquiry/" aria-label={`Enquire about ${listingTitle}`}>
+  <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+  <input type="hidden" name="listing_id" value={listingId} />
+  <input type="hidden" name="ts" value="" />
+  <div>
+    <label for="le-name">Name</label>
+    <input type="text" id="le-name" name="name" autocomplete="name" required />
+  </div>
+  <div class="row2">
+    <div>
+      <label for="le-email">Email</label>
+      <input type="email" id="le-email" name="email" autocomplete="email" required />
+    </div>
+    <div>
+      <label for="le-phone">Phone (optional)</label>
+      <input type="tel" id="le-phone" name="phone" autocomplete="tel" />
+    </div>
+  </div>
+  <div>
+    <label for="le-message">Your enquiry</label>
+    <textarea id="le-message" name="message" required></textarea>
+  </div>
+  <div class="le-consent">
+    <input type="checkbox" id="le-consent" name="consent" value="yes" required />
+    <label for="le-consent">I have read the <a href="/privacy-policy/">privacy policy</a> and agree to be contacted about this opportunity.</label>
+  </div>
+  <button type="submit" class="btn b1 le-submit">Send enquiry</button>
+  <p class="form-status" role="status" aria-live="polite"></p>
+</form>
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('form[data-le-form]').forEach((form) => {
+    // the server rejects a submission that arrives implausibly fast; this records when the form loaded
+    const ts = form.querySelector<HTMLInputElement>('input[name="ts"]');
+    if (ts) ts.value = String(Date.now());
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+      const status = form.querySelector<HTMLElement>('.form-status')!;
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      btn.disabled = true;
+      status.textContent = 'Sending...';
+      try {
+        const res = await fetch(form.dataset.endpoint!, { method: 'POST', body: new FormData(form) });
+        const out = await res.json();
+        if (out.ok) {
+          status.textContent = 'Thank you. We will be in touch shortly.';
+        } else {
+          status.textContent = out.error || 'Something went wrong.';
+          btn.disabled = false;
+        }
+      } catch {
+        status.textContent = 'Network error. Please try again.';
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
+<style>
+/* sits on a dark band; the global .form rules supply field styling */
+.le-form{max-width:none;margin:0;padding:0}
+.le-form :global(.form-status){color:var(--pale);min-height:1.4em}
+.le-consent{display:flex;align-items:flex-start;gap:12px}
+.le-consent input{width:auto;margin-top:4px;accent-color:var(--blue)}
+.le-consent label{margin:0;font-family:var(--sans);font-size:14px;letter-spacing:normal;text-transform:none;line-height:1.5;color:var(--pale)}
+.le-consent a{color:var(--white);text-underline-offset:3px}
+.le-submit{justify-self:start}
+</style>

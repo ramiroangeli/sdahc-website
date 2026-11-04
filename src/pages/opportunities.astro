@@ -1,8 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/opportunities.json';
+import OpportunitiesHero from '../components/OpportunitiesHero.astro';
+import ListingsCatalogue from '../components/ListingsCatalogue.astro';
+import { getPublicListings } from '../data/listings';
 
 const { statesCovered } = data;
+const listings = getPublicListings();
 
 /*
   Internal note, not rendered on the page: the real geocoded property counts behind the
@@ -11,17 +15,6 @@ const { statesCovered } = data;
   deliberately not broken out per state on the page. NT is claimed through a portfolio but
   not yet confirmed in the records, so it is excluded from statesCovered for now.
 */
-
-// Pluggable hero background. heroVideo stays empty (no SDAHC-hosted clip exists yet); heroPoster
-// points at the same generic reference photo used to be a standalone content image (see below),
-// now repurposed as the hero's static background, shown under a dark navy mask so it reads as a
-// quiet texture rather than a bright photo. To swap in a real SDAHC-hosted clip later, set
-// heroVideo = '/videos/opportunities-hero.mp4' (heroPoster already covers the poster/fallback
-// role). Never point either at a third party's branded asset. If either is ever hosted on a
-// domain other than this site's own, that domain must be added to media-src (video) / img-src
-// (poster) in vercel.json's Content-Security-Policy, or the browser will block it.
-const heroVideo = '';
-const heroPoster = '/images/opportunities/feature.jpg';
 
 // Reference images for the 3-up row. GENERIC reference photography only (accessible housing,
 // purpose-built dwelling exteriors/interiors, community settings): NEVER a specific off-market
@@ -39,41 +32,12 @@ const refImages = [
   { src: '/images/opportunities/ref-3.jpg', alt: 'Aerial view of an Australian residential neighbourhood', caption: 'Communities across Australia', w: 800, h: 800 },
 ];
 ---
-<BaseLayout title="Off-market SDA opportunities across Australia | SDA Home Choices" description="100+ off-market Specialist Disability Accommodation opportunities nationally. Register your buyer mandate, or speak to us about selling an SDA asset." breadcrumbs={[{ name: 'Off-market SDA opportunities', path: '/opportunities/' }]}>
-  <section class="opp-cinehero" id="oppHero" data-has-video={heroVideo ? '1' : ''}>
-    <div class="opp-cinehero-bg" aria-hidden="true">
-      {heroVideo ? (
-        <>
-          <video class="opp-hero-video v1" muted autoplay loop playsinline preload="auto" poster={heroPoster || undefined} aria-hidden="true">
-            <source src={heroVideo} type="video/mp4" />
-          </video>
-          <video class="opp-hero-video v2" muted autoplay loop playsinline preload="auto" poster={heroPoster || undefined} aria-hidden="true">
-            <source src={heroVideo} type="video/mp4" />
-          </video>
-        </>
-      ) : heroPoster ? (
-        <img class="opp-hero-poster" src={heroPoster} alt="" />
-      ) : null}
-      <div class="opp-aurora">
-        <span class="opp-aurora-blob b1"></span>
-        <span class="opp-aurora-blob b2"></span>
-        <span class="opp-aurora-blob b3"></span>
-      </div>
-      <div class="opp-hero-scrim"></div>
-    </div>
+<BaseLayout title="SDA Investment Opportunities | SDA Home Choices" description="Explore available SDA properties and discover exclusive off-market Specialist Disability Accommodation investment opportunities. Register your buyer mandate or speak to us about selling." breadcrumbs={[{ name: 'Opportunities', path: '/opportunities/' }]}>
+  <OpportunitiesHero listings={listings} lockedStates={statesCovered.slice(0, 3)} />
 
-    <div class="opp-cinehero-inner">
-      <h1 class="opp-hero-headline">
-        <span class="ln"><span class="ln-i">Off-market SDA opportunities</span></span>
-        <span class="ln"><span class="ln-i">across Australia</span></span>
-      </h1>
-      <p class="opp-hero-subtitle">We hold 100+ off-market Specialist Disability Accommodation opportunities nationally, from single dwellings to large portfolios. Most never reach the open market.</p>
-      <div class="opp-hero-ctas">
-        <a class="btn b1 opp-hero-cta" href="#enquiry">Register your interest<svg class="opp-arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-        <a class="btn b2 opp-hero-cta-ghost" href="#enquiry">Selling an SDA asset?</a>
-      </div>
-    </div>
-  </section>
+  <!-- Available properties. Dark band directly under the dark hero, so the states band's existing
+       fade-in from navy still lines up. With no published listing it shows an empty state. -->
+  <ListingsCatalogue />
 
   <section class="section opp-states-band"><div class="wrap">
     <div class="opp-states">
@@ -120,7 +84,7 @@ const refImages = [
     </div>
   </div></section>
 
-  <section class="section opp-access-band"><div class="wrap">
+  <section class="section opp-access-band" id="access"><div class="wrap">
     <h2 class="opp-heading">How access works</h2>
     <div class="opp-step-grid">
       <div class="opp-step-card">
@@ -197,68 +161,6 @@ const refImages = [
 
 <!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
 <script>
-  const hero = document.getElementById('oppHero');
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (hero) {
-    // pluggable background video: cross-fades two looped <video> elements near the loop
-    // point to hide the seam. Inert (no-op) until heroVideo is set on the page, since the
-    // video elements then do not exist in the DOM at all.
-    if (hero.dataset.hasVideo === '1') {
-      const v1 = hero.querySelector('.opp-hero-video.v1');
-      const v2 = hero.querySelector('.opp-hero-video.v2');
-      if (v1 && v2) {
-        if (reduceMotion) {
-          v1.pause();
-          v2.pause();
-        } else {
-          let active = v1, idle = v2;
-          idle.style.opacity = '0';
-          const crossfade = () => {
-            idle.currentTime = 0;
-            idle.play().catch(() => {});
-            idle.style.opacity = '1';
-            active.style.opacity = '0';
-            const next = idle;
-            idle = active;
-            active = next;
-          };
-          active.addEventListener('timeupdate', () => {
-            if (active.duration && active.duration - active.currentTime < 1) crossfade();
-          });
-        }
-      }
-    }
-
-    // masked line-rise entrance: the hidden/offset state is the plain CSS default (no flash),
-    // and arming is gated on fonts.ready (with a timeout ceiling) so type doesn't visibly reflow
-    // mid-animation. The apparatus detaches itself (transitions removed) once the last tween ends,
-    // so the resting page is fully static.
-    if (reduceMotion) {
-      hero.classList.add('is-armed', 'is-settled');
-    } else {
-      const arm = () => {
-        if (hero.classList.contains('is-armed')) return;
-        hero.classList.add('is-armed');
-        const tweened = hero.querySelectorAll('.ln-i, .opp-hero-subtitle, .opp-hero-ctas .btn');
-        let pending = tweened.length;
-        const settle = () => { hero.classList.add('is-settled'); };
-        const onEnd = () => { pending -= 1; if (pending <= 0) { settle(); hero.removeEventListener('transitionend', onEnd); } };
-        hero.addEventListener('transitionend', onEnd);
-        window.setTimeout(settle, 1800);
-      };
-      const ceiling = window.setTimeout(arm, 400);
-      if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(() => { window.clearTimeout(ceiling); arm(); });
-      } else {
-        arm();
-      }
-    }
-  }
-</script>
-
-<!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
-<script>
   const form = document.querySelector('form[data-endpoint]');
   if (form) form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -284,69 +186,6 @@ const refImages = [
 <style>
 :root{
   --opp-depth:.85;
-}
-
-/* cinematic hero: full-bleed, scrolls as a normal section (no viewport lock). Background layer
-   order (bottom to top): the photo (heroPoster, or the video once heroVideo is set), a subtle
-   brand aurora drifting above it, then a dark navy mask on top of both so the photo reads as a
-   quiet texture behind the hero rather than a bright image, and the aurora reads as a soft glow
-   rather than competing with the photo. */
-.opp-cinehero{position:relative;overflow:hidden;width:100%;height:min(100svh,760px);min-height:560px;display:flex;align-items:center;justify-content:center}
-.opp-cinehero-bg{position:absolute;inset:0;z-index:0;background:var(--navy);overflow:hidden}
-.opp-hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
-.opp-hero-video.v2{opacity:0}
-.opp-hero-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
-.opp-aurora{position:absolute;inset:-12%;pointer-events:none}
-.opp-aurora-blob{position:absolute;border-radius:50%;filter:blur(80px);will-change:transform,opacity}
-.opp-aurora-blob.b1{width:58vw;height:58vw;max-width:780px;max-height:780px;left:-8%;top:-12%;background:radial-gradient(circle,var(--navy2) 0%,rgba(6,51,107,0) 70%);opacity:.32;animation:auroraDrift1 30s ease-in-out infinite alternate}
-.opp-aurora-blob.b2{width:52vw;height:52vw;max-width:720px;max-height:720px;right:-10%;top:6%;background:radial-gradient(circle,var(--blue) 0%,rgba(4,118,217,0) 70%);opacity:.18;animation:auroraDrift2 36s ease-in-out infinite alternate}
-.opp-aurora-blob.b3{width:42vw;height:42vw;max-width:600px;max-height:600px;left:22%;bottom:-18%;background:radial-gradient(circle,var(--teal) 0%,rgba(47,160,168,0) 70%);opacity:.1;animation:auroraDrift3 42s ease-in-out infinite alternate}
-@keyframes auroraDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(6%,5%) scale(1.14)}}
-@keyframes auroraDrift2{0%{transform:translate(0,0) scale(1);opacity:.16}100%{transform:translate(-6%,-5%) scale(1.1);opacity:.24}}
-@keyframes auroraDrift3{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-5%,6%) scale(1.12)}}
-/* the mask: strong dark navy overall, a touch stronger toward the top, so the photo and aurora
-   both read as a quiet texture and hero text stays fully legible at every point */
-.opp-hero-scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,22,43,.92) 0%,rgba(0,22,43,.82) 45%,rgba(0,22,43,.88) 100%)}
-
-.opp-cinehero-inner{position:relative;z-index:1;max-width:1140px;margin:0 auto;padding:var(--nav-clearance) 24px 0;display:flex;flex-direction:column;align-items:center}
-
-/* headline: a proportional unit authored against a 1280x760 composition drives desktop sizing,
-   filling close to the hero's content width while keeping "Off-market SDA opportunities" on one
-   line at 1160px and up, with a safety margin; below that, and on mobile, it falls back to the
-   site's normal clamp()-based responsive scale. No max-width in ch is set on the headline itself,
-   so each authored line wraps only when the viewport is genuinely too narrow for it, never mid-word. */
-.opp-hero-headline{font-family:var(--serif);font-weight:600;color:#fff;line-height:1.08;letter-spacing:-.01em;margin:0;text-align:center;overflow-wrap:normal;word-break:normal;hyphens:none;font-size:clamp(34px,8.4vw,60px)}
-@media(min-width:1160px){
-  .opp-cinehero{--u:min(calc(100vw / 1280px),calc(100svh / 760px))}
-  .opp-hero-headline{font-size:min(calc(var(--u) * 70px),72px)}
-}
-.opp-hero-headline .ln{display:block;overflow:hidden}
-.opp-hero-headline .ln-i{display:block;transform:translateY(110%);transition:transform .9s cubic-bezier(.16,1,.3,1)}
-.opp-hero-headline .ln:nth-child(2) .ln-i{transition-delay:.14s}
-
-.opp-hero-subtitle{font-family:var(--sans);color:var(--pale);font-size:clamp(16px,1.6vw,20px);line-height:1.55;max-width:58ch;margin:28px 0 0;text-align:center;opacity:0;filter:blur(6px);transform:translateY(14px);transition:opacity .7s ease,filter .7s ease,transform .7s ease;transition-delay:.32s}
-
-.opp-hero-ctas{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:40px}
-.opp-hero-ctas .btn{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease;display:inline-flex;align-items:center;gap:8px}
-.opp-hero-ctas .btn:nth-child(1){transition-delay:.44s}
-.opp-hero-ctas .btn:nth-child(2){transition-delay:.54s}
-.opp-arrow{flex:0 0 auto}
-.opp-hero-cta-ghost{backdrop-filter:blur(6px);background:rgba(255,255,255,.06)}
-
-.opp-cinehero.is-armed .opp-hero-headline .ln-i{transform:translateY(0)}
-.opp-cinehero.is-armed .opp-hero-subtitle{opacity:1;filter:blur(0);transform:translateY(0)}
-.opp-cinehero.is-armed .opp-hero-ctas .btn{opacity:1;transform:translateY(0)}
-
-/* detach the entrance apparatus once settled: the resting page carries no live transitions */
-.opp-cinehero.is-settled .opp-hero-headline .ln-i,
-.opp-cinehero.is-settled .opp-hero-subtitle,
-.opp-cinehero.is-settled .opp-hero-ctas .btn{transition:none}
-
-@media(max-width:480px){.opp-hero-ctas{flex-direction:column;width:100%}.opp-hero-ctas .btn{width:100%;justify-content:center}}
-
-@media(prefers-reduced-motion:reduce){
-  .opp-hero-headline .ln-i,.opp-hero-subtitle,.opp-hero-ctas .btn{transition:none!important;transform:none!important;opacity:1!important;filter:none!important}
-  .opp-aurora-blob{animation:none!important}
 }
 
 /* ===== section colour rhythm =====

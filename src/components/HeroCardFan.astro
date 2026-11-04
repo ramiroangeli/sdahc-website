@@ -1,0 +1,183 @@
+---
+import ListingImage from './ListingImage.astro';
+import ListingStatusBadge from './ListingStatusBadge.astro';
+import { DESIGN_LABEL, STATUS_LABEL, type PublicListing } from '../data/listings/schema';
+import { localityLine, streetLine } from '../data/listings/address';
+
+/*
+  Animated property-card fan for the /opportunities/ hero. Reusable: give it published listings.
+
+  Desktop: three or five cards fanned around a featured one, each with its own rotation, depth and a
+  slow idle float. Hovering or focusing a card, or using the arrow buttons, brings it forward. A click
+  or Enter on a card always goes to that property, so there is never a hidden step before the link.
+  Mobile: the same cards become a native swipe carousel (scroll-snap). No hover is needed anywhere.
+
+  The fan is padded with locked "Off-market" cards when there are fewer than three listings. Those
+  are decorative and non-interactive: they carry a state code only and invent no property.
+  Everything shown comes from PublicListing, so no private data can reach this component.
+*/
+interface Props { listings: PublicListing[]; lockedStates: string[] }
+const { listings, lockedStates } = Astro.props;
+
+type Slot = { kind: 'listing'; l: PublicListing } | { kind: 'locked'; state: string };
+
+const reals = [...listings].sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, 5);
+const N = reals.length > 3 ? 5 : 3;
+const centre = Math.floor(N / 2);
+// fill the centre first, then outwards, so the best listing is always the featured card
+const order = [centre, centre + 1, centre - 1, centre + 2, centre - 2].filter((i) => i >= 0 && i < N);
+const slots: Slot[] = new Array(N);
+let r = 0;
+let k = 0;
+for (const idx of order) {
+  slots[idx] = r < reals.length ? { kind: 'listing', l: reals[r++] } : { kind: 'locked', state: lockedStates[k++ % lockedStates.length] };
+}
+const interactive = slots.filter((s) => s.kind === 'listing').length;
+---
+<div class="hf" data-hf data-n={N}>
+  <div class="hf-stage" role="group" aria-label="Featured SDA properties">
+    {slots.map((s, i) => {
+      const o = i - centre;
+      const vars = `--o:${o};--a:${Math.abs(o)};--i:${i}`;
+      if (s.kind === 'locked') {
+        return (
+          <div class="hf-card hf-locked" data-hf-card data-active={o === 0 ? 'true' : 'false'} style={vars} aria-hidden="true">
+            <div class="hf-float">
+              <div class="hf-lock">
+                <svg width="38" height="38" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><circle cx="12" cy="15" r="1.3" fill="currentColor" /></svg>
+                <p class="hf-lock-k">Off-market</p>
+                <p class="hf-lock-d">Details under NDA</p>
+              </div>
+              <div class="hf-top"><span class="hf-pill">{s.state}</span></div>
+            </div>
+          </div>
+        );
+      }
+      const l = s.l;
+      const label = `${streetLine(l.address)}, ${l.address.suburb} ${l.address.state}. ${STATUS_LABEL[l.commercialStatus]}. View property.`;
+      return (
+        <a class="hf-card" href={`/opportunities/${l.slug}/`} data-hf-card data-hf-link data-active={o === 0 ? 'true' : 'false'} data-name={`${streetLine(l.address)}, ${l.address.suburb}`} style={vars} aria-label={label}>
+          <div class="hf-float">
+            <div class="hf-photo"><ListingImage photo={l.photos[0]} sizes="(min-width: 900px) 300px, 74vw" loading={i === centre ? 'eager' : 'lazy'} demoTag={false} /></div>
+            <div class="hf-shade"></div>
+            <div class="hf-top">
+              <span class="hf-pill">{l.address.state}</span>
+              <ListingStatusBadge status={l.commercialStatus} />
+            </div>
+            <div class="hf-bottom">
+              <p class="hf-street">{streetLine(l.address)}</p>
+              <p class="hf-loc">{localityLine(l.address)}</p>
+              {(l.sda.designCategories?.length ?? 0) > 0 && (
+                <p class="hf-chips">{l.sda.designCategories!.map((d) => <span title={DESIGN_LABEL[d]}>{d}</span>)}</p>
+              )}
+            </div>
+            {l.isDemo && <span class="hf-demo">Demo</span>}
+          </div>
+        </a>
+      );
+    })}
+  </div>
+  {interactive > 1 && (
+    <div class="hf-ctrl" data-hf-ctrl hidden>
+      <button type="button" class="hf-btn" data-hf-prev aria-label="Previous featured property">&larr;</button>
+      <p class="hf-now" role="status" aria-live="polite" data-hf-now></p>
+      <button type="button" class="hf-btn" data-hf-next aria-label="Next featured property">&rarr;</button>
+    </div>
+  )}
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-hf]');
+  if (root) {
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-hf-card]')];
+    const linkIdx = cards.map((c, i) => (c.hasAttribute('data-hf-link') ? i : -1)).filter((i) => i >= 0);
+    const half = Math.floor(cards.length / 2);
+    const now = root.querySelector<HTMLElement>('[data-hf-now]');
+    const ctrl = root.querySelector<HTMLElement>('[data-hf-ctrl]');
+    const desktop = matchMedia('(min-width: 900px)');
+    let active = half;
+
+    // positions are cyclic: any card can be the featured one and the rest fan evenly around it
+    const set = (a: number, announce = false) => {
+      active = a;
+      cards.forEach((c, i) => {
+        const o = ((i - a + cards.length + half) % cards.length) - half;
+        c.style.setProperty('--o', String(o));
+        c.style.setProperty('--a', String(Math.abs(o)));
+        c.dataset.active = o === 0 ? 'true' : 'false';
+      });
+      if (announce && now) now.textContent = `Featured: ${cards[a].dataset.name ?? ''}`;
+    };
+
+    linkIdx.forEach((i) => {
+      cards[i].addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && desktop.matches) set(i); });
+      cards[i].addEventListener('focus', () => { if (desktop.matches) set(i, true); });
+    });
+
+    const step = (dir: 1 | -1) => {
+      const at = Math.max(0, linkIdx.indexOf(active));
+      set(linkIdx[(at + dir + linkIdx.length) % linkIdx.length], true);
+    };
+    root.querySelector('[data-hf-prev]')?.addEventListener('click', () => step(-1));
+    root.querySelector('[data-hf-next]')?.addEventListener('click', () => step(1));
+    if (ctrl && linkIdx.length > 1) ctrl.hidden = false;
+  }
+</script>
+
+<style>
+.hf{position:relative}
+.hf-stage{position:relative;height:calc(var(--w) * 1.25 + 96px);--w:clamp(200px,21vw,300px);--step:calc(var(--w) * .52)}
+/* five cards need a tighter spread and slightly smaller cards to stay inside the column */
+.hf[data-n="5"] .hf-stage{--w:clamp(180px,17vw,250px);--step:calc(var(--w) * .34)}
+
+.hf-card{display:block;position:absolute;left:50%;top:50%;width:var(--w);aspect-ratio:4/5;margin:calc(var(--w) * -.625) 0 0 calc(var(--w) * -.5);color:var(--white);text-decoration:none;border-radius:14px;
+  transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px)) rotate(calc(var(--o) * 7deg)) scale(calc(1 - var(--a) * .07));
+  z-index:calc(10 - var(--a));
+  transition:transform .7s cubic-bezier(.2,.8,.2,1),box-shadow .5s ease;
+  box-shadow:0 18px 40px color-mix(in srgb,var(--navy) 55%,transparent);
+  animation:hfIn .9s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i) * 90ms + 200ms)}
+.hf-card[data-active="true"]{transform:translate(0,-8px) rotate(0deg) scale(1.04);box-shadow:0 30px 60px color-mix(in srgb,var(--navy) 80%,transparent)}
+.hf-card:focus-visible{outline:3px solid var(--white);outline-offset:4px}
+
+/* idle drift lives on an inner layer so it never fights the card's own transform */
+.hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);animation:hfFloat 9s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -1.7s)}
+.hf-photo{position:absolute;inset:0}
+.hf-shade{position:absolute;inset:0;background:linear-gradient(0deg,color-mix(in srgb,var(--navy) 92%,transparent) 0%,color-mix(in srgb,var(--navy) 50%,transparent) 32%,transparent 62%)}
+.hf-top{position:absolute;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hf-pill{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--white);background:color-mix(in srgb,var(--navy) 72%,transparent);border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:4px 8px}
+.hf-bottom{position:absolute;left:16px;right:16px;bottom:16px}
+.hf-street{font-family:var(--serif);font-weight:600;font-size:clamp(18px,1.7vw,22px);line-height:1.15;margin:0 0 4px}
+.hf-loc{font-family:var(--geo);font-size:12px;letter-spacing:.05em;color:var(--pale);margin:0}
+.hf-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.hf-chips span{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.1em;border:1px solid color-mix(in srgb,var(--blue) 75%,transparent);background:color-mix(in srgb,var(--navy) 60%,transparent);border-radius:2px;padding:3px 7px}
+.hf-demo{position:absolute;left:12px;top:48px;font-family:var(--geo);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:3px 6px}
+
+/* locked off-market card: darker, exclusive, never a link and never a real property */
+.hf-locked .hf-float{background:linear-gradient(160deg,var(--navy) 0%,color-mix(in srgb,var(--navy2) 70%,var(--navy)) 100%);border-color:color-mix(in srgb,var(--amber) 38%,transparent)}
+.hf-lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--amber);text-align:center}
+.hf-lock-k{font-family:var(--serif);font-weight:600;font-size:20px;color:var(--white);margin:8px 0 0}
+.hf-lock-d{font-family:var(--geo);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--pale);margin:0}
+
+.hf-ctrl{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:4px}
+.hf-ctrl[hidden]{display:none}
+.hf-btn{width:44px;height:44px;border-radius:50%;border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);background:color-mix(in srgb,var(--navy) 60%,transparent);color:var(--white);font-size:20px;line-height:1;cursor:pointer;transition:.18s}
+.hf-btn:hover{border-color:var(--white)}
+.hf-btn:focus-visible{outline:2px solid var(--white);outline-offset:3px}
+.hf-now{margin:0;min-width:22ch;text-align:center;font-family:var(--geo);font-size:12px;letter-spacing:.08em;color:var(--pale)}
+
+@keyframes hfIn{from{opacity:0;transform:translate(0,56px) rotate(0deg) scale(.86)}}
+@keyframes hfFloat{from{transform:translateY(0) rotate(0deg)}to{transform:translateY(-7px) rotate(.4deg)}}
+
+/* mobile: the fan becomes a native swipe carousel. Nothing depends on hover; the arrows are hidden. */
+@media(max-width:899px){
+  .hf-stage{display:flex;gap:14px;height:auto;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 24px 22px;margin:0 -24px;scrollbar-width:none;--w:min(72vw,290px)}
+  .hf-stage::-webkit-scrollbar{display:none}
+  .hf-card,.hf-card[data-active="true"]{position:relative;left:auto;top:auto;margin:0;flex:0 0 var(--w);transform:none;scroll-snap-align:center;z-index:auto;animation:none;box-shadow:0 14px 30px color-mix(in srgb,var(--navy) 55%,transparent)}
+  .hf-float{animation:none}
+  .hf-ctrl{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .hf-card,.hf-float{animation:none}
+  .hf-card{transition:box-shadow .2s ease}
+}
+</style>
