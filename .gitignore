@@ -27,3 +27,7 @@ pnpm-debug.log*
 backup(cpanel)_230926/
 backup_15072026/
 .vercel
+
+
+# local Notion read-only credentials for scripts/listings-sync.mjs (never commit)
+.env.listings

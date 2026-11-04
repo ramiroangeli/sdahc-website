@@ -1,0 +1,108 @@
+{
+  "database": "Properties",
+  "note": "Properties to ADD to the existing Properties database. Nothing existing is renamed, removed or edited.",
+  "apiVersion": "2026-03-11",
+  "properties": [
+    {
+      "name": "Web Listing Status",
+      "type": "select",
+      "options": [
+        "Not Published",
+        "Draft",
+        "In Review",
+        "Approved",
+        "Published",
+        "Under Offer",
+        "Sold",
+        "Withdrawn"
+      ],
+      "required": "always",
+      "defaultBehaviour": "Not Published. Blank or unrecognised also means Not Published, so nothing can go live.",
+      "mapsTo": "Not stored. It is the visibility gate: Published, Under Offer and Sold set snapshot.commercialStatus (Available, Under offer, Sold); Draft, In Review and Approved are checked but never proposed; Withdrawn and Not Published are never proposed."
+    },
+    {
+      "name": "Web Public Address",
+      "type": "rich_text",
+      "required": "always",
+      "defaultBehaviour": "Blank blocks publication.",
+      "mapsTo": "content.address { street, suburb, state, postcode }. Also the source of the slug. There is no field for a house or unit number."
+    },
+    {
+      "name": "Web Description",
+      "type": "rich_text",
+      "required": "always",
+      "defaultBehaviour": "Blank blocks publication. The CRM Description is never used.",
+      "mapsTo": "content.description[] (one entry per paragraph). The first paragraph becomes the summary shown on cards."
+    },
+    {
+      "name": "Web Pricing Mode",
+      "type": "select",
+      "options": [
+        "Asking Price",
+        "Price Guide",
+        "Expressions of Interest",
+        "Contact Agent"
+      ],
+      "required": "always",
+      "defaultBehaviour": "Blank blocks publication.",
+      "mapsTo": "content.pricing.mode (asking_price, price_guide, eoi, contact_agent)."
+    },
+    {
+      "name": "Web Approved By",
+      "type": "people",
+      "required": "always",
+      "defaultBehaviour": "Blank blocks publication. The person must also be on approvers.json (by Notion user id).",
+      "mapsTo": "snapshot.approvedBy and snapshot.approvedById. Not shown on any page."
+    },
+    {
+      "name": "Web Display Price",
+      "type": "number",
+      "required": "conditional",
+      "defaultBehaviour": "Blank is correct for EOI and Contact Agent. Required for Asking Price and Price Guide; filling it for the other two modes is reported and ignored.",
+      "mapsTo": "content.pricing.display, formatted as \"$695,000 AUD\". Never copied from the CRM Price."
+    },
+    {
+      "name": "Web Title",
+      "type": "rich_text",
+      "required": "optional",
+      "defaultBehaviour": "Blank derives \"SDA property, <suburb>\".",
+      "mapsTo": "content.title."
+    },
+    {
+      "name": "Web Featured",
+      "type": "checkbox",
+      "required": "optional",
+      "defaultBehaviour": "Unchecked: not featured.",
+      "mapsTo": "snapshot.featured (orders the hero cards)."
+    },
+    {
+      "name": "Web Photo Folder",
+      "type": "url",
+      "required": "optional",
+      "defaultBehaviour": "Blank is fine.",
+      "mapsTo": "Not stored and never read by the website. A human pointer to the SharePoint \"Approved for Website\" folder."
+    }
+  ],
+  "derivedNotCreated": [
+    {
+      "name": "slug",
+      "from": "Web Public Address",
+      "rule": "letters and hyphens only; a letter suffix if another property shares the street; frozen once published"
+    },
+    {
+      "name": "approval time",
+      "from": "the proposal step",
+      "rule": "the moment the snapshot is proposed; git history is the record"
+    },
+    {
+      "name": "photo manifest location",
+      "from": "public listing id",
+      "rule": "<LISTINGS_MEDIA_BASE_URL>/<public id>/manifest.json"
+    },
+    {
+      "name": "public listing id",
+      "from": "Notion page id",
+      "rule": "lst_ + first 10 hex characters of the SHA-256 of the page id"
+    }
+  ]
+}

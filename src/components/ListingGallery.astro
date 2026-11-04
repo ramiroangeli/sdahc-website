@@ -1,0 +1,79 @@
+---
+import ListingImage from './ListingImage.astro';
+import type { PublicListing } from '../data/listings/schema';
+interface Props { photos: PublicListing['photos']; title: string }
+const { photos, title } = Astro.props;
+---
+<div class="lg" data-lg>
+  {photos.length > 0 ? (
+    <>
+      <ul class="lg-track" tabindex="0" aria-label={`Photos of ${title}. Scroll or use the arrow keys.`} data-lg-track>
+        {photos.map((p, i) => (
+          <li class="lg-slide" aria-label={`Photo ${i + 1} of ${photos.length}`}>
+            <figure class="lg-fig">
+              <div class="lg-frame"><ListingImage photo={p} sizes="(min-width: 900px) 62vw, 100vw" loading={i === 0 ? 'eager' : 'lazy'} /></div>
+            </figure>
+          </li>
+        ))}
+      </ul>
+      {photos.length > 1 && (
+        <div class="lg-ctrl" data-lg-ctrl hidden>
+          <button type="button" class="lg-btn" data-lg-prev aria-label="Previous photo">&larr;</button>
+          <p class="lg-count" role="status" aria-live="polite" data-lg-count>1 / {photos.length}</p>
+          <button type="button" class="lg-btn" data-lg-next aria-label="Next photo">&rarr;</button>
+        </div>
+      )}
+    </>
+  ) : (
+    <div class="lg-empty">
+      <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.3" /><circle cx="9" cy="10" r="1.4" fill="currentColor" /><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      <p>Approved photography will appear here.</p>
+      <p class="lg-empty-sub">Ask us for images in your enquiry.</p>
+    </div>
+  )}
+</div>
+
+<script>
+  // Native scroll-snap does the real work, so the gallery is fully usable without JavaScript.
+  // This only reveals the previous/next buttons and keeps the "n / total" counter in step.
+  document.querySelectorAll<HTMLElement>('[data-lg]').forEach((root) => {
+    const track = root.querySelector<HTMLElement>('[data-lg-track]');
+    const ctrl = root.querySelector<HTMLElement>('[data-lg-ctrl]');
+    const count = root.querySelector<HTMLElement>('[data-lg-count]');
+    if (!track || !ctrl || !count) return;
+    const slides = [...track.children] as HTMLElement[];
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    ctrl.hidden = false;
+
+    const current = () => Math.round(track.scrollLeft / track.clientWidth);
+    const go = (i: number) => {
+      const n = Math.min(slides.length - 1, Math.max(0, i));
+      track.scrollTo({ left: n * track.clientWidth, behavior: reduce.matches ? 'auto' : 'smooth' });
+    };
+    root.querySelector('[data-lg-prev]')?.addEventListener('click', () => go(current() - 1));
+    root.querySelector('[data-lg-next]')?.addEventListener('click', () => go(current() + 1));
+    track.addEventListener('scroll', () => {
+      count.textContent = `${current() + 1} / ${slides.length}`;
+    }, { passive: true });
+  });
+</script>
+
+<style>
+.lg{position:relative}
+.lg-track{list-style:none;margin:0;padding:0;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:10px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);background:color-mix(in srgb,var(--navy2) 55%,var(--navy))}
+.lg-track::-webkit-scrollbar{display:none}
+.lg-track:focus-visible{outline:2px solid var(--white);outline-offset:3px}
+.lg-slide{flex:0 0 100%;scroll-snap-align:start}
+.lg-fig{margin:0;position:relative}
+.lg-frame{aspect-ratio:4/3}
+.lg-ctrl{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:14px}
+.lg-ctrl[hidden]{display:none}
+.lg-btn{width:44px;height:44px;border-radius:50%;border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);background:transparent;color:var(--white);font-size:20px;line-height:1;cursor:pointer;transition:.18s}
+.lg-btn:hover{border-color:var(--white)}
+.lg-btn:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.lg-count{margin:0;min-width:5ch;text-align:center;font-family:var(--geo);font-size:13px;letter-spacing:.08em;color:var(--pale)}
+.lg-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:4/3;border-radius:10px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--navy2) 55%,transparent) 0%,color-mix(in srgb,var(--navy) 70%,transparent) 100%);color:var(--pale);text-align:center;padding:24px}
+.lg-empty p{margin:0;font-family:var(--sans);font-size:16px}
+.lg-empty-sub{font-size:14px;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.lg-track{scroll-behavior:auto}}
+</style>

@@ -1,0 +1,15 @@
+---
+import { STATUS_LABEL, type CommercialStatus } from '../data/listings/schema';
+interface Props { status: CommercialStatus }
+const { status } = Astro.props;
+---
+<span class={`lsb lsb-${status}`}>{STATUS_LABEL[status]}</span>
+<style>
+/* status is always conveyed by the text label; the coloured dot and border are reinforcement only,
+   so the badge stays readable without colour and keeps AA contrast (white text on navy) */
+.lsb{--lsb:var(--pale);display:inline-flex;align-items:center;gap:8px;font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--white);border:1px solid color-mix(in srgb,var(--lsb) 70%,transparent);background:color-mix(in srgb,var(--navy) 72%,transparent);border-radius:999px;padding:5px 12px 5px 10px;white-space:nowrap}
+.lsb::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--lsb);flex:0 0 auto}
+.lsb-available{--lsb:var(--teal)}
+.lsb-under_offer{--lsb:var(--amber)}
+.lsb-sold{--lsb:var(--muted)}
+</style>

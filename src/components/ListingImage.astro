@@ -1,0 +1,68 @@
+---
+import { isDemoPhoto, type Photo } from '../data/listings/schema';
+
+/*
+  One image component for the hero, the catalogue and the detail page, so all three draw from the
+  same approved photo library and carry the same chromatic mask.
+
+  Three states:
+    real photo   responsive <img> built from the prepared variants (see scripts/prepare-listing-photos.mjs)
+    demo photo   a graphic labelled DEMO, used by fixtures and development only
+    no photo     a styled "photography to follow" slot, never a broken image
+
+  The mask is a semi-transparent gradient in one of our own brand accents (blue, teal, amber, slate).
+  The accent is chosen when the photo is prepared, by sampling its dominant colour and snapping it
+  to the nearest brand colour, so the photograph stays recognisable and the page stays on palette.
+*/
+interface Props { photo?: Photo; sizes?: string; loading?: 'eager' | 'lazy'; mask?: boolean; demoTag?: boolean }
+const { photo, sizes = '(min-width: 900px) 33vw, 100vw', loading = 'lazy', mask = true, demoTag = true } = Astro.props;
+
+const real = photo && !isDemoPhoto(photo) ? photo : undefined;
+const variants = real ? [...real.variants].sort((a, b) => a.w - b.w) : [];
+const src = variants.length ? variants[Math.min(1, variants.length - 1)].src : undefined;
+const srcset = variants.map((v) => `${v.src} ${v.w}w`).join(', ');
+const accent = photo?.accent ?? 'blue';
+---
+<div class={`li li--${accent}`}>
+  {real && src ? (
+    <img src={src} srcset={srcset} sizes={sizes} alt={real.alt} width={real.width} height={real.height} loading={loading} decoding="async" />
+  ) : photo ? (
+    <>
+      <svg class="li-demo" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label={photo.alt}>
+        <rect class="d-sky" width="400" height="300" />
+        <circle class="d-sun" cx="322" cy="72" r="34" />
+        <path class="d-ground" d="M0 232H400V300H0Z" />
+        <path class="d-house" d="M84 232V142L200 76L316 142V232Z" />
+        <rect class="d-door" x="176" y="168" width="48" height="64" />
+        <rect class="d-win" x="110" y="162" width="38" height="32" />
+        <rect class="d-win" x="252" y="162" width="38" height="32" />
+      </svg>
+      {demoTag && <span class="li-demo-tag">Demo image</span>}
+    </>
+  ) : (
+    <div class="li-none">
+      <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.3" /><circle cx="9" cy="10" r="1.4" fill="currentColor" /><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      <span>Photography to follow</span>
+    </div>
+  )}
+  {mask && <span class="li-tint" aria-hidden="true"></span>}
+</div>
+<style>
+.li{position:relative;width:100%;height:100%;overflow:hidden;background:color-mix(in srgb,var(--navy2) 60%,var(--navy));--li-accent:var(--blue)}
+.li--blue{--li-accent:var(--blue)}
+.li--teal{--li-accent:var(--teal)}
+.li--amber{--li-accent:var(--amber)}
+.li--slate{--li-accent:var(--slate)}
+.li img{display:block;width:100%;height:100%;object-fit:cover}
+/* the mask: a brand-accent wash from one corner plus a soft navy foot, both semi-transparent */
+.li-tint{position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,color-mix(in srgb,var(--li-accent) 38%,transparent) 0%,transparent 58%),linear-gradient(0deg,color-mix(in srgb,var(--navy) 45%,transparent) 0%,transparent 46%)}
+.li-none{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--pale);font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:12px}
+.li-demo{position:absolute;inset:0;width:100%;height:100%;display:block}
+.d-sky{fill:color-mix(in srgb,var(--li-accent) 30%,var(--navy2))}
+.d-sun{fill:color-mix(in srgb,var(--li-accent) 55%,var(--white))}
+.d-ground{fill:color-mix(in srgb,var(--navy) 80%,var(--li-accent))}
+.d-house{fill:color-mix(in srgb,var(--navy) 88%,var(--white))}
+.d-door{fill:color-mix(in srgb,var(--li-accent) 70%,var(--navy))}
+.d-win{fill:color-mix(in srgb,var(--pale) 70%,var(--navy))}
+.li-demo-tag{position:absolute;right:10px;bottom:10px;font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:3px 7px}
+</style>
