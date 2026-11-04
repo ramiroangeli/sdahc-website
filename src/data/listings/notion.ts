@@ -490,7 +490,7 @@ const UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$
 /** The database (container) id. The REST API needs the DATA SOURCE id; this one would 404. */
 export const KNOWN_DATABASE_ID = '2e2909c1-bb60-81b5-8806-ff710a8274ed';
 
-export interface NotionConfig { token: string; dataSourceId: string; version: string }
+export interface NotionConfig { token: string; dataSourceId: string; version: string; apiBase?: string }
 
 /**
  * Accepts a bare UUID, or the "collection://<uuid>" form the connector shows, and returns the plain UUID.
@@ -508,7 +508,13 @@ export const readNotionConfig = (env: Record<string, string | undefined>): Notio
   if (dataSourceId.replace(/-/g, '').toLowerCase() === KNOWN_DATABASE_ID.replace(/-/g, '')) {
     throw new Error('NOTION_PROPERTIES_DATA_SOURCE_ID is set to the DATABASE id. Use the data source id from Notion (see docs/listings-runbook.md).');
   }
-  return { token: env.NOTION_TOKEN, dataSourceId, version: env.NOTION_API_VERSION || NOTION_VERSION };
+  // NOTION_API_BASE exists only so the CLI can be exercised against a local mock server. It must be a loopback
+  // address, so a mistyped or malicious value can never redirect the token to another host.
+  const base = env.NOTION_API_BASE;
+  if (base && !/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/.test(base)) {
+    throw new Error('NOTION_API_BASE is for local tests only and must be http://127.0.0.1 or http://localhost');
+  }
+  return { token: env.NOTION_TOKEN, dataSourceId, version: env.NOTION_API_VERSION || NOTION_VERSION, ...(base ? { apiBase: base.replace(/\/$/, '') } : {}) };
 };
 
 /** Never carries headers, the token or the response body: only the status and Notion's error code. */
@@ -551,7 +557,7 @@ export class NotionReadClient {
       const wait = this.last + this.minInterval - this.now();
       if (wait > 0) await this.sleep(wait);
       this.last = this.now();
-      const res = await this.fetchImpl(`https://api.notion.com${path}`, {
+      const res = await this.fetchImpl(`${this.cfg.apiBase ?? 'https://api.notion.com'}${path}`, {
         method,
         headers: { Authorization: `Bearer ${this.cfg.token}`, 'Notion-Version': this.cfg.version, ...(body ? { 'Content-Type': 'application/json' } : {}) },
         ...(body ? { body: JSON.stringify(body) } : {}),
@@ -567,6 +573,11 @@ export class NotionReadClient {
       const backoff = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 60) * 1000 : 500 * 2 ** attempt + Math.floor(Math.random() * 250);
       await this.sleep(backoff);
     }
+  }
+
+  /** GET the integration's own bot user. Read only. It proves the token is accepted, and nothing more. */
+  retrieveSelf(): Promise<{ object: string; type?: string }> {
+    return this.request('GET', '/v1/users/me', 'token check');
   }
 
   /** GET the data source (its property schema). Read only. */
