@@ -3,12 +3,12 @@
 // isolation, the Notion mapping (against mock API responses, never the network), enquiries and the
 // photo preparation step. Exits non-zero on any failure.
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
-import { prepareFolder, readAccentPalette, snapToAccent } from './prepare-listing-photos.mjs';
+import { prepareFolder, readAccentPalette, snapToAccent, verifyFolder } from './prepare-listing-photos.mjs';
 
 const L = await loadTs();
 const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
@@ -325,7 +325,7 @@ const all = await client.queryAll();
 t('client paginates the data source query', all.length === 2 && calls.length === 2 && JSON.parse(calls[1].body).start_cursor === 'c2');
 t('client only ever calls the data source query endpoint', calls.every((c) => c.url === `https://api.notion.com/v1/data_sources/${DS}/query` && c.method === 'POST'));
 t('client sends the token and pinned Notion-Version', calls[0].headers.Authorization === 'Bearer secret-token' && calls[0].headers['Notion-Version'] === '2026-03-11');
-t('the client class exposes no write surface', JSON.stringify(Object.getOwnPropertyNames(L.NotionReadClient.prototype).sort()) === JSON.stringify(['constructor', 'queryAll', 'request', 'retrieveDataSource', 'retrievePage']));
+t('the client class exposes no write surface', JSON.stringify(Object.getOwnPropertyNames(L.NotionReadClient.prototype).sort()) === JSON.stringify(['constructor', 'queryAll', 'request', 'retrieveDataSource', 'retrievePage', 'retrieveSelf']));
 calls.length = 0;
 await new L.NotionReadClient(CFG, fast(mockFetch([page()]))).retrievePage('402909c1-bb60-817e-b2d8-d9def6dde218');
 t('reading a page is a GET to the pages endpoint and nothing else', calls.length === 1 && calls[0].method === 'GET' && calls[0].url === 'https://api.notion.com/v1/pages/402909c1-bb60-817e-b2d8-d9def6dde218' && !calls[0].body);
@@ -622,6 +622,148 @@ section('hero card fan: decorative cards react to hover without becoming actions
   t('on touch screens nothing depends on hover (the hover rules sit behind (hover:hover))', /@media\(hover:hover\)\{\s*\.hf-card:hover\{/.test(css));
   t('the carousel on small screens never lifts a card on hover', /@media\(max-width:899px\)[\s\S]*\.hf-card:hover[\s\S]*transform:none/.test(css));
   t('the property page link is only on real listing cards', (markup.match(/href=\{`\/opportunities\//g) ?? []).length === 1 && !/href/.test(locked));
+}
+
+/* ------------------- doctor, delivery test, photo gate and the full CLI against a mock Notion */
+section('doctor, delivery test, photo gate and an end-to-end CLI run against a local mock Notion');
+{
+  const { spawn } = await import('node:child_process');
+  const { createServer } = await import('node:http');
+  const { mkdirSync, writeFileSync, existsSync, readFileSync: rf } = await import('node:fs');
+  const run = (script, args, env) => new Promise((resolveRun) => {
+    const p = spawn('node', [join(repoRoot, script), ...args], { env: { PATH: process.env.PATH, ...env }, cwd: repoRoot });
+    let out = ''; let err = '';
+    p.stdout.on('data', (d) => { out += d; }); p.stderr.on('data', (d) => { err += d; });
+    p.on('close', (code) => resolveRun({ code, out, err, all: out + err }));
+  });
+  const cli = (args, env = {}) => run('scripts/listings-sync.mjs', args, env);
+  const TOKEN = `ntn_${'a1b2c3d4e5'.repeat(4)}`;
+  const DSID = '2e2909c1-bb60-8177-bf4f-000b40ef0d48';
+
+  // ---- doctor
+  const d0 = await cli(['--doctor']);
+  t('doctor with nothing configured fails and names what is missing and how to set it up', d0.code === 1 && /NOTION_TOKEN is not set/.test(d0.out) && /NOTION_PROPERTIES_DATA_SOURCE_ID is not set/.test(d0.out) && /Read content/.test(d0.out));
+  const d1 = await cli(['--doctor'], { NOTION_TOKEN: TOKEN, NOTION_PROPERTIES_DATA_SOURCE_ID: `collection://${DSID}` });
+  t('doctor accepts a token shape and a collection:// id, and never prints the token', d1.code === 0 && !d1.all.includes(TOKEN) && !d1.all.includes('a1b2c3d4e5a1b2') && /data source id is a valid UUID/.test(d1.out));
+  const d2 = await cli(['--doctor'], { NOTION_TOKEN: TOKEN, NOTION_PROPERTIES_DATA_SOURCE_ID: '2e2909c1-bb60-81b5-8806-ff710a8274ed' });
+  t('doctor flags the DATABASE id used as the data source id', d2.code === 1 && /DATABASE id/.test(d2.out));
+  const d3 = await cli(['--doctor'], { NOTION_TOKEN: 'not-a-token', NOTION_PROPERTIES_DATA_SOURCE_ID: DSID });
+  t('doctor flags a value that is not a Notion token', d3.code === 1 && /does not look like a Notion integration token/.test(d3.out) && !d3.all.includes('not-a-token'));
+  const d4 = await cli(['--doctor'], { NOTION_TOKEN: TOKEN, NOTION_PROPERTIES_DATA_SOURCE_ID: DSID, NOTION_API_BASE: 'https://evil.example.test' });
+  t('a non-loopback NOTION_API_BASE is refused, so the token can never be redirected', d4.code === 1 && /local tests only/.test(d4.out) && !d4.all.includes(TOKEN));
+
+  // ---- delivery test (dry run only: tests never send email)
+  const dl = (args, env) => run('scripts/test-enquiry-delivery.mjs', args, env);
+  const dl1 = await dl([], { RESEND_API_KEY: `re_${'FAKEKEY'.repeat(4)}` });
+  t('the delivery test dry run shows the real sender and recipient, sends nothing and hides the key', dl1.code === 0 && /noreply@send\.sdahomechoices\.com\.au/.test(dl1.out) && /steve@sdahomechoices\.com\.au/.test(dl1.out) && /Nothing was sent/.test(dl1.out) && !dl1.all.includes('FAKEKEY'));
+  t('the delivery test refuses an external recipient', (await dl(['--to', 'someone@example.com'], { RESEND_API_KEY: 'x' })).code === 2);
+  const dl2 = await dl(['--send'], {});
+  t('--send without a key fails before any network call', dl2.code === 1 && /RESEND_API_KEY is not set/.test(dl2.all));
+  t('the delivery test uses the same sink as the endpoint and has an explicit --send gate', /createEmailSink/.test(rd('scripts/test-enquiry-delivery.mjs')) && /argv\.includes\('--send'\)/.test(rd('scripts/test-enquiry-delivery.mjs')));
+
+  // ---- photo gate
+  {
+    const w = mkdtempSync(join(tmpdir(), 'photo-gate-'));
+    const inD = join(w, 'in'); mkdirSync(inD);
+    await sharp({ create: { width: 1800, height: 1200, channels: 3, background: { r: 25, g: 140, b: 160 } } }).jpeg().toFile(join(inD, 'a.jpg'));
+    const outCli = await run('scripts/prepare-listing-photos.mjs', ['--in', inD, '--out', join(w, 'out'), '--id', 'lst_454f05d21f'], {});
+    const prepared = join(w, 'out', 'lst_454f05d21f');
+    t('--id writes the prepared folder under the public id, the exact upload prefix', outCli.code === 0 && existsSync(join(prepared, 'manifest.json')));
+    t('--id rejects anything that is not a public listing id', (await run('scripts/prepare-listing-photos.mjs', ['--in', inD, '--out', join(w, 'o2'), '--id', '19 Some Street'], {})).code === 2);
+    const v0 = await verifyFolder(prepared);
+    t('the gate refuses a fresh folder: no alt text and no privacy review', !v0.ok && v0.problems.some((m) => /alt text/.test(m)) && v0.problems.some((m) => /privacy review/.test(m)));
+    t('the gate command exits non-zero and says not to upload', (await run('scripts/prepare-listing-photos.mjs', ['--verify', prepared], {})).code === 1);
+    const mp = join(prepared, 'manifest.json');
+    const man0 = JSON.parse(rf(mp, 'utf8'));
+    man0.photos[0].alt = 'Front elevation of a single-storey home'; man0.photos[0].privacyReviewed = true;
+    writeFileSync(mp, JSON.stringify(man0));
+    const v1 = await verifyFolder(prepared);
+    t('the gate passes once alt text and the privacy review are recorded', v1.ok && v1.problems.length === 0);
+    t('the gate command exits zero when the folder is ready', (await run('scripts/prepare-listing-photos.mjs', ['--verify', prepared], {})).code === 0);
+    const f0 = join(prepared, man0.photos[0].files[0].file);
+    try {
+      await sharp(f0).withExif({ IFD0: { Copyright: 'Owner Name' } }).webp().toFile(`${f0}.tmp`);
+      (await import('node:fs')).renameSync(`${f0}.tmp`, f0);
+      const v2 = await verifyFolder(prepared);
+      t('the gate catches a file that still carries EXIF metadata', !v2.ok && v2.problems.some((m) => /metadata/.test(m)));
+    } catch { t('the gate catches a file that still carries EXIF metadata (skipped: this sharp cannot write EXIF to WebP)', true); }
+    writeFileSync(join(prepared, 'stray.jpg'), 'x');
+    t('the gate catches an image that is not in the manifest', (await verifyFolder(prepared)).problems.some((m) => /stray\.jpg/.test(m)));
+    man0.photos[0].alt = 'IMG_4821.jpg'; writeFileSync(mp, JSON.stringify(man0));
+    t('the gate catches alt text that is a file name', (await verifyFolder(prepared)).problems.some((m) => /file name/.test(m)));
+  }
+
+  // ---- the whole CLI against a mock Notion that behaves like the documented API
+  const A = page();
+  const PID = L.publicIdFor(A.id);
+  const requests = [];
+  let migrated = false;
+  let authOk = true;
+  const dsMigrated = () => dsPayload((d) => { for (const w of L.WEB_SCHEMA) d.add(w.name, w.type, w.options ? { select: { options: w.options.map((name) => ({ name })) } } : {}); return d; });
+  const server = createServer((req, res) => {
+    const url = new URL(req.url, 'http://x');
+    requests.push({ method: req.method, path: url.pathname, version: req.headers['notion-version'], auth: !!req.headers.authorization });
+    const json = (code, body) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
+    if (url.pathname.startsWith('/media/')) return json(200, man({ files: [{ w: 480, file: 'a1b2c3d4e5f6-480.webp' }] }));
+    if (!req.headers.authorization || !authOk) return json(401, { object: 'error', code: 'unauthorized', message: 'API token is invalid.' });
+    if (url.pathname === '/v1/users/me') return json(200, { object: 'user', type: 'bot' });
+    if (url.pathname === `/v1/data_sources/${DSID}` && req.method === 'GET') return json(200, migrated ? dsMigrated() : dsPayload());
+    if (url.pathname === `/v1/data_sources/${DSID}/query` && req.method === 'POST') return json(200, { object: 'list', results: [A], has_more: false, next_cursor: null, type: 'page_or_data_source', request_status: { type: 'complete' } });
+    if (url.pathname === `/v1/pages/${A.id}` && req.method === 'GET') return json(200, A);
+    return json(404, { object: 'error', code: 'object_not_found', message: 'not found' });
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const port = server.address().port;
+  const dataDir = mkdtempSync(join(tmpdir(), 'e2e-data-'));
+  for (const d of ['approved', 'withdrawn']) mkdirSync(join(dataDir, d));
+  writeFileSync(join(dataDir, 'approvers.json'), JSON.stringify({ approvers: [{ notionUserId: 'user-steve', name: 'Steve Dawson' }] }));
+  writeFileSync(join(dataDir, 'compliance.json'), JSON.stringify(COMPLY));
+  const env = { NOTION_TOKEN: TOKEN, NOTION_PROPERTIES_DATA_SOURCE_ID: `collection://${DSID}`, NOTION_API_BASE: `http://127.0.0.1:${port}`, LISTINGS_MEDIA_BASE_URL: `http://127.0.0.1:${port}/media`, LISTINGS_DATA_DIR: dataDir };
+
+  const online = await cli(['--doctor', '--online'], env);
+  t('doctor --online: Notion accepts the token and the integration can read the data source', online.code === 0 || /Notion accepted the token/.test(online.out));
+  t('doctor --online reports the Web properties still to create', /9 Web properties still to create/.test(online.out));
+
+  requests.length = 0;
+  const sch = await cli(['--schema'], env);
+  t('--schema against the pre-migration data source lists the nine properties to add and changes nothing', sch.code === 0 && /Web properties still to add \(9\)/.test(sch.out) && /Nothing was changed in Notion/.test(sch.out) && /Web Display Price  \[number\]/.test(sch.out) && /Web Approved By  \[people\]/.test(sch.out));
+  t('the schema check sent only GET requests, with the pinned API version and the token', requests.length === 1 && requests.every((r) => r.method === 'GET' && r.version === '2026-03-11' && r.auth));
+
+  const pre = await cli(['--preflight', A.id], env);
+  t('--preflight reads one page and prints the readiness report', pre.code === 0 && /Final readiness/.test(pre.out) && new RegExp(PID).test(pre.out));
+  t('the report prints no price, yield or SharePoint address', !/\b695,?000\b|\b6\.5\b|sharepoint\.com/i.test(pre.out));
+  t('the CRM Description and Features are reported as protected', /PROTECTED\s+Description \(CRM\)/.test(pre.out) && /PROTECTED\s+Features/.test(pre.out));
+
+  migrated = true;
+  const dry = await cli(['--propose'], env);
+  t('--propose (dry run) shows what it would propose and writes nothing', dry.code === 0 && /would propose/.test(dry.out) && readdirSync(join(dataDir, 'approved')).length === 0);
+  requests.length = 0;
+  const wr = await cli(['--propose', '--write'], env);
+  const snapFile = join(dataDir, 'approved', 'rutherford-grove-armstrong-creek-vic.json');
+  t('--propose --write produces the first snapshot for the pilot property', wr.code === 0 && existsSync(snapFile));
+  const snapJson = existsSync(snapFile) ? JSON.parse(rf(snapFile, 'utf8')) : {};
+  t('the snapshot has the public address, a hashed id and the authorised approver', snapJson.listingId === PID && snapJson.content?.address?.street === 'Rutherford Grove' && snapJson.content?.address?.postcode === '3217' && snapJson.approvedById === 'user-steve' && snapJson.version === 1 && L.contentHash(snapJson.content) === snapJson.contentHash);
+  t('the snapshot contains no house number, price, yield, CRM description, SharePoint link or internal id', !/1\/10|695|6\.5|vendor motivation|sharepoint|2e2909c1/i.test(JSON.stringify(snapJson)));
+  const reads = requests.filter((r) => r.path.startsWith('/v1/'));
+  t('the whole run used only reads: GET, plus the data source query which reads', reads.every((r) => r.method === 'GET' || (r.method === 'POST' && /\/query$/.test(r.path))));
+  t('every Notion request carried the pinned version and the token', reads.every((r) => r.version === '2026-03-11' && r.auth));
+  t('the public manifest was fetched without the Notion token', requests.filter((r) => r.path.startsWith('/media/')).every((r) => !r.auth) && requests.some((r) => r.path.startsWith('/media/')));
+  t('no output of any command contains the token', ![sch, pre, dry, wr, online].some((r) => r.all.includes(TOKEN)));
+
+  writeFileSync(join(dataDir, 'approvers.json'), JSON.stringify({ approvers: [{ notionUserId: 'someone-else', name: 'Nobody' }] }));
+  rmSync(snapFile);
+  const noAuth = await cli(['--propose', '--write'], env);
+  t('an approver who is not on the list yields no snapshot and a clear failure', noAuth.code === 1 && /not an authorised approver/.test(noAuth.all) && !existsSync(snapFile));
+  writeFileSync(join(dataDir, 'approvers.json'), JSON.stringify({ approvers: [{ notionUserId: 'user-steve', name: 'Steve Dawson' }] }));
+  writeFileSync(join(dataDir, 'compliance.json'), JSON.stringify(DENY));
+  const noComp = await cli(['--propose', '--write'], env);
+  t('Victoria not cleared yields no snapshot even with an authorised approver', noComp.code === 1 && /Victorian pricing compliance is not cleared/.test(noComp.all) && !existsSync(snapFile));
+  authOk = false;
+  const bad = await cli(['--schema'], env);
+  t('a rejected token fails closed with the status only, never the token', bad.code === 1 && /HTTP 401/.test(bad.all) && !bad.all.includes(TOKEN));
+  const noWrite = await cli(['--schema'], { ...env, NOTION_TOKEN: undefined });
+  t('without a token the command fails before any network call', noWrite.code === 1);
+  await new Promise((r) => server.close(r));
 }
 
 /* ----------------------------------------------- safety of the repository itself */

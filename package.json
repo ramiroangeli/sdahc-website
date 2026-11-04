@@ -19,7 +19,10 @@
     "listings:withdraw": "node scripts/listings-sync.mjs --withdraw",
     "check:withdrawal": "node scripts/check-withdrawal.mjs",
     "check:readiness": "node scripts/check-readiness.mjs",
-    "listings:manifest": "node scripts/print-schema-manifest.mjs"
+    "listings:manifest": "node scripts/print-schema-manifest.mjs",
+    "listings:doctor": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --doctor",
+    "listings:test-delivery": "node --env-file-if-exists=.env --env-file-if-exists=.env.listings scripts/test-enquiry-delivery.mjs",
+    "listings:photos:verify": "node scripts/prepare-listing-photos.mjs --verify"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
