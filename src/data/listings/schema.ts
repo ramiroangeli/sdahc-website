@@ -142,6 +142,8 @@ export const publicListingSchema = publicContentSchema.extend({
   publishedAt: z.string(),
   updatedAt: z.string(),
   isDemo: z.boolean(),
+  /** Local draft preview only (astro dev). Never present in a build. */
+  isPreview: z.boolean().optional(),
 }).strict();
 
 export type PublicAddress = z.infer<typeof publicAddressSchema>;
