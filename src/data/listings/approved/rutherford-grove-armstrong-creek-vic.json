@@ -1,0 +1,146 @@
+{
+  "listingId": "lst_454f05d21f",
+  "version": 1,
+  "approvedBy": "Ramiro - SDAHC account",
+  "approvedById": "2e1d872b-594c-8122-be15-00028acc4f13",
+  "approvedAt": "2026-11-05T12:29:09.094Z",
+  "firstPublishedAt": "2026-11-05T12:29:09.094Z",
+  "commercialStatus": "available",
+  "featured": false,
+  "sourceEditedAt": "2026-11-05T12:25:00.000Z",
+  "contentHash": "bcde06cde37b874835b3d061966b8ff0c590258073e3efebbb6f80aaa538defa",
+  "content": {
+    "slug": "rutherford-grove-armstrong-creek-vic",
+    "type": "property",
+    "title": "Established Improved Liveability SDA Investment",
+    "description": [
+      "An established Improved Liveability (IL) Specialist Disability Accommodation investment in Armstrong Creek, in the Geelong region. The property has three participant places plus Onsite Overnight Assistance (OOA) and has been enrolled with the NDIA since August 2021. Contact SDA Home Choices for further investment information."
+    ],
+    "address": {
+      "street": "Rutherford Grove",
+      "suburb": "Armstrong Creek",
+      "state": "VIC",
+      "postcode": "3217"
+    },
+    "pricing": {
+      "mode": "contact_agent"
+    },
+    "sda": {
+      "designCategories": [
+        "IL"
+      ],
+      "buildingType": "House"
+    },
+    "photos": [
+      {
+        "id": "84108af97e65",
+        "alt": "Front of a single-storey brick and render home at dusk, with a double garage and landscaped front garden",
+        "width": 800,
+        "height": 409,
+        "accent": "teal",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/84108af97e65-480.webp"
+          },
+          {
+            "w": 800,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/84108af97e65-800.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "59c25899828d",
+        "alt": "Open kitchen with a stone island bench, gas cooktop and timber floor",
+        "width": 875,
+        "height": 656,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/59c25899828d-480.webp"
+          },
+          {
+            "w": 875,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/59c25899828d-875.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "4d614d028693",
+        "alt": "Living room with two leather sofas and a large window, on a timber-look floor",
+        "width": 492,
+        "height": 656,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/4d614d028693-480.webp"
+          },
+          {
+            "w": 492,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/4d614d028693-492.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "0db3177629fc",
+        "alt": "Accessible bathroom with a level-access shower, grab rails and a fold-down shower seat",
+        "width": 480,
+        "height": 640,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/0db3177629fc-480.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "a8aa188a824b",
+        "alt": "Ensuite with a double vanity and a walk-in glass shower",
+        "width": 492,
+        "height": 656,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/a8aa188a824b-480.webp"
+          },
+          {
+            "w": 492,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/a8aa188a824b-492.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "d540f90cf904",
+        "alt": "Floorplan of the single-storey home, showing the garage, living areas, bedrooms and alfresco",
+        "width": 3507,
+        "height": 2478,
+        "accent": "slate",
+        "kind": "floorplan",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/d540f90cf904-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/d540f90cf904-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_454f05d21f/d540f90cf904-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      }
+    ]
+  }
+}
