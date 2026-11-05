@@ -838,6 +838,10 @@ t('reuses an existing Contact: no duplicate is created', !linkedOld.contactCreat
 t('looks the Contact up by lower-cased email', crmCalls[0][1] === 'alex@example.com');
 t('never creates a Deal, by construction', linkedNew.dealCreated === false && linkedOld.dealCreated === false && !('createDeal' in mkCrm(true)));
 const sent = [];
+t('a Preview may redirect to an @sdahomechoices.com.au test inbox', L.resolveRecipient('steve@sdahomechoices.com.au', 'ramiro@sdahomechoices.com.au', 'preview') === 'ramiro@sdahomechoices.com.au');
+t('Production never uses the test recipient', L.resolveRecipient('steve@sdahomechoices.com.au', 'ramiro@sdahomechoices.com.au', 'production') === 'steve@sdahomechoices.com.au');
+t('the test recipient must be on the company domain', L.resolveRecipient('steve@sdahomechoices.com.au', 'x@evil.example.test', 'preview') === 'steve@sdahomechoices.com.au');
+t('no override means the default recipient', L.resolveRecipient('steve@sdahomechoices.com.au', undefined, 'preview') === 'steve@sdahomechoices.com.au');
 const sink = L.createEmailSink(async (m) => { sent.push(m); return {}; }, 'inbox@example.test');
 const evil = { ...rr, message: '<script>alert(1)</script>' };
 await sink.deliver(evil, fx[0]);
