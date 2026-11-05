@@ -14,18 +14,30 @@ import { isDemoPhoto, type Photo } from '../data/listings/schema';
   The accent is chosen when the photo is prepared, by sampling its dominant colour and snapping it
   to the nearest brand colour, so the photograph stays recognisable and the page stays on palette.
 */
-interface Props { photo?: Photo; sizes?: string; loading?: 'eager' | 'lazy'; mask?: boolean; demoTag?: boolean }
-const { photo, sizes = '(min-width: 900px) 33vw, 100vw', loading = 'lazy', mask = true, demoTag = true } = Astro.props;
+/*
+  Framing (`whole`, used by the detail gallery): a floorplan is shown whole on a neutral ground, and a photograph
+  whose shape is far from the frame (portrait or very wide) is shown whole over a blurred copy of itself instead
+  of being cropped hard. Other photographs fill the frame. Catalogue and hero keep the default fill.
+*/
+interface Props { photo?: Photo; sizes?: string; loading?: 'eager' | 'lazy'; mask?: boolean; demoTag?: boolean; whole?: boolean }
+const { photo, sizes = '(min-width: 900px) 33vw, 100vw', loading = 'lazy', mask = true, demoTag = true, whole = false } = Astro.props;
 
 const real = photo && !isDemoPhoto(photo) ? photo : undefined;
 const variants = real ? [...real.variants].sort((a, b) => a.w - b.w) : [];
 const src = variants.length ? variants[Math.min(1, variants.length - 1)].src : undefined;
 const srcset = variants.map((v) => `${v.src} ${v.w}w`).join(', ');
 const accent = photo?.accent ?? 'blue';
+const plan = !!real && real.kind === 'floorplan';
+const ratio = real ? real.width / real.height : 1;
+const fit = whole && !!real && !plan && (ratio < 1 || ratio > 1.7);
+const frame = whole && plan ? 'plan' : fit ? 'fit' : 'fill';
 ---
-<div class={`li li--${accent}`}>
+<div class={`li li--${accent} li--${frame}`}>
   {real && src ? (
-    <img src={src} srcset={srcset} sizes={sizes} alt={real.alt} width={real.width} height={real.height} loading={loading} decoding="async" />
+    <>
+    {frame === 'fit' && <img class="li-back" src={src} alt="" aria-hidden="true" width={real.width} height={real.height} loading={loading} decoding="async" />}
+    <img class="li-main" src={src} srcset={srcset} sizes={sizes} alt={real.alt} width={real.width} height={real.height} loading={loading} decoding="async" />
+    </>
   ) : photo ? (
     <>
       <svg class="li-demo" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label={photo.alt}>
@@ -45,7 +57,7 @@ const accent = photo?.accent ?? 'blue';
       <span>Photography to follow</span>
     </div>
   )}
-  {mask && <span class="li-tint" aria-hidden="true"></span>}
+  {mask && frame !== 'plan' && <span class="li-tint" aria-hidden="true"></span>}
 </div>
 <style>
 .li{position:relative;width:100%;height:100%;overflow:hidden;background:color-mix(in srgb,var(--navy2) 60%,var(--navy));--li-accent:var(--blue)}
@@ -54,6 +66,11 @@ const accent = photo?.accent ?? 'blue';
 .li--amber{--li-accent:var(--amber)}
 .li--slate{--li-accent:var(--slate)}
 .li img{display:block;width:100%;height:100%;object-fit:cover}
+/* whole-image framing (detail gallery only) */
+.li--plan{background:var(--paper)}
+.li--plan img{object-fit:contain;padding:14px}
+.li--fit .li-back{position:absolute;inset:0;filter:blur(22px) brightness(.6);transform:scale(1.15)}
+.li--fit .li-main{position:relative;object-fit:contain}
 /* the mask: a brand-accent wash from one corner plus a soft navy foot, both semi-transparent */
 .li-tint{position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,color-mix(in srgb,var(--li-accent) 38%,transparent) 0%,transparent 58%),linear-gradient(0deg,color-mix(in srgb,var(--navy) 45%,transparent) 0%,transparent 46%)}
 .li-none{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--pale);font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:12px}

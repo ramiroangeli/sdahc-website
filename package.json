@@ -12,6 +12,8 @@
     "astro": "astro",
     "test:listings": "node scripts/test-listings.mjs",
     "check:privacy": "node scripts/check-dist-privacy.mjs",
+    "listings:preview": "node --env-file-if-exists=.env.listings scripts/local-preview.mjs",
+    "dev:preview": "LISTINGS_LOCAL_PREVIEW=1 astro dev --host 127.0.0.1",
     "listings:photos": "node scripts/prepare-listing-photos.mjs",
     "listings:schema": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --schema",
     "listings:preflight": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --preflight",

@@ -19,7 +19,7 @@ import { isAllowedOrigin, json } from '../../lib/enquiry-http';
 const perIp = new RateLimiter(5, 10 * 60 * 1000);
 const perEmail = new RateLimiter(3, 60 * 60 * 1000);
 
-const mode = () => import.meta.env.LISTINGS_ENQUIRY_MODE || (import.meta.env.DEV ? 'dry-run' : '');
+const mode = () => (import.meta.env.DEV && process.env.LISTINGS_LOCAL_PREVIEW === '1' ? 'dry-run' : import.meta.env.LISTINGS_ENQUIRY_MODE) || (import.meta.env.DEV ? 'dry-run' : '');
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   const devHosts = import.meta.env.DEV ? ['localhost:4321', '127.0.0.1:4321'] : [];

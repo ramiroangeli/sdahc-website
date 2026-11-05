@@ -98,6 +98,8 @@ const realPhotoSchema = z.object({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   accent: z.enum(ACCENTS),
+  /** A floorplan is a drawing, not a photograph: shown whole on a neutral ground. Absent means photograph. */
+  kind: z.literal('floorplan').optional(),
   variants: z.array(variantSchema).min(1).max(6),
   /** A human confirmed no house number, letterbox, sign or person is identifiable in the frame. */
   privacyReviewed: z.literal(true),
@@ -142,6 +144,8 @@ export const publicListingSchema = publicContentSchema.extend({
   publishedAt: z.string(),
   updatedAt: z.string(),
   isDemo: z.boolean(),
+  /** Local draft preview only (astro dev). Never present in a build. */
+  isPreview: z.boolean().optional(),
 }).strict();
 
 export type PublicAddress = z.infer<typeof publicAddressSchema>;

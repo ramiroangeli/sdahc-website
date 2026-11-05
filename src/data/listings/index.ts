@@ -1,6 +1,8 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { FIXTURE_RECORDS, FIXTURE_SNAPSHOTS } from './fixtures';
 import { assertFixturesAllowed, buildPublicListings } from './publish';
-import { type ApprovedSnapshot, type ListingRecord, type PublicListing, type Withdrawal, type WebStatus } from './schema';
+import { publicContentSchema, publicListingSchema, type ApprovedSnapshot, type ListingRecord, type PublicListing, type Withdrawal, type WebStatus } from './schema';
 
 /*
   Loader for listings. The single entry point for every page and API route.
@@ -42,7 +44,29 @@ const load = (): { records: ListingRecord[]; snapshots: ApprovedSnapshot[]; allo
   return { records, snapshots, allowDemo: false };
 };
 
+/*
+  Local draft preview. Only `astro dev` with LISTINGS_LOCAL_PREVIEW=1 reads .local-preview/draft.json (written by
+  `npm run listings:preview`, git-ignored). It shows that one unpublished draft instead of the fixtures, bypasses
+  the publication path entirely, and is dead code in a production build because import.meta.env.DEV is false.
+*/
+const summarise = (t: string) => (t.length <= 200 ? t : `${t.slice(0, t.lastIndexOf(' ', 200))}...`);
+
+const localPreview = (): PublicListing[] | null => {
+  if (!import.meta.env.DEV || process.env.LISTINGS_LOCAL_PREVIEW !== '1') return null;
+  const file = join(process.cwd(), '.local-preview', 'draft.json');
+  if (!existsSync(file)) return null;
+  const d = JSON.parse(readFileSync(file, 'utf8'));
+  const content = publicContentSchema.parse(d.content);
+  const now = new Date().toISOString();
+  return [publicListingSchema.parse({
+    ...content, id: d.id, summary: summarise(content.description[0]),
+    commercialStatus: 'available', featured: false, version: 1, publishedAt: now, updatedAt: now, isDemo: false, isPreview: true,
+  })];
+};
+
 export const getPublicListings = (now: Date = new Date()): PublicListing[] => {
+  const preview = localPreview();
+  if (preview) return preview;
   const { records, snapshots, allowDemo } = load();
   const withdrawn = new Set(Object.values(withdrawalFiles).map((w) => w.listingId));
   return buildPublicListings({ records, snapshots, now, withdrawn, ctx: { allowDemo, mediaBaseUrl: mediaBaseUrl() } });

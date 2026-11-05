@@ -39,6 +39,7 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
 
   <section class="section ld-main"><div class="wrap">
     <p class="ld-back"><a href="/opportunities/#listings">&larr; All available properties</a></p>
+    {listing.isPreview && <p class="ld-fixture" role="note">Local draft preview. Not published, not approved. Enquiries are not sent.</p>}
     {listing.isDemo && <p class="ld-fixture" role="note">Demo listing. Not a live property and contains no verified facts. Images are placeholders.</p>}
 
     <div class="ld-grid">

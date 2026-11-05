@@ -11,7 +11,7 @@ const { photos, title } = Astro.props;
         {photos.map((p, i) => (
           <li class="lg-slide" aria-label={`Photo ${i + 1} of ${photos.length}`}>
             <figure class="lg-fig">
-              <div class="lg-frame"><ListingImage photo={p} sizes="(min-width: 900px) 62vw, 100vw" loading={i === 0 ? 'eager' : 'lazy'} /></div>
+              <div class="lg-frame"><ListingImage photo={p} whole sizes="(min-width: 900px) 62vw, 100vw" loading={i === 0 ? 'eager' : 'lazy'} /></div>
             </figure>
           </li>
         ))}

@@ -38,6 +38,13 @@ patterns.push({ why: 'SharePoint link', re: /sharepoint\.com|onedrive\.live/i })
 patterns.push({ why: 'Notion link', re: /notion\.(so|site)\//i });
 // credentials and the Notion API host must never reach any bundle, client or server
 patterns.push({ why: 'Notion token or API host', re: /NOTION_TOKEN|api\.notion\.com|\b(?:secret_|ntn_)[A-Za-z0-9]{20,}/ });
+// the local draft preview must never reach a build
+{
+  const hit = (n) => /__local-preview__|\.local-preview/.test(n);
+  const scan = (d) => { for (const n of readdirSync(d)) { const q = join(d, n); if (hit(n)) findings.push(`${relative(dist, q)}: trace of the local draft preview`); else if (statSync(q).isDirectory()) scan(q); else if (/\.(html|js|mjs|json|css|xml|txt)$/.test(n) && hit(readFileSync(q, 'utf8'))) findings.push(`${relative(dist, q)}: trace of the local draft preview`); } };
+  scan(dist);
+}
+
 if (expectNone) {
   patterns.push({ why: 'demo marker', re: /demo listing|demo image|DEMO placeholder|demo-[a-z]+-(one|two|three)/i });
   for (const r of L.FIXTURE_SNAPSHOTS) patterns.push({ why: `fixture slug ${r.content.slug}`, re: new RegExp(esc(r.content.slug)) });
