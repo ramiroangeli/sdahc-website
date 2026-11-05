@@ -2,7 +2,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
 import { getPublicListings } from '../../data/listings';
-import { createEmailSink, dryRunSink, hashKey, parseEnquiry, RateLimiter, toRecord } from '../../lib/enquiries';
+import { createEmailSink, dryRunSink, hashKey, parseEnquiry, RateLimiter, resolveRecipient, toRecord } from '../../lib/enquiries';
 import { isAllowedOrigin, json } from '../../lib/enquiry-http';
 
 /*
@@ -55,7 +55,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const resend = new Resend(key);
   const sink = createEmailSink(
     (msg) => resend.emails.send({ from: 'SDA Home Choices <noreply@send.sdahomechoices.com.au>', ...msg }),
-    'steve@sdahomechoices.com.au',
+    resolveRecipient('steve@sdahomechoices.com.au', import.meta.env.LISTINGS_ENQUIRY_TEST_TO, process.env.VERCEL_ENV),
   );
   const out = await sink.deliver(record, listing);
   return out.ok ? json({ ok: true }) : json({ ok: false, error: 'Could not send. Please try again.' }, 502);

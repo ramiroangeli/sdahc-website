@@ -95,6 +95,10 @@ export interface EnquirySink { name: 'dry-run' | 'email'; deliver(r: EnquiryReco
 
 export const dryRunSink: EnquirySink = { name: 'dry-run', deliver: async () => ({ ok: true }) };
 
+/** Production always uses the default recipient. A Vercel Preview may redirect to one @sdahomechoices.com.au test inbox. */
+export const resolveRecipient = (defaultTo: string, override: string | undefined, vercelEnv: string | undefined): string =>
+  vercelEnv === 'preview' && override && /^[A-Za-z0-9._%+-]+@sdahomechoices\.com\.au$/i.test(override.trim()) ? override.trim() : defaultTo;
+
 export const createEmailSink = (send: (m: { to: string; replyTo: string; subject: string; html: string }) => Promise<{ error?: unknown }>, to: string): EnquirySink => ({
   name: 'email',
   async deliver(r, l) {
