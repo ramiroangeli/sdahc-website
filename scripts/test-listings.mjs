@@ -538,6 +538,13 @@ for (const mode of ['asking_price', 'price_guide', 'eoi', 'contact_agent']) {
   t(`a Victorian ${mode} listing is blocked until cleared`, !L.validateForPublication({ ...rec, draft: { ...rec.draft, pricing: mode === 'price_guide' ? { mode, display: '$650,000 to $700,000' } : rec.draft.pricing } }, ctxWith(DENY), now).ok);
 }
 t('with no compliance config at all, Victoria is denied (default deny)', !L.validateForPublication(withState('VIC'), { ...vctx, compliance: undefined }, now).ok);
+{
+  const det = { listingId: 'lst_det', pricingMode: 'contact_agent', basis: 'internal_determination', recordedBy: 'Someone', recordedAt: '2026-11-05', reference: 'https://example.test/guidance', statement: 'Internal determination, not legal advice.' };
+  const cfg = (d) => ({ ...DENY, victoria: { ...DENY.victoria, determinations: d ? [d] : [] } });
+  t('a complete determination clears only its own listing and mode', L.victorianClearance(cfg(det), 'lst_det', 'contact_agent').cleared === true && L.victorianClearance(cfg(det), 'lst_other', 'contact_agent').cleared === false && L.victorianClearance(cfg(det), 'lst_det', 'asking_price').cleared === false);
+  t('a determination with a missing field does not clear', L.victorianClearance(cfg({ ...det, reference: '' }), 'lst_det', 'contact_agent').cleared === false && L.victorianClearance(cfg({ ...det, basis: 'guess' }), 'lst_det', 'contact_agent').cleared === false);
+  t('no determinations and nothing cleared means not cleared', L.victorianClearance(DENY, 'lst_det', 'contact_agent').cleared === false && L.victorianClearance(undefined, 'lst_det', 'contact_agent').cleared === false);
+}
 t('the block names the unresolved legal question', L.validateForPublication(withState('VIC'), ctxWith(DENY), now).issues.some((m) => /Victorian pricing compliance is not cleared/.test(m)));
 t('a recorded clearance lets a Victorian listing through', L.validateForPublication(withState('VIC'), ctxWith(COMPLY), now).ok);
 t('clearance is per pricing mode', (() => { const only = { ...COMPLY, victoria: { ...COMPLY.victoria, cleared: { ...DENY.victoria.cleared, eoi: true } } }; return L.validateForPublication(withState('VIC', 'eoi'), ctxWith(only), now).ok && !L.validateForPublication(withState('VIC', 'contact_agent'), ctxWith(only), now).ok; })());

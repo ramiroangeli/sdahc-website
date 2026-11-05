@@ -4,6 +4,7 @@ import { normalisePriceDisplay } from './pricing';
 import { validateForPublication } from './versioning';
 import {
   ACCENTS,
+  victorianClearance,
   PRICING_MODES,
   STATES,
   type Accent,
@@ -369,8 +370,9 @@ export const readinessReport = (page: NotionPage, o: { photos?: Photo[]; mediaBa
   const state = toStateCode(readText(p[NOTION.state])) ?? (parseTry(readText(p[NOTION.webPublicAddress]))?.state);
   const modeKey = ({ askingprice: 'asking_price', priceguide: 'price_guide', expressionsofinterest: 'eoi', eoi: 'eoi', contactagent: 'contact_agent' } as Record<string, PricingMode>)[readText(p[NOTION.webPricingMode]).toLowerCase().replace(/[^a-z]/g, '')];
   if (state === 'VIC') {
-    const cleared = modeKey ? o.compliance?.victoria.cleared[modeKey] : false;
-    add('Victorian pricing compliance', cleared ? 'ready' : 'missing', cleared ? `Cleared for ${modeKey}.` : `Not cleared${modeKey ? ` for ${modeKey}` : ''}. The Victorian rules in force from 1 October 2026 and their application to SDA sales need legal classification (docs/victorian-pricing-compliance.md), recorded in compliance.json.`);
+    const clearance = modeKey ? victorianClearance(o.compliance, publicIdFor(page.id), modeKey) : { cleared: false };
+    const cleared = clearance.cleared;
+    add('Victorian pricing compliance', cleared ? 'ready' : 'missing', cleared ? `Cleared for ${modeKey} (${clearance.basis}).` : `Not cleared${modeKey ? ` for ${modeKey}` : ''}. The Victorian rules in force from 1 October 2026 and their application to SDA sales need legal classification (docs/victorian-pricing-compliance.md), recorded in compliance.json.`);
   }
   if (cats.values.includes('Basic')) {
     const ok = o.compliance?.basicClassification.confirmedListingIds.includes(publicIdFor(page.id));
