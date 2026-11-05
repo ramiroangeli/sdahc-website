@@ -67,8 +67,12 @@ export async function prepareOne(file, outDir, palette) {
   const id = createHash('sha256').update(data).digest('hex').slice(0, 12);
   const { dominant } = await sharp(data).resize(128, 128, { fit: 'inside' }).stats();
   const files = [];
-  for (const w of WIDTHS) {
-    if (w > info.width && w !== WIDTHS[0]) continue; // never upscale
+  // never upscale; but an image between two widths (say 800 px) also keeps its own full width, so it is not
+  // reduced to the smallest size when the next one up does not apply
+  const widths = WIDTHS.filter((w) => w <= info.width || w === WIDTHS[0]);
+  if (info.width > Math.max(...widths) && info.width < WIDTHS[WIDTHS.length - 1]) widths.push(info.width);
+  widths.sort((a, b) => a - b);
+  for (const w of widths) {
     const name = `${id}-${w}.webp`;
     // no .withMetadata(): sharp then writes no EXIF, ICC owner fields or GPS
     await sharp(data).resize({ width: Math.min(w, info.width), withoutEnlargement: true }).webp({ quality: 78 }).toFile(join(outDir, name));

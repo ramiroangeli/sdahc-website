@@ -168,7 +168,7 @@ export const publicIdFor = (notionPageId: string): string => `lst_${createHash('
 export interface MediaManifest {
   version: 1;
   photos: {
-    id: string; alt: string; width: number; height: number; accent: string; privacyReviewed: boolean;
+    id: string; alt: string; width: number; height: number; accent: string; privacyReviewed: boolean; kind?: string;
     files: { w: number; file: string }[];
   }[];
 }
@@ -187,7 +187,7 @@ export const manifestToPhotos = (m: MediaManifest, manifestUrl: string, mediaBas
     if (!(ACCENTS as readonly string[]).includes(p.accent)) { issues.push(`photo ${p.id}: unknown accent "${p.accent}"`); continue; }
     const variants = p.files.map((f) => ({ w: f.w, src: new URL(f.file, manifestUrl).href }));
     if (variants.some((v) => !v.src.startsWith(`${base}/`))) { issues.push(`photo ${p.id}: file is not on the approved media origin`); continue; }
-    photos.push({ id: p.id, alt: p.alt.trim(), width: p.width, height: p.height, accent: p.accent as Accent, variants, privacyReviewed: true } as Photo);
+    photos.push({ id: p.id, alt: p.alt.trim(), width: p.width, height: p.height, accent: p.accent as Accent, ...(p.kind === 'floorplan' ? { kind: 'floorplan' as const } : {}), variants, privacyReviewed: true } as Photo);
   }
   return { photos, issues };
 };
