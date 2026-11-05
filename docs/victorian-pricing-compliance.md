@@ -45,3 +45,9 @@
 1. El asesor responde las preguntas 1 a 9 por escrito.
 2. Se registra `reviewedBy`, `reviewedAt` y `adviceReference` en `compliance.json`, y se marca solo el modo de precio autorizado, mediante PR.
 3. Se repite el preflight del piloto.
+
+## Determinaciones registradas (por listing)
+
+`compliance.json` admite `victoria.determinations`: una entrada por listing y modo de precio, con `basis` (`internal_determination` o `external_advice`), `recordedBy`, `recordedAt`, `reference` y `statement`, todos obligatorios. **Solo autoriza ese listing y ese modo**; no abre ningún otro listing victoriano. Una `internal_determination` es la posición razonada del negocio y **no es asesoramiento jurídico ni una exención**.
+
+- `lst_454f05d21f` (Rutherford Grove, Contact Agent): determinación interna del 2026-11-05. Se comercializa como inversión SDA arrendada, ya anunciada en realcommercial y sin precio. CAV indica que las reglas de underquoting y la PPS se aplican a la venta residencial y no a la comercial; las obligaciones de la Australian Consumer Law siguen vigentes. **La clasificación legal de la propiedad no ha sido confirmada por un abogado ni por el regulador**: es el riesgo residual, aceptado por el negocio.

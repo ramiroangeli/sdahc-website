@@ -4,6 +4,7 @@ import {
   LIVE_STATUSES,
   STATUS_TO_COMMERCIAL,
   isDemoPhoto,
+  victorianClearance,
   publicContentSchema,
   type ApprovedSnapshot,
   type CommercialStatus,
@@ -105,7 +106,7 @@ export const validateForPublication = (r: ListingRecord, ctx: SafetyContext, now
   if (!r.isFixture) {
     // Victoria: the price display and listing rules took effect on 1 October 2026 and their application to SDA
     // sales is not yet classified. Each pricing mode needs a recorded clearance (compliance.json).
-    if (c.address.state === 'VIC' && !ctx.compliance?.victoria.cleared[c.pricing.mode]) {
+    if (c.address.state === 'VIC' && !victorianClearance(ctx.compliance, r.id, c.pricing.mode).cleared) {
       issues.push(`Victorian pricing compliance is not cleared for "${c.pricing.mode}" (docs/victorian-pricing-compliance.md)`);
     }
     // Basic is real SDA design category for existing stock; it needs its classification validated first

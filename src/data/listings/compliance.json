@@ -8,7 +8,18 @@
       "price_guide": false,
       "eoi": false,
       "contact_agent": false
-    }
+    },
+    "determinations": [
+      {
+        "listingId": "lst_454f05d21f",
+        "pricingMode": "contact_agent",
+        "basis": "internal_determination",
+        "recordedBy": "Ramiro - SDAHC account, recording the commercial approval confirmed by Steve and Ali",
+        "recordedAt": "2026-11-05",
+        "reference": "https://www.consumer.vic.gov.au/licensing-and-registration/estate-agents/running-your-business/underquoting-information-for-real-estate-agents",
+        "statement": "SDAHC internal business determination, not legal advice and not a statutory exemption ruling. The property is marketed as a tenanted SDA investment, is already advertised on realcommercial, and shows no price (Contact Agent). Consumer Affairs Victoria states that the residential underquoting and Property Price Statement rules do not apply to commercial property sales, while Australian Consumer Law obligations (false or misleading representations) continue to apply. The legal classification of this property has not been confirmed by a lawyer or by the regulator. Applies to this listing and this pricing mode only."
+      }
+    ]
   },
   "basicClassification": {
     "confirmedListingIds": []
