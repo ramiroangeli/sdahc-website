@@ -398,12 +398,18 @@ export const EXPECTED_CORE_TYPES: Record<string, string> = {
   [NOTION.state]: 'select',
   [NOTION.features]: 'multi_select',
   [NOTION.description]: 'rich_text',
-  [NOTION.deals]: 'relation',
   [NOTION.sharepointLink]: 'url',
   [NOTION.listingAgent]: 'rich_text',
   [NOTION.listingDate]: 'date',
   [NOTION.listingEndDate]: 'date',
 };
+
+/**
+ * Existing properties that are checked only when the integration can see them. A relation to another database
+ * is hidden from an integration that has no access to that database, and the read-only integration must NOT be
+ * given access to the Deals database (it holds financial deal data). Deals is never needed to publish.
+ */
+export const OPTIONAL_CORE_TYPES: Record<string, string> = { [NOTION.deals]: 'relation' };
 
 export const WEB_STATUS_OPTIONS = ['Not Published', 'Draft', 'In Review', 'Approved', 'Published', 'Under Offer', 'Sold', 'Withdrawn'];
 export const WEB_PRICING_OPTIONS = ['Asking Price', 'Price Guide', 'Expressions of Interest', 'Contact Agent'];
@@ -459,6 +465,10 @@ export const checkDataSourceSchema = (ds: DataSourceSchema): SchemaCheck => {
     const got = byName.get(name);
     if (!got) missingCore.push(name);
     else if (got.type !== expected) wrongCoreType.push({ name, expected, actual: String(got.type) });
+  }
+  for (const [name, expected] of Object.entries(OPTIONAL_CORE_TYPES)) {
+    const got = byName.get(name);
+    if (got && got.type !== expected) wrongCoreType.push({ name, expected, actual: String(got.type) });
   }
   const toAdd: SchemaCheck['toAdd'] = [];
   const wrongWebType: SchemaCheck['wrongWebType'] = [];
