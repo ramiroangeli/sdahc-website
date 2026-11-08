@@ -1,5 +1,6 @@
 {
   "headlineCount": "100+",
   "statesCovered": ["QLD", "VIC", "SA", "NSW", "WA", "ACT"],
+  "jurisdictions": ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"],
   "designCategories": ["HPS", "IL", "Robust", "FA"]
 }
