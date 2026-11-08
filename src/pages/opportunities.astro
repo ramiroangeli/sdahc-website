@@ -5,7 +5,7 @@ import OpportunitiesHero from '../components/OpportunitiesHero.astro';
 import ListingsCatalogue from '../components/ListingsCatalogue.astro';
 import { getPublicListings } from '../data/listings';
 
-const { statesCovered } = data;
+const { statesCovered, jurisdictions } = data;
 const listings = getPublicListings();
 
 /*
@@ -13,7 +13,8 @@ const listings = getPublicListings();
   "100+" headline are QLD 76, VIC 39, SA 26, NSW 8, WA 3, ACT 1 (153 geocoded, roughly 220
   records in total). These counts fluctuate and include pipeline opportunities, so they are
   deliberately not broken out per state on the page. NT is claimed through a portfolio but
-  not yet confirmed in the records, so it is excluded from statesCovered for now.
+  not yet confirmed in the records, so it is excluded from statesCovered (used only for the hero's locked
+  cards). The pills below use the static `jurisdictions` list: service coverage, not stock.
 */
 
 // Reference images for the 3-up row. GENERIC reference photography only (accessible housing,
@@ -41,10 +42,11 @@ const refImages = [
 
     <section class="section opp-states-band"><div class="wrap">
       <div class="opp-states">
-        <p class="opp-states-caption">Active mandates and listings across six states and territories.</p>
+        <p class="opp-states-caption">National coverage across all eight states and territories.</p>
         <div class="opp-pills">
-          {statesCovered.map((s) => <span class="opp-pill">{s}</span>)}
+          {jurisdictions.map((s) => <span class="opp-pill">{s}</span>)}
         </div>
+        <p class="opp-states-note">SDA Home Choices operates nationally. Property availability varies by location. Please contact our team to enquire about current listings and opportunities in your preferred state or territory.</p>
       </div>
     </div></section>
 
@@ -205,6 +207,7 @@ const refImages = [
 .opp-states-band{position:relative}
 .opp-states{text-align:center}
 .opp-states-caption{font-family:var(--sans);color:var(--pale);font-size:15px;margin:0 0 18px}
+.opp-states-note{font-family:var(--sans);color:var(--pale);font-size:14px;line-height:1.55;max-width:640px;margin:18px auto 0}
 .opp-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
 .opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--white);border:1px solid color-mix(in srgb,var(--pale) 34%,transparent);background:color-mix(in srgb,var(--white) 6%,transparent);border-radius:999px;padding:10px 20px}
 
