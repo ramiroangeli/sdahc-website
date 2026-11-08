@@ -177,18 +177,33 @@ export interface MediaManifest {
 /** Where a listing's prepared photos and manifest live: <media base>/<public id>/manifest.json. Derived, never typed. */
 export const manifestUrlFor = (publicId: string, mediaBaseUrl: string): string => `${mediaBaseUrl.replace(/\/$/, '')}/${publicId}/manifest.json`;
 
+/**
+ * Neutral accessibility text for an image with no description. It says only what is certain (a photograph or a floorplan and its place
+ * in the gallery): no invented visual detail, no address, nothing from the CRM. Same wording as the internal Listings Manager.
+ */
+export const fallbackAlt = (kind: 'photo' | 'floorplan', n: number, count: number): string =>
+  kind === 'floorplan'
+    ? (count > 1 ? `Floorplan ${n} of ${count} of the property` : 'Floorplan of the property')
+    : (count > 1 ? `Photograph ${n} of ${count} of the property` : 'Photograph of the property');
+
 export const manifestToPhotos = (m: MediaManifest, manifestUrl: string, mediaBaseUrl: string): { photos: Photo[]; issues: string[] } => {
   const issues: string[] = [];
   if (m?.version !== 1 || !Array.isArray(m.photos)) return { photos: [], issues: ['media manifest has an unexpected shape'] };
   const base = mediaBaseUrl.replace(/\/$/, '');
   const photos: Photo[] = [];
+  const kindOf = (p: { kind?: string }) => (p.kind === 'floorplan' ? 'floorplan' : 'photo');
+  const counts = { photo: m.photos.filter((p) => kindOf(p) === 'photo').length, floorplan: m.photos.filter((p) => kindOf(p) === 'floorplan').length };
+  const seen = { photo: 0, floorplan: 0 };
   for (const p of m.photos) {
+    seen[kindOf(p)] += 1;
     if (!p.privacyReviewed) { issues.push(`photo ${p.id}: privacy review (no house number, no identifiable person) not confirmed`); continue; }
-    if (!p.alt || p.alt.trim().length < 8) { issues.push(`photo ${p.id}: alt text is missing`); continue; }
+    // an empty description is allowed: the neutral fallback is used so the published alt is never empty
+    const alt = (p.alt ?? '').trim() || fallbackAlt(kindOf(p), seen[kindOf(p)], counts[kindOf(p)]);
+    if (alt.length > 200) { issues.push(`photo ${p.id}: alt text is longer than 200 characters`); continue; }
     if (!(ACCENTS as readonly string[]).includes(p.accent)) { issues.push(`photo ${p.id}: unknown accent "${p.accent}"`); continue; }
     const variants = p.files.map((f) => ({ w: f.w, src: new URL(f.file, manifestUrl).href }));
     if (variants.some((v) => !v.src.startsWith(`${base}/`))) { issues.push(`photo ${p.id}: file is not on the approved media origin`); continue; }
-    photos.push({ id: p.id, alt: p.alt.trim(), width: p.width, height: p.height, accent: p.accent as Accent, ...(p.kind === 'floorplan' ? { kind: 'floorplan' as const } : {}), variants, privacyReviewed: true } as Photo);
+    photos.push({ id: p.id, alt, width: p.width, height: p.height, accent: p.accent as Accent, ...(p.kind === 'floorplan' ? { kind: 'floorplan' as const } : {}), variants, privacyReviewed: true } as Photo);
   }
   return { photos, issues };
 };

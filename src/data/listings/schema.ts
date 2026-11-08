@@ -94,7 +94,8 @@ const variantSchema = z.object({
 
 const realPhotoSchema = z.object({
   id: z.string().regex(/^[a-f0-9]{10,}$/),
-  alt: z.string().min(8).max(200),
+  /** A description is optional for staff ("Kitchen" is enough). The published value is never empty: see fallbackAlt in notion.ts. */
+  alt: z.string().min(1).max(200),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   accent: z.enum(ACCENTS),

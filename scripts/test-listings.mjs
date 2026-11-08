@@ -307,7 +307,11 @@ const man = (over = {}) => ({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', alt: 'F
 const murl = `${MEDIA}/lst/manifest.json`;
 t('manifest resolves to approved-origin photo URLs', L.manifestToPhotos(man(), murl, MEDIA).photos[0].variants[0].src === `${MEDIA}/lst/a1b2c3d4e5f6-480.webp`);
 t('manifest rejects an unreviewed photo', L.manifestToPhotos(man({ privacyReviewed: false }), murl, MEDIA).photos.length === 0);
-t('manifest rejects a photo with no alt text', L.manifestToPhotos(man({ alt: '' }), murl, MEDIA).photos.length === 0);
+t('manifest accepts a photo with no alt text and gives it the neutral fallback', (() => { const r = L.manifestToPhotos(man({ alt: '' }), murl, MEDIA); return r.photos.length === 1 && r.photos[0].alt === 'Photograph of the property' && r.issues.length === 0; })());
+t('manifest accepts a short description such as Kitchen', ['Kitchen', 'Bedroom', 'Bathroom'].every((a) => L.manifestToPhotos(man({ alt: a }), murl, MEDIA).photos[0]?.alt === a));
+t('the fallback numbers photographs and floorplans separately and says nothing else', (() => { const m2 = { version: 1, photos: [man({ id: 'a1b2c3d4e5f6', alt: '' }).photos[0], man({ id: 'b1b2c3d4e5f6', alt: 'Kitchen' }).photos[0], man({ id: 'c1b2c3d4e5f6', alt: '', kind: 'floorplan' }).photos[0]] }; const r = L.manifestToPhotos(m2, murl, MEDIA).photos.map((p) => p.alt); return r[0] === 'Photograph 1 of 2 of the property' && r[1] === 'Kitchen' && r[2] === 'Floorplan of the property'; })());
+t('a fallback description passes the website publication safety checks (no number beside a street, no amounts)', (() => { const c = withMod((x) => { x.photos = [{ ...realPhoto(), alt: 'Photograph 1 of 12 of the property' }]; }); return L.checkPublicSafety(c, { allowDemo: false, mediaBaseUrl: MEDIA }).filter((m) => /house|unit|dollar|financial|email|phone/i.test(m)).length === 0; })());
+t('the published schema accepts a one-word alt text and still refuses an empty or 201-character one', (() => { const ok = (alt) => L.publicContentSchema.safeParse(withMod((c) => { c.photos = [{ ...realPhoto(), alt }]; })).success; return ok('Kitchen') && !ok('') && !ok('x'.repeat(201)); })());
 t('manifest rejects a file on a foreign origin', L.manifestToPhotos(man({ files: [{ w: 480, file: 'https://evil.example.test/x.webp' }] }), murl, MEDIA).photos.length === 0);
 t('manifest rejects an unknown accent', L.manifestToPhotos(man({ accent: 'hotpink' }), murl, MEDIA).photos.length === 0);
 
@@ -689,14 +693,14 @@ section('doctor, delivery test, photo gate and an end-to-end CLI run against a l
     t('--id writes the prepared folder under the public id, the exact upload prefix', outCli.code === 0 && existsSync(join(prepared, 'manifest.json')));
     t('--id rejects anything that is not a public listing id', (await run('scripts/prepare-listing-photos.mjs', ['--in', inD, '--out', join(w, 'o2'), '--id', '19 Some Street'], {})).code === 2);
     const v0 = await verifyFolder(prepared);
-    t('the gate refuses a fresh folder: no alt text and no privacy review', !v0.ok && v0.problems.some((m) => /alt text/.test(m)) && v0.problems.some((m) => /privacy review/.test(m)));
+    t('the gate refuses a fresh folder only for the missing privacy review (empty alt text is allowed)', !v0.ok && !v0.problems.some((m) => /alt/.test(m)) && v0.problems.some((m) => /privacy review/.test(m)));
     t('the gate command exits non-zero and says not to upload', (await run('scripts/prepare-listing-photos.mjs', ['--verify', prepared], {})).code === 1);
     const mp = join(prepared, 'manifest.json');
     const man0 = JSON.parse(rf(mp, 'utf8'));
-    man0.photos[0].alt = 'Front elevation of a single-storey home'; man0.photos[0].privacyReviewed = true;
+    man0.photos[0].alt = ''; man0.photos[0].privacyReviewed = true;
     writeFileSync(mp, JSON.stringify(man0));
     const v1 = await verifyFolder(prepared);
-    t('the gate passes once alt text and the privacy review are recorded', v1.ok && v1.problems.length === 0);
+    t('the gate passes with the privacy review recorded and no alt text', v1.ok && v1.problems.length === 0);
     t('the gate command exits zero when the folder is ready', (await run('scripts/prepare-listing-photos.mjs', ['--verify', prepared], {})).code === 0);
     const f0 = join(prepared, man0.photos[0].files[0].file);
     try {

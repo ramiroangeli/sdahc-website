@@ -16,7 +16,7 @@
     2. Run this script on a local copy of that folder.
     3. Upload the output folder to the public store (Vercel Blob, see docs) and put the URL of the
        uploaded manifest.json into the Notion property "Web Media Manifest".
-    4. A person fills in each alt text and confirms the privacy review in manifest.json before upload.
+    4. A person optionally fills in alt text and confirms the privacy review in manifest.json before upload.
 
   What it does to every image:
     - corrects orientation, then DROPS all metadata (EXIF, GPS, camera and owner fields)
@@ -93,7 +93,7 @@ export async function prepareOne(file, outDir, palette) {
 /**
  * Gate before upload. Returns every problem found; empty means the folder can be uploaded.
  *  - manifest.json present, with at least one photograph
- *  - every photograph has a content-hash id, alt text, a recorded privacy review (true) and a known accent
+ *  - every photograph has a content-hash id, optional alt text, a recorded privacy review (true) and a known accent
  *  - every listed file exists, is a WebP named <id>-<width>.webp, and carries NO metadata (EXIF, XMP, ICC)
  *  - no image file in the folder is missing from the manifest
  */
@@ -109,8 +109,9 @@ export async function verifyFolder(dir) {
   for (const p of manifest.photos ?? []) {
     const tag = `photo ${p.id ?? '(no id)'}`;
     if (!/^[a-f0-9]{12}$/.test(p.id ?? '')) problems.push(`${tag}: id is not a content hash`);
-    if (typeof p.alt !== 'string' || p.alt.trim().length < 8) problems.push(`${tag}: alt text is missing or too short`);
-    else if (/\.(jpe?g|png|webp|heic)\b|\bIMG[_-]?\d/i.test(p.alt)) problems.push(`${tag}: alt text looks like a file name`);
+    // alt text is optional (empty is fine, "Kitchen" is fine); only a non-string value or a file name is a problem
+    if (typeof p.alt !== 'string') problems.push(`${tag}: alt must be text (it can be empty)`);
+    else if (p.alt.trim() && /\.(jpe?g|png|webp|heic)\b|\bIMG[_-]?\d/i.test(p.alt)) problems.push(`${tag}: alt text looks like a file name`);
     if (p.privacyReviewed !== true) problems.push(`${tag}: privacy review not confirmed (privacyReviewed must be true)`);
     if (!['blue', 'teal', 'amber', 'slate'].includes(p.accent)) problems.push(`${tag}: unknown accent`);
     if (!Array.isArray(p.files) || p.files.length === 0) { problems.push(`${tag}: no files listed`); continue; }
@@ -135,7 +136,7 @@ export async function prepareFolder(inDir, outDir, tokensPath) {
   for (const f of inputs) photos.push(await prepareOne(join(inDir, f), outDir, palette));
   const manifest = {
     version: 1,
-    note: 'Fill in every alt text and set privacyReviewed to true only after checking the frame for house numbers, letterboxes, signs, number plates and identifiable people.',
+    note: 'Alt text is optional (an empty one gets a neutral fallback). Set privacyReviewed to true only after checking the frame for house numbers, letterboxes, signs, number plates and identifiable people.',
     photos,
   };
   writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
@@ -166,5 +167,5 @@ if (isMain) {
   const m = await prepareFolder(resolve(inDir), resolve(outDir), join(root, 'src/styles/tokens.css'));
   console.log(`Prepared ${m.photos.length} photo(s) in ${outDir}`);
   for (const p of m.photos) console.log(`  ${p.id}  ${p.width}x${p.height}  accent=${p.accent}  files=${p.files.map((f) => f.w).join('/')}`);
-  console.log('Next: fill in every alt text and set privacyReviewed to true after checking each frame, then run --verify, then upload the folder.');
+  console.log('Next: optionally add alt text, and set privacyReviewed to true after checking each frame, then run --verify, then upload the folder.');
 }
