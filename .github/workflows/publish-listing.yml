@@ -1,0 +1,65 @@
+# Publication job started by the internal Listings Manager (app.sdahomechoices.com.au).
+#
+# DRY RUN ONLY in this release. It checks that an approved draft WOULD publish and changes nothing:
+# no Notion write, no commit, no branch, no pull request, no public image. The token is read-only.
+# The job continues here, on GitHub's servers, whether or not anyone keeps a browser open; progress goes back to the app by signed request.
+# Logs of a public repository are public, so the script prints step names only, never listing content.
+#
+# Secrets and variables (Settings > Secrets and variables > Actions):
+#   secrets: NOTION_TOKEN (read-only), NOTION_PROPERTIES_DATA_SOURCE_ID, LISTINGS_CALLBACK_SECRET
+#   variables: LISTINGS_MEDIA_BASE_URL, LISTINGS_APP_URL
+name: Publish listing
+
+run-name: publish ${{ inputs.job_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: 'Job id from the Listings Manager'
+        required: true
+      public_id:
+        description: 'Public listing id (lst_...)'
+        required: true
+      mode:
+        description: 'dry_run is the only mode enabled in this release'
+        required: true
+        type: choice
+        default: dry_run
+        options:
+          - dry_run
+
+permissions:
+  contents: read
+
+# one publication job at a time; a queued one waits, nothing is cancelled half way
+concurrency:
+  group: listings-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'ramiroangeli/sdahc-website'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_PROPERTIES_DATA_SOURCE_ID: ${{ secrets.NOTION_PROPERTIES_DATA_SOURCE_ID }}
+      LISTINGS_CALLBACK_SECRET: ${{ secrets.LISTINGS_CALLBACK_SECRET }}
+      LISTINGS_MEDIA_BASE_URL: ${{ vars.LISTINGS_MEDIA_BASE_URL }}
+      LISTINGS_APP_URL: ${{ vars.LISTINGS_APP_URL }}
+      JOB_ID: ${{ inputs.job_id }}
+      PUBLIC_ID: ${{ inputs.public_id }}
+      MODE: ${{ inputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Run the job
+        run: node scripts/listings-publish-job.mjs --job "$JOB_ID" --public-id "$PUBLIC_ID" --mode "$MODE"

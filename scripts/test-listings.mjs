@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { prepareFolder, readAccentPalette, snapToAccent, verifyFolder } from './prepare-listing-photos.mjs';
+import { checkManifest, overlayPage, parity, sign, signedHeaders, verifySignature, withRetry } from './lib/publish-job.mjs';
 
 const L = await loadTs();
 const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
@@ -803,7 +804,7 @@ const wf = stripYaml(rd('.github/workflows/listings-sync.yml'));
 t('the workflow is manual only', /workflow_dispatch/.test(wf) && !/^\s*schedule:/m.test(wf) && !/repository_dispatch/.test(wf) && !/^\s*push:/m.test(wf));
 t('the workflow never writes to main or triggers a deployment', !/HEAD:main/.test(wf) && !/push origin main/.test(wf) && !/deploy.?hook/i.test(wf) && !/curl/.test(wf) && /refs\/heads\/\$\{\{ steps\.branch\.outputs\.name \}\}/.test(wf));
 t('the workflow proposes and opens a pull request instead of publishing', /--propose --write/.test(wf) && /gh pr create/.test(wf));
-t('no other workflow exists that could publish or deploy', readdirSync(join(repoRoot, '.github/workflows')).join() === 'listings-sync.yml');
+t('only the two known workflows exist, and the second (started by the internal app) is dry run only, read only and cannot deploy', readdirSync(join(repoRoot, '.github/workflows')).sort().join() === 'listings-sync.yml,publish-listing.yml' && !/deploy.?hook|curl|vercel/i.test(stripYaml(rd('.github/workflows/publish-listing.yml'))) && /options:\s*\n\s*- dry_run/.test(rd('.github/workflows/publish-listing.yml')));
 t('listing files are protected by code owners', /approved\//.test(rd('.github/CODEOWNERS')) && /withdrawn\//.test(rd('.github/CODEOWNERS')));
 t('Notion credentials live in a git-ignored env file', /^\.env\.listings$/m.test(rd('.gitignore')) && /^\.env$/m.test(rd('.gitignore')));
 const secretRe = /\b(secret_[A-Za-z0-9]{30,}|ntn_[A-Za-z0-9]{30,}|re_[A-Za-z0-9]{20,}|Bearer\s+[A-Za-z0-9._-]{30,})\b/;
@@ -887,6 +888,53 @@ t('the accent is sampled from the image', tealPhoto.accent === 'teal' && manifes
 t('alt text and privacy review start unset, so nothing can publish unreviewed', manifest.photos.every((p) => p.alt === '' && p.privacyReviewed === false));
 t('metadata (EXIF, GPS, owner) is stripped from outputs', (await Promise.all(files.filter((f) => f.endsWith('.webp')).map((f) => sharp(join(outDir, f)).metadata()))).every((m) => !m.exif));
 t('output is smaller than a 1600px original', (await sharp(join(outDir, `${tealPhoto.id}-1600.webp`)).metadata()).width === 1600);
+
+section('publication job started by the internal app (dry run only in this release)');
+{
+  const SECRET = 'test-secret-not-real';
+  const NOW = 1_800_000_000_000;
+  const body = '{"jobId":"x"}';
+  const h = signedHeaders(SECRET, body, NOW);
+  t('a request signed with the shared secret verifies', verifySignature(SECRET, h['x-listings-timestamp'], body, h['x-listings-signature'], NOW));
+  t('a tampered body, another secret, a stale timestamp or no signature are refused', !verifySignature(SECRET, h['x-listings-timestamp'], body + ' ', h['x-listings-signature'], NOW) && !verifySignature('other', h['x-listings-timestamp'], body, h['x-listings-signature'], NOW) && !verifySignature(SECRET, h['x-listings-timestamp'], body, h['x-listings-signature'], NOW + 6 * 60 * 1000) && !verifySignature(SECRET, h['x-listings-timestamp'], body, undefined, NOW) && !verifySignature('', h['x-listings-timestamp'], body, h['x-listings-signature'], NOW));
+  t('the signature is a keyed hash (not the secret, not reversible text)', sign(SECRET, '1', 'b').length === 64 && !sign(SECRET, '1', 'b').includes(SECRET));
+
+  const page = { id: 'p1', properties: { Name: { type: 'title', title: [{ plain_text: '12 Example Street, Exampleton VIC 3999' }] }, Address: { type: 'rich_text', rich_text: [{ plain_text: '12 Example Street, Exampleton VIC 3999' }] }, Price: { type: 'number', number: 1234567 }, 'Web Title': { type: 'rich_text', rich_text: [{ plain_text: 'old' }] } } };
+  const payload = { content: { title: 'Established SDA house', description: 'First paragraph here.\n\nSecond paragraph here.', publicAddress: 'Example Street, Exampleton VIC 3999', pricingMode: 'asking_price', displayPrice: 695000, featured: true }, manifest: { version: 1, photos: [{ id: 'a1b2c3d4e5f6' }, { id: 'b1b2c3d4e5f6' }] } };
+  const before = JSON.stringify(page);
+  const ov = overlayPage(page, payload, { notionUserId: 'u-1', name: 'Approver' });
+  t('the overlay replaces only the Web fields and never mutates the real row', JSON.stringify(page) === before && ov.properties.Address === page.properties.Address && ov.properties.Price.number === 1234567 && ov.properties.Name === page.properties.Name);
+  t('the overlay carries the approved content in the shapes the Notion adapter reads', L.readText(ov.properties['Web Title']) === 'Established SDA house' && L.readText(ov.properties['Web Pricing Mode']) === 'Asking Price' && ov.properties['Web Display Price'].number === 695000 && ov.properties['Web Featured'].checkbox === true && L.readText(ov.properties['Web Listing Status']) === 'Published' && L.readPeople(ov.properties['Web Approved By'])[0].id === 'u-1');
+  t('with no approver the overlay has an empty Web Approved By (the engine then refuses)', L.readPeople(overlayPage(page, payload, null).properties['Web Approved By']).length === 0);
+
+  const content = { title: 'Established SDA house', description: ['First paragraph here.', 'Second paragraph here.'], address: { street: 'Example Street', suburb: 'Exampleton', state: 'VIC', postcode: '3999' }, pricing: { mode: 'asking_price', display: '$695,000' }, photos: [{ id: 'a1b2c3d4e5f6' }, { id: 'b1b2c3d4e5f6' }] };
+  t('parity: a snapshot that says what was approved has no differences', parity(content, payload).length === 0);
+  t('parity names every difference (title, text, address, mode, price, photo order) and nothing else', JSON.stringify(parity({ ...content, title: 'x', description: ['y'], address: { ...content.address, suburb: 'Elsewhere' }, pricing: { mode: 'eoi' }, photos: [content.photos[1], content.photos[0]] }, payload)) === JSON.stringify(['title', 'description', 'address', 'pricing mode', 'display price', 'photo order']));
+  t('parity: an empty approved title is not compared (the engine derives the default)', parity({ ...content, title: 'SDA property, Exampleton' }, { ...payload, content: { ...payload.content, title: '' } }).length === 0);
+  t('the manifest check refuses photographs outside a gallery review, non-hash ids and an empty gallery', checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: true }] }).length === 0 && checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: false }] }).length > 0 && checkManifest({ version: 1, photos: [{ id: 'x', privacyReviewed: true }] }).length > 0 && checkManifest({ version: 1, photos: [] }).length > 0);
+
+  {
+    let n = 0; const pauses = [];
+    const flaky = await withRetry(async () => { n += 1; if (n < 3) throw new Error('fetch failed'); return 'ok'; }, { sleep: async (ms) => { pauses.push(ms); } });
+    t('a dropped connection is retried with growing pauses and the call then succeeds (progress is not lost)', flaky === 'ok' && n === 3 && pauses.join() === '400,800');
+    let m = 0; let refused = false;
+    try { await withRetry(async () => { m += 1; throw Object.assign(new Error('refused'), { retryable: false }); }, { sleep: async () => {} }); } catch { refused = true; }
+    t('a refusal by the app is final and is not retried', refused && m === 1);
+    let k = 0; let gaveUp = false;
+    try { await withRetry(async () => { k += 1; throw new Error('down'); }, { attempts: 3, sleep: async () => {} }); } catch { gaveUp = true; }
+    t('retrying gives up after the configured attempts', gaveUp && k === 3);
+  }
+  const wf = rd('.github/workflows/publish-listing.yml');
+  const job = rd('scripts/listings-publish-job.mjs');
+  t('workflow: dry run is the only selectable mode and the token is read only', /options:\s*\n\s*- dry_run\s*\n/.test(wf) && /permissions:\s*\n\s*contents: read/.test(wf) && !/contents: write|pull-requests: write|id-token/.test(wf));
+  t('workflow: inputs reach the script through environment variables, never interpolated into the shell command', /--job "\$JOB_ID" --public-id "\$PUBLIC_ID" --mode "\$MODE"/.test(wf) && !/run:.*\$\{\{ *inputs/.test(wf));
+  t('workflow: runs on main only in this repository, one job at a time, never cancels half way, has a timeout', /ref: main/.test(wf) && /github\.repository == 'ramiroangeli\/sdahc-website'/.test(wf) && /cancel-in-progress: false/.test(wf) && /timeout-minutes: 20/.test(wf) && /persist-credentials: false/.test(wf));
+  t('workflow: secrets are referenced only as environment values and never echoed', !/echo .*secrets\./.test(wf) && (wf.match(/secrets\./g) ?? []).length === 3);
+  t('the job script cannot change anything: no Notion write, no git push, no pull request, no public store write, no content printed', !/git['", ]+push|pull-requests|gh ['"]?pr|method: 'PATCH'|method: 'DELETE'|api\.notion\.com|archived|put\(|vercel-storage|console\.log\(.*(payload|snapshot|content)/.test(job));
+  t('the job script writes the snapshot only into the runner workspace and reports through the signed app endpoints only', /approved', `\$\{slug\}\.json`/.test(job) && /publish-callback/.test(job) && /publish-payload/.test(job));
+  const refused = (mode) => { try { execFileSync('node', ['scripts/listings-publish-job.mjs', '--job', '11111111-1111-4111-8111-111111111111', '--public-id', 'lst_0123456789', '--mode', mode], { cwd: repoRoot, env: { PATH: process.env.PATH }, stdio: 'pipe' }); return false; } catch (e) { return e.status === 2; } };
+  t('any mode other than dry_run (publish, update, withdraw) is refused before anything runs', ['publish', 'update', 'withdraw', ''].every(refused));
+}
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
