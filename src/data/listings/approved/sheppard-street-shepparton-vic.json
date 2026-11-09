@@ -1,14 +1,14 @@
 {
   "listingId": "lst_94fe48835b",
-  "version": 1,
+  "version": 2,
   "approvedBy": "SDA Home Choices",
   "approvedById": "app-cc8a4a7b33e7",
-  "approvedAt": "2026-11-09T15:39:12.976Z",
+  "approvedAt": "2026-11-09T17:58:21.356Z",
   "firstPublishedAt": "2026-11-09T15:39:12.976Z",
   "commercialStatus": "available",
   "featured": false,
   "sourceEditedAt": "2026-11-08T22:55:00.000Z",
-  "contentHash": "48afac01c5fd7c596323e8b7ae0c26e8c0db16ed08479fd07eb6d82d4cd832ca",
+  "contentHash": "201bbea12ebbfce585ad2ed4f0cc6894eee6b1e69a5acc56e7713860aaceed16",
   "content": {
     "slug": "sheppard-street-shepparton-vic",
     "type": "property",
@@ -17,7 +17,7 @@
       "An established IL Specialist Disability Accommodation investment opportunity in Shepparton, Victoria.",
       "The SDA-enrolled property is configured for 3 participant places and includes Onsite Overnight Assistance (OOA). The property operates under an existing SDA provider management arrangement, supporting the ongoing administration of SDA accommodation services.",
       "Located in Greater Shepparton, the property benefits from access to regional healthcare, disability support and community infrastructure.",
-      "Contact SDA Home Choices for further information about the property, current occupancy and investment details."
+      "Contact SDAHC for further information about the property, current occupancy and investment details."
     ],
     "address": {
       "street": "Sheppard Street",
