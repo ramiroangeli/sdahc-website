@@ -1,0 +1,217 @@
+{
+  "listingId": "lst_94fe48835b",
+  "version": 1,
+  "approvedBy": "SDA Home Choices",
+  "approvedById": "app-cc8a4a7b33e7",
+  "approvedAt": "2026-11-09T15:39:12.976Z",
+  "firstPublishedAt": "2026-11-09T15:39:12.976Z",
+  "commercialStatus": "available",
+  "featured": false,
+  "sourceEditedAt": "2026-11-08T22:55:00.000Z",
+  "contentHash": "48afac01c5fd7c596323e8b7ae0c26e8c0db16ed08479fd07eb6d82d4cd832ca",
+  "content": {
+    "slug": "sheppard-street-shepparton-vic",
+    "type": "property",
+    "title": "Shepparton VIC | IL SDA Investment",
+    "description": [
+      "An established IL Specialist Disability Accommodation investment opportunity in Shepparton, Victoria.",
+      "The SDA-enrolled property is configured for 3 participant places and includes Onsite Overnight Assistance (OOA). The property operates under an existing SDA provider management arrangement, supporting the ongoing administration of SDA accommodation services.",
+      "Located in Greater Shepparton, the property benefits from access to regional healthcare, disability support and community infrastructure.",
+      "Contact SDA Home Choices for further information about the property, current occupancy and investment details."
+    ],
+    "address": {
+      "street": "Sheppard Street",
+      "suburb": "Shepparton",
+      "state": "VIC",
+      "postcode": "3630"
+    },
+    "pricing": {
+      "mode": "contact_agent"
+    },
+    "sda": {
+      "designCategories": [
+        "IL"
+      ],
+      "buildingType": "House"
+    },
+    "photos": [
+      {
+        "id": "1f9c0aca12cd",
+        "alt": "Front of house",
+        "width": 1024,
+        "height": 1026,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/1f9c0aca12cd-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/1f9c0aca12cd-960.webp"
+          },
+          {
+            "w": 1024,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/1f9c0aca12cd-1024.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "28ef3778d64b",
+        "alt": "Corridor",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/28ef3778d64b-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/28ef3778d64b-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/28ef3778d64b-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "1cf85373ef6e",
+        "alt": "Interior",
+        "width": 1496,
+        "height": 656,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/1cf85373ef6e-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/1cf85373ef6e-960.webp"
+          },
+          {
+            "w": 1496,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/1cf85373ef6e-1496.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "bc132ba86ae0",
+        "alt": "Bathroom",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/bc132ba86ae0-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/bc132ba86ae0-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/bc132ba86ae0-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "77423b14064b",
+        "alt": "Kitchen view",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/77423b14064b-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/77423b14064b-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/77423b14064b-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "42322e69962c",
+        "alt": "Kitchen",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/42322e69962c-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/42322e69962c-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/42322e69962c-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "e352571eb771",
+        "alt": "Room",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/e352571eb771-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/e352571eb771-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/e352571eb771-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "bbdc48b479ae",
+        "alt": "Floorplan of the property",
+        "width": 3507,
+        "height": 2478,
+        "accent": "slate",
+        "kind": "floorplan",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/bbdc48b479ae-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/bbdc48b479ae-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_94fe48835b/bbdc48b479ae-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      }
+    ]
+  }
+}
