@@ -930,7 +930,7 @@ section('publication job started by the internal app (dry run only in this relea
     t('a complete standing determination ("*") clears every listing for that pricing mode only', L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && L.victorianClearance(cfg([det()]), 'lst_bbbbbbbbbb', 'contact_agent').cleared && !L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'asking_price').cleared && !L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'eoi').cleared);
     t('a standing determination still needs the full record and states that it is standing', !L.victorianClearance(cfg([det({ statement: '' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && !L.victorianClearance(cfg([det({ basis: 'hunch' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'contact_agent').basis === 'standing internal_determination');
     t('the default is unchanged: nothing is cleared without a recorded determination, and a per-listing one never clears another listing', !L.victorianClearance(cfg([]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && !L.victorianClearance(cfg([det({ listingId: 'lst_cccccccccc' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && L.victorianClearance(cfg([det({ listingId: 'lst_aaaaaaaaaa' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared);
-    t('the live compliance file still clears nothing by default', JSON.parse(rd('src/data/listings/compliance.json')).victoria.determinations.every((d) => d.listingId !== '*'));
+    t('the live compliance file has no mode-wide clearance and exactly one standing record, for Contact Agent only', Object.values(JSON.parse(rd('src/data/listings/compliance.json')).victoria.cleared).every((v) => v === false) && JSON.parse(rd('src/data/listings/compliance.json')).victoria.determinations.filter((d) => d.listingId === '*').map((d) => d.pricingMode).join() === 'contact_agent');
     const p = { authority: 'listings_manager', approver: { id: 'app-0123456789ab', name: 'Ali Example' } };
     t('approval from the Listings Manager is the authority: the id and display name come from the signed payload', JSON.stringify(approverFor(p, [])) === JSON.stringify({ id: 'app-0123456789ab', name: 'Ali Example', via: 'listings_manager' }));
     t('the public approver name is never an email address, never markup, and has a default', approverFor({ ...p, approver: { id: 'app-0123456789ab', name: 'ali@sdahomechoices.com.au' } }, []).name === 'SDA Home Choices' && approverFor({ ...p, approver: { id: 'app-0123456789ab', name: '<b>Ali</b>' } }, []).name === 'bAlib' && approverFor({ ...p, approver: { id: 'app-0123456789ab' } }, []).name === 'SDA Home Choices');
@@ -948,6 +948,35 @@ section('publication job started by the internal app (dry run only in this relea
   t('the job script writes the snapshot only into the runner workspace and reports through the signed app endpoints only', /approved', `\$\{slug\}\.json`/.test(job) && /publish-callback/.test(job) && /publish-payload/.test(job));
   const refused = (mode) => { try { execFileSync('node', ['scripts/listings-publish-job.mjs', '--job', '11111111-1111-4111-8111-111111111111', '--public-id', 'lst_0123456789', '--mode', mode], { cwd: repoRoot, env: { PATH: process.env.PATH }, stdio: 'pipe' }); return false; } catch (e) { return e.status === 2; } };
   t('any mode other than dry_run (publish, update, withdraw) is refused before anything runs', ['publish', 'update', 'withdraw', ''].every(refused));
+}
+
+section('standing Victorian position for tenanted SDA investment sales (Contact Agent)');
+{
+  const live = JSON.parse(rd('src/data/listings/compliance.json'));
+  const standing = live.victoria.determinations.find((d) => d.listingId === '*');
+  const sda = (over = {}) => real({ draft: withMod((c) => { c.photos = [realPhoto()]; c.address = { ...c.address, state: 'VIC', postcode: '3217' }; c.pricing = { mode: 'contact_agent' }; c.sda = { designCategories: ['IL'], buildingType: 'House' }; Object.assign(c, over); }) });
+  const withText = (text) => real({ draft: withMod((c) => { c.photos = [realPhoto()]; c.address = { ...c.address, state: 'VIC', postcode: '3217' }; c.pricing = { mode: 'contact_agent' }; c.sda = { designCategories: ['IL'] }; c.description = [text]; }) });
+  const issues = (rec, cfg = live) => L.validateForPublication(rec, { ...vctx, compliance: cfg }, now).issues;
+  const advertising = (rec, cfg = live) => issues(rec, cfg).filter((m) => /advertising position|Victorian pricing compliance/i.test(m));
+
+  t('the standing record is complete, honest about what it is, and names what is NOT established', !!standing && standing.basis === 'internal_determination' && /not legal advice/i.test(standing.statement) && /NOT ESTABLISHED/.test(standing.statement) && /not evidence that any exemption applies/i.test(standing.statement) && /Australian Consumer Law/.test(standing.statement) && /residual risk/i.test(standing.statement) && /^https:\/\/www\.consumer\.vic\.gov\.au\//.test(standing.reference));
+  t('the standing record declares the conditions the engine enforces', JSON.stringify(standing.conditions) === JSON.stringify(['sda_dwelling', 'no_price_indication']));
+  t('a Victorian Contact Agent SDA listing with clean text is cleared by the standing record', L.victorianClearance(live, 'lst_aaaaaaaaaa', 'contact_agent').cleared && L.victorianClearance(live, 'lst_aaaaaaaaaa', 'contact_agent').basis === 'standing internal_determination' && advertising(sda()).length === 0);
+  t('it clears Contact Agent only: Asking Price, Price Guide and EOI stay blocked in Victoria', ['asking_price', 'price_guide', 'eoi'].every((m) => !L.victorianClearance(live, 'lst_aaaaaaaaaa', m).cleared));
+  t('it does not touch other states, and Rutherford Grove keeps its own record without conditions', L.validateForPublication(withState('QLD'), ctxWith(DENY), now).ok && (L.victorianClearance(live, 'lst_454f05d21f', 'contact_agent').conditions ?? []).length === 0);
+
+  for (const phrase of ['Offers over the reserve are invited.', 'A great buy: guide price on request.', 'Strong yields, price guide available.', 'To be sold by auction.', 'Expressions of interest are now open.', 'Asking for serious investors only.', 'Offers from investors welcome.', 'Priced to sell quickly.', 'Negotiable for the right buyer.']) {
+    t(`a price indication in the description blocks it: "${phrase.slice(0, 34)}"`, advertising(withText(`An established Improved Liveability SDA house with three participant places. ${phrase}`)).some((m) => /no indication of price/.test(m)));
+  }
+  t('price language in the title or a photo description also blocks it', advertising(sda({ title: 'Asking price SDA investment house' })).some((m) => /no indication of price/.test(m)) && advertising(sda({ photos: [{ ...realPhoto(), alt: 'Sold by auction signage' }] })).some((m) => /no indication of price/.test(m)));
+  t('ordinary wording is not caught (contact, investment, enquire, occupied, tenanted)', advertising(withText('An established Improved Liveability SDA house with three participant places, tenanted and enrolled. Contact SDA Home Choices to enquire about this investment.')).length === 0);
+  t('a listing without an SDA design category cannot rely on the standing record', advertising(sda({ sda: {} })).some((m) => /SDA dwellings only/.test(m)));
+  t('an unknown condition fails closed, so a typo can never widen a record', (() => { const cfg = { ...live, victoria: { ...live.victoria, determinations: [{ ...standing, conditions: ['sda_dwelling', 'sda_dweling'] }] } }; return advertising(sda(), cfg).some((m) => /does not recognise/.test(m)); })());
+  t('removing the standing record blocks the listing again (the requirement is not bypassed)', advertising(sda(), { ...live, victoria: { ...live.victoria, determinations: live.victoria.determinations.filter((d) => d.listingId !== '*') } }).some((m) => /Victorian pricing compliance is not cleared/.test(m)));
+  t('a per-listing record without conditions behaves as before (nothing extra is imposed on it)', (() => { const cfg = { ...DENY, victoria: { ...DENY.victoria, determinations: [{ ...standing, listingId: 'lst_det', conditions: undefined }] } }; return L.victorianClearance(cfg, 'lst_det', 'contact_agent').cleared; })());
+  const rg = JSON.parse(rd('src/data/listings/approved/rutherford-grove-armstrong-creek-vic.json'));
+  t('the live Rutherford Grove snapshot still passes the Victorian gate with the live file', !advertising(real({ id: rg.listingId, draft: rg.content }), live).length);
+  t('the policy is described in the compliance notes and names the unresolved questions', /Posición permanente/.test(rd('docs/victorian-pricing-compliance.md')) && /no prueba ninguna exención/.test(rd('docs/victorian-pricing-compliance.md')));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

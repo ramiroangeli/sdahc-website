@@ -234,17 +234,23 @@ export interface VictorianDetermination {
   recordedAt: string;
   reference: string;
   statement: string;
+  /**
+   * Conditions the position relies on, checked by the publication engine on every listing that uses it, so the record cannot quietly stretch
+   * beyond what it states. A condition this code does not recognise fails closed. Known: "sda_dwelling" (the listing carries an SDA design
+   * category), "no_price_indication" (the public text never hints at a price, with words such as "offers over", "guide" or "reserve").
+   */
+  conditions?: string[];
 }
 
 /** Is this listing cleared for its pricing mode in Victoria? Mode-wide clearance, a complete standing determination ("*"), or a complete per-listing determination. */
-export const victorianClearance = (c: ComplianceConfig | undefined, listingId: string, mode: PricingMode): { cleared: boolean; basis?: string } => {
+export const victorianClearance = (c: ComplianceConfig | undefined, listingId: string, mode: PricingMode): { cleared: boolean; basis?: string; conditions?: string[] } => {
   if (!c) return { cleared: false };
   if (c.victoria.cleared[mode]) return { cleared: true, basis: 'mode-wide clearance' };
   const all = c.victoria.determinations ?? [];
   const d = all.find((x) => x.listingId === listingId && x.pricingMode === mode) ?? all.find((x) => x.listingId === '*' && x.pricingMode === mode);
   const complete = !!d && [d.recordedBy, d.recordedAt, d.reference, d.statement].every((v) => typeof v === 'string' && v.trim().length >= 3)
     && (d.basis === 'internal_determination' || d.basis === 'external_advice');
-  return complete ? { cleared: true, basis: d!.listingId === '*' ? `standing ${d!.basis}` : d!.basis } : { cleared: false };
+  return complete ? { cleared: true, basis: d!.listingId === '*' ? `standing ${d!.basis}` : d!.basis, conditions: d!.conditions ?? [] } : { cleared: false };
 };
 
 export interface Approver { notionUserId: string; name: string; githubHandle?: string }

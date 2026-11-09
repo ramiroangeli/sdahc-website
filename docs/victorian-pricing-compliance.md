@@ -51,3 +51,14 @@
 `compliance.json` admite `victoria.determinations`: una entrada por listing y modo de precio, con `basis` (`internal_determination` o `external_advice`), `recordedBy`, `recordedAt`, `reference` y `statement`, todos obligatorios. **Solo autoriza ese listing y ese modo**; no abre ningún otro listing victoriano. Una `internal_determination` es la posición razonada del negocio y **no es asesoramiento jurídico ni una exención**.
 
 - `lst_454f05d21f` (Rutherford Grove, Contact Agent): determinación interna del 2026-11-05. Se comercializa como inversión SDA arrendada, ya anunciada en realcommercial y sin precio. CAV indica que las reglas de underquoting y la PPS se aplican a la venta residencial y no a la comercial; las obligaciones de la Australian Consumer Law siguen vigentes. **La clasificación legal de la propiedad no ha sido confirmada por un abogado ni por el regulador**: es el riesgo residual, aceptado por el negocio.
+
+## Posición permanente (listings con Contact Agent)
+
+`determinations` admite `listingId: "*"`: una sola posición registrada que cubre todos los listings de un modo de precio. Hoy hay una, para **Contact Agent**, registrada como `internal_determination` el 2026-11-09 por el propietario del código al fusionar el PR que la añade.
+
+- **Clase cubierta.** Ventas de viviendas SDA que SDAHC comercializa a inversores como inversión arrendada que genera ingresos, anunciadas sin precio.
+- **Base.** La página de CAV sobre underquoting dice que esas reglas y la PPS se aplican a la venta de **propiedad residencial** y no a la **comercial, rural o industrial**, y que la Australian Consumer Law se aplica a todas. La posición de SDAHC es que un inmueble SDA arrendado vendido a un inversor por sus ingresos es una venta comercial; ya existía un registro así para `lst_454f05d21f`.
+- **Lo que NO está establecido.** La clasificación legal no está confirmada por un abogado ni por el regulador. La página no trata los anuncios sin precio ni el "contact agent" y no es clara sobre el alcance del precio vendido y del precio de reserva. **Anunciar en un portal comercial, o aprobar comercialmente el marketing, no prueba ninguna exención.** SDAHC acepta el riesgo residual.
+- **Lo que el motor exige a cada listing que la use** (`conditions`): solo Contact Agent (nunca se publica precio, rango ni calificativo), el texto público no puede insinuar un precio ("offers over", "guide", "asking", "reserve", "auction", EOI...), y la propiedad debe ser una vivienda SDA (con categoría de diseño). Una condición desconocida falla cerrada.
+- **Lo que no se quita.** Las obligaciones de la ACL (nada falso o engañoso) y cualquier requisito que se aplique si una venta resultara ser residencial. Eliminar la entrada por PR bloquea otra vez todo listing que dependa de ella.
+- Asking Price, Price Guide y EOI siguen bloqueados en Victoria. Otros estados no cambian.
