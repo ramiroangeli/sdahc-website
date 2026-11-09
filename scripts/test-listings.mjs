@@ -804,7 +804,7 @@ const wf = stripYaml(rd('.github/workflows/listings-sync.yml'));
 t('the workflow is manual only', /workflow_dispatch/.test(wf) && !/^\s*schedule:/m.test(wf) && !/repository_dispatch/.test(wf) && !/^\s*push:/m.test(wf));
 t('the workflow never writes to main or triggers a deployment', !/HEAD:main/.test(wf) && !/push origin main/.test(wf) && !/deploy.?hook/i.test(wf) && !/curl/.test(wf) && /refs\/heads\/\$\{\{ steps\.branch\.outputs\.name \}\}/.test(wf));
 t('the workflow proposes and opens a pull request instead of publishing', /--propose --write/.test(wf) && /gh pr create/.test(wf));
-t('only the two known workflows exist, and the second (started by the internal app) is dry run only, read only and cannot deploy', readdirSync(join(repoRoot, '.github/workflows')).sort().join() === 'listings-sync.yml,publish-listing.yml' && !/deploy.?hook|curl|vercel/i.test(stripYaml(rd('.github/workflows/publish-listing.yml'))) && /options:\s*\n\s*- dry_run/.test(rd('.github/workflows/publish-listing.yml')));
+t('only the three known workflows exist, and the publish workflow cannot deploy by itself (no deploy hook, no Vercel call)', readdirSync(join(repoRoot, '.github/workflows')).sort().join() === 'ci.yml,listings-sync.yml,publish-listing.yml' && !/deploy.?hook|curl|vercel/i.test(stripYaml(rd('.github/workflows/publish-listing.yml'))));
 t('listing files are protected by code owners', /approved\//.test(rd('.github/CODEOWNERS')) && /withdrawn\//.test(rd('.github/CODEOWNERS')));
 t('Notion credentials live in a git-ignored env file', /^\.env\.listings$/m.test(rd('.gitignore')) && /^\.env$/m.test(rd('.gitignore')));
 const secretRe = /\b(secret_[A-Za-z0-9]{30,}|ntn_[A-Za-z0-9]{30,}|re_[A-Za-z0-9]{20,}|Bearer\s+[A-Za-z0-9._-]{30,})\b/;
@@ -940,14 +940,14 @@ section('publication job started by the internal app (dry run only in this relea
   }
   const wf = rd('.github/workflows/publish-listing.yml');
   const job = rd('scripts/listings-publish-job.mjs');
-  t('workflow: dry run is the only selectable mode and the token is read only', /options:\s*\n\s*- dry_run\s*\n/.test(wf) && /permissions:\s*\n\s*contents: read/.test(wf) && !/contents: write|pull-requests: write|id-token/.test(wf));
+  t('workflow: modes are dry_run, publish and update; write rights are limited to what a pull request needs; no id-token', /options:\s*\n\s*- dry_run\s*\n\s*- publish\s*\n\s*- update\s*\n/.test(wf) && /permissions:\s*\n\s*contents: write\s*\n\s*pull-requests: write\s*\n\s*actions: write\s*\n\s*checks: read\s*\n\s*deployments: read\s*\n/.test(wf) && !/id-token|packages:|administration|secrets: write/.test(wf));
   t('workflow: inputs reach the script through environment variables, never interpolated into the shell command', /--job "\$JOB_ID" --public-id "\$PUBLIC_ID" --mode "\$MODE"/.test(wf) && !/run:.*\$\{\{ *inputs/.test(wf));
   t('workflow: runs on main only in this repository, one job at a time, never cancels half way, has a timeout', /ref: main/.test(wf) && /github\.repository == 'ramiroangeli\/sdahc-website'/.test(wf) && /cancel-in-progress: false/.test(wf) && /timeout-minutes: 20/.test(wf) && /persist-credentials: false/.test(wf));
-  t('workflow: secrets are referenced only as environment values and never echoed', !/echo .*secrets\./.test(wf) && (wf.match(/secrets\./g) ?? []).length === 3);
-  t('the job script cannot change anything: no Notion write, no git push, no pull request, no public store write, no content printed', !/git['", ]+push|pull-requests|gh ['"]?pr|method: 'PATCH'|method: 'DELETE'|api\.notion\.com|archived|put\(|vercel-storage|console\.log\(.*(payload|snapshot|content)/.test(job));
+  t('workflow: secrets are referenced only as environment values and never echoed; the write token reaches the job step only', !/echo .*secrets\./.test(wf) && (wf.match(/secrets\./g) ?? []).length === 3 && (wf.match(/github\.token/g) ?? []).length === 1 && /- name: Run the job\s*\n\s*env:[^]*GITHUB_TOKEN: \$\{\{ github\.token \}\}/.test(wf));
+  t('the job script writes only through the publish-git module (pull request flow), never to Notion, never to the media store, and never prints content', !/api\.notion\.com|method: 'PATCH'|method: 'DELETE'|archived|put\(|vercel-storage|console\.log\(.*(payload|snapshot|content)/.test(job) && /publishReal/.test(job) && !/git['", ]+push|spawnSync\('git/.test(job) && /delete e\.GITHUB_TOKEN/.test(job));
   t('the job script writes the snapshot only into the runner workspace and reports through the signed app endpoints only', /approved', `\$\{slug\}\.json`/.test(job) && /publish-callback/.test(job) && /publish-payload/.test(job));
   const refused = (mode) => { try { execFileSync('node', ['scripts/listings-publish-job.mjs', '--job', '11111111-1111-4111-8111-111111111111', '--public-id', 'lst_0123456789', '--mode', mode], { cwd: repoRoot, env: { PATH: process.env.PATH }, stdio: 'pipe' }); return false; } catch (e) { return e.status === 2; } };
-  t('any mode other than dry_run (publish, update, withdraw) is refused before anything runs', ['publish', 'update', 'withdraw', ''].every(refused));
+  t('an unknown mode (withdraw, empty, anything else) is refused before anything runs', ['withdraw', 'delete', '', 'PUBLISH'].every(refused));
 }
 
 section('standing Victorian position for tenanted SDA investment sales (Contact Agent)');
@@ -978,6 +978,8 @@ section('standing Victorian position for tenanted SDA investment sales (Contact 
   t('the live Rutherford Grove snapshot still passes the Victorian gate with the live file', !advertising(real({ id: rg.listingId, draft: rg.content }), live).length);
   t('the policy is described in the compliance notes and names the unresolved questions', /Posición permanente/.test(rd('docs/victorian-pricing-compliance.md')) && /no prueba ninguna exención/.test(rd('docs/victorian-pricing-compliance.md')));
 }
+
+await (await import('./test-publish-git.mjs')).default({ t, section });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -1,7 +1,12 @@
 # Publication job started by the internal Listings Manager (app.sdahomechoices.com.au).
 #
-# DRY RUN ONLY in this release. It checks that an approved draft WOULD publish and changes nothing:
-# no Notion write, no commit, no branch, no pull request, no public image. The token is read-only.
+# Modes:
+#   dry_run  checks that an approved draft WOULD publish and changes nothing (no Notion write, no branch, no pull request).
+#   publish  first publication of a listing.   update  a new version of a listing that is already live.
+# Real modes open ONE pull request that changes ONLY src/data/listings/approved/<slug>.json, wait for the required CI check (ci.yml) on that
+# exact commit, merge it under the branch rules, wait for the Vercel Production deployment and prove the live page, images and catalogue.
+# If anything fails the pull request is closed and its branch deleted: main, and so the live site, is never touched.
+# The workflow token below is the only write credential. Nothing here writes to Notion or to the public media store.
 # The job continues here, on GitHub's servers, whether or not anyone keeps a browser open; progress goes back to the app by signed request.
 # Logs of a public repository are public, so the script prints step names only, never listing content.
 #
@@ -22,15 +27,23 @@ on:
         description: 'Public listing id (lst_...)'
         required: true
       mode:
-        description: 'dry_run is the only mode enabled in this release'
+        description: 'dry_run changes nothing; publish and update change the live site'
         required: true
         type: choice
         default: dry_run
         options:
           - dry_run
+          - publish
+          - update
 
+# least privilege for the real modes: write a branch + file, open and merge a pull request, start the CI workflow on that branch, read check
+# runs and deployments. Nothing else is granted.
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  actions: write
+  checks: read
+  deployments: read
 
 # one publication job at a time; a queued one waits, nothing is cancelled half way
 concurrency:
@@ -48,6 +61,7 @@ jobs:
       LISTINGS_CALLBACK_SECRET: ${{ secrets.LISTINGS_CALLBACK_SECRET }}
       LISTINGS_MEDIA_BASE_URL: ${{ vars.LISTINGS_MEDIA_BASE_URL }}
       LISTINGS_APP_URL: ${{ vars.LISTINGS_APP_URL }}
+      LISTINGS_SITE_URL: ${{ vars.LISTINGS_SITE_URL }}
       JOB_ID: ${{ inputs.job_id }}
       PUBLIC_ID: ${{ inputs.public_id }}
       MODE: ${{ inputs.mode }}
@@ -62,4 +76,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Run the job
+        env:
+          # the write-capable workflow token is given to this one step only (not to npm ci, tests or the build)
+          GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/listings-publish-job.mjs --job "$JOB_ID" --public-id "$PUBLIC_ID" --mode "$MODE"
