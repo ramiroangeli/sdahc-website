@@ -29,20 +29,20 @@ function fakeGitHub(opts = {}) {
       return json(200, { files: changed.map((filename) => ({ filename })), commits: changed.length ? [{ sha: s.refs[b] }] : [] });
     }
     if (method === 'GET' && path === '/pulls') return json(200, s.prs.filter((p) => p.state === 'open' && u.searchParams.get('head').endsWith(`:${p.head}`)));
-    if (method === 'POST' && path === '/pulls') { const p = { number: s.prs.length + 7, state: 'open', head: body.head, html_url: `https://github.example/pull/${s.prs.length + 7}`, title: body.title, body: body.body }; s.prs.push(p); return json(201, p); }
+    if (method === 'POST' && path === '/pulls') { const p = { number: s.prs.length + 7, state: 'open', head: body.head, html_url: `https://github.example/pull/${s.prs.length + 7}`, title: body.title, body: body.body }; s.prs.push(p);
+      // a pull request opened with the GitHub App token starts the normal pull_request run of ci.yml on its head commit (opts.noCheck: it does not)
+      if (!opts.noCheck) s.checkRuns[s.refs[body.head]] = [{ id: rid(), name: REQUIRED_CHECK, status: opts.checkPending ? 'in_progress' : 'completed', conclusion: opts.checkPending ? null : (opts.checkConclusion ?? 'success'), html_url: 'https://github.example/run/1' }];
+      return json(201, p); }
     if (method === 'PATCH' && (m = path.match(/^\/pulls\/(\d+)$/))) { const p = s.prs.find((x) => x.number === Number(m[1])); p.state = body.state; return json(200, p); }
     if (method === 'DELETE' && (m = path.match(/^\/git\/refs\/heads\/(.+)$/))) { delete s.refs[m[1]]; delete s.files[m[1]]; return json(204, {}); }
-    if (method === 'POST' && path === '/actions/workflows/ci.yml/dispatches') {
-      s.dispatches.push(body.ref);
-      s.checkRuns[s.refs[body.ref]] = [{ id: rid(), name: REQUIRED_CHECK, status: opts.checkPending ? 'in_progress' : 'completed', conclusion: opts.checkPending ? null : (opts.checkConclusion ?? 'success'), html_url: 'https://github.example/run/1' }];
-      return { ok: true, status: 204, headers: new Headers(), json: async () => { throw new Error('no body'); } };
-    }
+    if (method === 'POST' && /^\/actions\/workflows\/[^/]+\/dispatches$/.test(path)) { s.dispatches.push(body.ref); return { ok: true, status: 204, headers: new Headers(), json: async () => { throw new Error('no body'); } }; } // a manual run never counts as the required check
     if (method === 'GET' && (m = path.match(/^\/commits\/([0-9a-f]+)\/check-runs$/))) return json(200, { check_runs: s.checkRuns[m[1]] ?? [] });
     if (method === 'PUT' && (m = path.match(/^\/pulls\/(\d+)\/merge$/))) {
       const p = s.prs.find((x) => x.number === Number(m[1]));
       const ok = (s.checkRuns[s.refs[p.head]] ?? []).some((r) => r.name === REQUIRED_CHECK && r.conclusion === 'success');
       if (body.sha !== s.refs[p.head]) return json(409, { message: 'head changed' });
-      if (!ok || opts.refuseMerge) return json(405, { message: 'Required status check is expected.' });
+      s.mergeTries = (s.mergeTries ?? 0) + 1;
+      if (!ok || opts.refuseMerge || s.mergeTries <= (opts.mergeFlaky ?? 0)) return json(405, { message: 'Required status check is expected.' });
       Object.assign(s.files.main, s.files[p.head]); s.refs.main = commitSha(); p.state = 'closed'; s.merged.push(p.number);
       return json(200, { merged: true, sha: s.refs.main });
     }
@@ -75,9 +75,9 @@ export default async function run({ t, section }) {
     const again = await openPublicationPr({ gh, snapshot: snap(), slug: SLUG, jobId: 'job-1', mode: 'publish' });
     t('a retry reuses the same branch and pull request (idempotent)', s.prs.length === 1 && again.prNumber === r.prNumber && again.branch === r.branch);
 
-    const c = await waitForChecks({ gh, branch: r.branch, headSha: r.headSha, sleep: noSleep });
-    t('CI is started on the branch and the required check is awaited on the exact commit', c.ok && s.dispatches.join() === r.branch);
-    const m = await mergePr({ gh, prNumber: r.prNumber, headSha: r.headSha, title: 't' });
+    const c = await waitForChecks({ gh, headSha: r.headSha, sleep: noSleep });
+    t('the required check is the pull request\'s own run on the exact commit; nothing is dispatched by hand', c.ok && s.dispatches.length === 0 && s.checkRuns[r.headSha]?.length === 1);
+    const m = await mergePr({ gh, prNumber: r.prNumber, headSha: r.headSha, title: 't', sleep: noSleep });
     t('merges only the commit that passed, and main then holds the file', m.merged && s.files.main[artifactPath(SLUG)] === snapshotText(snap()) && s.merged.length === 1);
     const after = await openPublicationPr({ gh, snapshot: snap(), slug: SLUG, jobId: 'job-2', mode: 'publish' });
     t('after the merge a rerun sees the file already on main and opens nothing', after.alreadyOnMain === true && s.prs.length === 1);
@@ -91,18 +91,34 @@ export default async function run({ t, section }) {
   {
     const { s, gh } = fakeGitHub({ checkConclusion: 'failure' });
     const r = await openPublicationPr({ gh, snapshot: snap(), slug: SLUG, jobId: 'j', mode: 'publish' });
-    const c = await waitForChecks({ gh, branch: r.branch, headSha: r.headSha, sleep: noSleep });
+    const c = await waitForChecks({ gh, headSha: r.headSha, sleep: noSleep });
     t('a failed required check is reported and nothing merges', !c.ok && c.conclusion === 'failure' && s.merged.length === 0);
-    let refused; try { await mergePr({ gh, prNumber: r.prNumber, headSha: r.headSha, title: 't' }); } catch (e) { refused = e; }
-    t('even if the merge is attempted, the branch rules refuse and the refusal is not worked around', refused?.code === 'merge_refused' && s.merged.length === 0 && s.files.main[artifactPath(SLUG)] === undefined);
+    let refused; try { await mergePr({ gh, prNumber: r.prNumber, headSha: r.headSha, title: 't', sleep: noSleep }); } catch (e) { refused = e; }
+    t('even if the merge is attempted, the branch rules refuse and the refusal is not worked around (only a short, bounded retry)', refused?.code === 'merge_refused' && s.merged.length === 0 && s.mergeTries === 4 && s.files.main[artifactPath(SLUG)] === undefined);
     await abandon({ gh, prNumber: r.prNumber, branch: r.branch });
     t('abandoning closes the pull request and deletes the branch; main is untouched', s.prs[0].state === 'closed' && !s.refs[r.branch] && s.files.main[artifactPath(SLUG)] === undefined);
   }
   {
     const { gh } = fakeGitHub({ checkPending: true });
     const r = await openPublicationPr({ gh, snapshot: snap(), slug: SLUG, jobId: 'j', mode: 'publish' });
-    let clock = 0; const c = await waitForChecks({ gh, branch: r.branch, headSha: r.headSha, sleep: async (ms) => { clock += ms; }, now: () => clock, timeoutMs: 60000, pollMs: 10000 });
+    let clock = 0; const c = await waitForChecks({ gh, headSha: r.headSha, sleep: async (ms) => { clock += ms; }, now: () => clock, timeoutMs: 60000, pollMs: 10000 });
     t('a check that never finishes times out instead of waiting for ever', !c.ok && c.conclusion === 'timed_out');
+  }
+  {
+    const { s, gh } = fakeGitHub({ noCheck: true });
+    const r = await openPublicationPr({ gh, snapshot: snap(), slug: SLUG, jobId: 'j', mode: 'publish' });
+    let clock = 0; const c = await waitForChecks({ gh, headSha: r.headSha, sleep: async (ms) => { clock += ms; }, now: () => clock, pollMs: 10000 });
+    t('if the pull request never gets its own check run the job stops ("not_started"); it is not started by hand and nothing merges', !c.ok && c.conclusion === 'not_started' && s.dispatches.length === 0 && s.merged.length === 0 && clock > 180000 && clock < 200000);
+  }
+  {
+    const { s, gh } = fakeGitHub({ mergeFlaky: 2 });
+    const r = await openPublicationPr({ gh, snapshot: snap(), slug: SLUG, jobId: 'j', mode: 'publish' });
+    await waitForChecks({ gh, headSha: r.headSha, sleep: noSleep });
+    const m = await mergePr({ gh, prNumber: r.prNumber, headSha: r.headSha, title: 't', sleep: noSleep });
+    t('a merge refused for a moment (GitHub still registering the finished check) succeeds on a later attempt', m.merged && s.mergeTries === 3 && s.merged.length === 1);
+    const wrong = fakeGitHub(); const r2 = await openPublicationPr({ gh: wrong.gh, snapshot: snap(), slug: SLUG, jobId: 'j', mode: 'publish' });
+    let e409; try { await mergePr({ gh: wrong.gh, prNumber: r2.prNumber, headSha: 'f'.repeat(40), title: 't', sleep: noSleep }); } catch (e) { e409 = e; }
+    t('a merge of any commit other than the one that passed is refused at once (409), not retried', e409?.code === 'merge_refused' && e409.status === 409 && wrong.s.mergeTries === undefined);
   }
   {
     const { s, gh } = fakeGitHub({ state: { files: { main: { 'package.json': '{}\n', [artifactPath(SLUG)]: snapshotText(snap()) } } } });
