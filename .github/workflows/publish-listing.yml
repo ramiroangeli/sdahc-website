@@ -6,12 +6,14 @@
 # Real modes open ONE pull request that changes ONLY src/data/listings/approved/<slug>.json, wait for the required CI check (ci.yml) on that
 # exact commit, merge it under the branch rules, wait for the Vercel Production deployment and prove the live page, images and catalogue.
 # If anything fails the pull request is closed and its branch deleted: main, and so the live site, is never touched.
-# The workflow token below is the only write credential. Nothing here writes to Notion or to the public media store.
+# The only write credential is a short-lived token of the dedicated GitHub App "SDAHC Listings Publisher" (installed on this repository only),
+# minted for the real modes and given to the one step that needs it. The workflow's own token is read-only. Pull requests opened with the App
+# token start the normal pull_request CI run, so the required check is the pull request's own. Nothing here writes to Notion or to the public media store.
 # The job continues here, on GitHub's servers, whether or not anyone keeps a browser open; progress goes back to the app by signed request.
 # Logs of a public repository are public, so the script prints step names only, never listing content.
 #
 # Secrets and variables (Settings > Secrets and variables > Actions):
-#   secrets: NOTION_TOKEN (read-only), NOTION_PROPERTIES_DATA_SOURCE_ID, LISTINGS_CALLBACK_SECRET
+#   secrets: NOTION_TOKEN (read-only), NOTION_PROPERTIES_DATA_SOURCE_ID, LISTINGS_CALLBACK_SECRET, LISTINGS_APP_ID, LISTINGS_APP_PRIVATE_KEY
 #   variables: LISTINGS_MEDIA_BASE_URL, LISTINGS_APP_URL
 name: Publish listing
 
@@ -36,14 +38,10 @@ on:
           - publish
           - update
 
-# least privilege for the real modes: write a branch + file, open and merge a pull request, start the CI workflow on that branch, read check
-# runs and deployments. Nothing else is granted.
+# the workflow's own token can only read; every write goes through the GitHub App token created below (contents, pull requests; read of checks
+# and deployments)
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
-  checks: read
-  deployments: read
+  contents: read
 
 # one publication job at a time; a queued one waits, nothing is cancelled half way
 concurrency:
@@ -75,8 +73,23 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Create the short-lived GitHub App token (real modes only)
+        id: app-token
+        if: inputs.mode != 'dry_run'
+        # actions/create-github-app-token v3.1.1, pinned by commit. The token is limited to this repository and to these four permissions,
+        # expires within the hour and is revoked when the job ends.
+        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3
+        with:
+          app-id: ${{ secrets.LISTINGS_APP_ID }}
+          private-key: ${{ secrets.LISTINGS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-checks: read
+          permission-deployments: read
       - name: Run the job
         env:
-          # the write-capable workflow token is given to this one step only (not to npm ci, tests or the build)
-          GITHUB_TOKEN: ${{ github.token }}
+          # the write-capable App token is given to this one step only (not to npm ci, tests or the build); empty in dry_run
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: node scripts/listings-publish-job.mjs --job "$JOB_ID" --public-id "$PUBLIC_ID" --mode "$MODE"

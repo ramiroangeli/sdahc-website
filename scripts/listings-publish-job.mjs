@@ -20,7 +20,7 @@
   internal values, because Actions logs of a public repository are public.
 
   Environment: LISTINGS_APP_URL, LISTINGS_CALLBACK_SECRET, NOTION_TOKEN, NOTION_PROPERTIES_DATA_SOURCE_ID, LISTINGS_MEDIA_BASE_URL
-  Real modes also: GITHUB_TOKEN, GITHUB_REPOSITORY, LISTINGS_SITE_URL (optional GITHUB_API_URL for rehearsals)
+  Real modes also: GITHUB_TOKEN (the short-lived GitHub App token), GITHUB_REPOSITORY, LISTINGS_SITE_URL (optional GITHUB_API_URL for rehearsals)
 */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -93,8 +93,8 @@ async function publishReal({ snapshot, checks, resumed }) {
         pr = opened;
         await report('pull_request', 'ok', { number: pr.prNumber, url: pr.prUrl, files: 1 });
         log('waiting for the required check');
-        const c = await waitForChecks({ gh, branch: pr.branch, headSha: pr.headSha });
-        checks.push({ name: 'required_check', ok: c.ok, note: c.ok ? `The required check (${REQUIRED_CHECK}) passed on the exact commit.` : `The required check did not pass (${c.conclusion}).` });
+        const c = await waitForChecks({ gh, headSha: pr.headSha });
+        checks.push({ name: 'required_check', ok: c.ok, note: c.ok ? `The required check (${REQUIRED_CHECK}) passed on the exact commit.` : c.conclusion === 'not_started' ? `The required check (${REQUIRED_CHECK}) did not start on the pull request.` : `The required check did not pass (${c.conclusion}).` });
         await report('checks', c.ok ? 'ok' : 'failed', { checks, url: c.url ?? null });
         if (!c.ok) throw Object.assign(new Error('the required check did not pass'), { code: 'checks_failed', reported: true });
         log('merging');

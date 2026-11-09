@@ -11,7 +11,6 @@ import { createHash } from 'node:crypto';
 
 export const SLUG_RE = /^[a-z]+(-[a-z]+)*$/;
 export const ARTIFACT_RE = /^src\/data\/listings\/approved\/[a-z]+(-[a-z]+)*\.json$/;
-export const CI_WORKFLOW = 'ci.yml';
 /** The name of the check run that the branch rules require. It is the job name inside .github/workflows/ci.yml. */
 export const REQUIRED_CHECK = 'site-checks';
 
@@ -92,10 +91,12 @@ export async function openPublicationPr({ gh, snapshot, slug, jobId, mode, defau
   return { branch, headSha, prNumber: pr.number, prUrl: pr.html_url };
 }
 
-/** Starts the CI workflow on the branch (bot pull requests do not trigger the pull_request event) and waits for the required check. */
-export async function waitForChecks({ gh, branch, headSha, sleep = sleepDefault, timeoutMs = 15 * 60 * 1000, pollMs = 10000, now = Date.now }) {
-  const existing = await findCheck(gh, headSha);
-  if (!existing) await gh.call('POST', `/actions/workflows/${CI_WORKFLOW}/dispatches`, { ref: branch });
+/**
+ * Waits for the required check on the pull request's head commit. The pull request is opened with the GitHub App token, which starts the
+ * normal pull_request run of ci.yml by itself, so nothing is dispatched here: a manually started run would NOT satisfy the branch rules.
+ * If no run appears within `startMs` the check did not start and the job stops (it is never started by hand).
+ */
+export async function waitForChecks({ gh, headSha, sleep = sleepDefault, timeoutMs = 15 * 60 * 1000, startMs = 3 * 60 * 1000, pollMs = 10000, now = Date.now }) {
   const start = now();
   for (;;) {
     const c = await findCheck(gh, headSha);
@@ -103,6 +104,7 @@ export async function waitForChecks({ gh, branch, headSha, sleep = sleepDefault,
       if (c.conclusion === 'success') return { ok: true, url: c.html_url };
       return { ok: false, conclusion: c.conclusion, url: c.html_url };
     }
+    if (!c && now() - start > startMs) return { ok: false, conclusion: 'not_started' };
     if (now() - start > timeoutMs) return { ok: false, conclusion: 'timed_out' };
     await sleep(pollMs);
   }
@@ -113,10 +115,19 @@ async function findCheck(gh, sha) {
   return runs.filter((r) => r.name === REQUIRED_CHECK).sort((a, b) => (a.id < b.id ? 1 : -1))[0] ?? null;
 }
 
-/** Squash-merges only the exact commit that passed. A rule refusal (405/409/422) is final and reported, never worked around. */
-export async function mergePr({ gh, prNumber, headSha, title }) {
-  const r = await gh.call('PUT', `/pulls/${prNumber}/merge`, { merge_method: 'squash', sha: headSha, commit_title: title }, { allow: [405, 409, 422] });
-  if (r.status === 200 && r.data?.merged) return { merged: true, sha: r.data.sha };
+/**
+ * Squash-merges only the exact commit that passed. A rule refusal is final and reported, never worked around. The only patience allowed: a 405
+ * is tried again a few times, because GitHub can take a few seconds to register a check that has just finished (the rules are not bypassed:
+ * if the check really is missing or failed, every attempt is refused).
+ */
+export async function mergePr({ gh, prNumber, headSha, title, sleep = sleepDefault, attempts = 4, pollMs = 5000 }) {
+  let r;
+  for (let i = 0; i < attempts; i += 1) {
+    r = await gh.call('PUT', `/pulls/${prNumber}/merge`, { merge_method: 'squash', sha: headSha, commit_title: title }, { allow: [405, 409, 422] });
+    if (r.status === 200 && r.data?.merged) return { merged: true, sha: r.data.sha };
+    if (r.status !== 405 || i === attempts - 1) break;
+    await sleep(pollMs);
+  }
   throw Object.assign(new Error(`the branch rules did not allow the merge (HTTP ${r.status})`), { code: 'merge_refused', status: r.status });
 }
 
