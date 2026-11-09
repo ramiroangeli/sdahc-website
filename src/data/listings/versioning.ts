@@ -75,6 +75,27 @@ export const resolveListing = (i: {
   };
 };
 
+/**
+ * Words that put a price into an advertisement without a number: qualifiers the Victorian guidance names for price statements, and the
+ * language of priced sales processes (guide, reserve, auction, expressions of interest). A listing relying on a "no price indication"
+ * position must not use them in any public text.
+ */
+const PRICE_LANGUAGE = /(?<![\w])(?:offers?\s+(?:above|over|from|in\s+excess\s+of|around)|from\s*\$|price\s+(?:guide|range|on\s+application)|guide\s+price|asking(?:\s+price)?|reserve(?:\s+price)?|auction|expressions?\s+of\s+interest|eoi|poa|negotiable|priced\s+to\s+sell|bargain|under\s+(?:market|valuation))(?![\w])/i;
+
+/** Conditions a recorded Victorian position relies on. Unknown conditions fail closed. Messages are plain: staff read them. */
+export const victorianConditionIssues = (conditions: string[], c: PublicContent): string[] => {
+  const out: string[] = [];
+  for (const cond of conditions) {
+    if (cond === 'sda_dwelling') {
+      if (!c.sda.designCategories?.length) out.push('The advertising position covers SDA dwellings only: this listing needs its SDA design category.');
+    } else if (cond === 'no_price_indication') {
+      const text = [c.title, ...c.description, ...c.photos.map((p) => ('alt' in p ? p.alt : ''))].join('\n');
+      if (PRICE_LANGUAGE.test(text)) out.push('The advertising position covers listings that give no indication of price: remove wording such as "offers over", "guide", "asking" or "reserve" from the public text.');
+    } else out.push(`The advertising position has a condition this system does not recognise ("${String(cond).slice(0, 40)}"), so it cannot be relied on.`);
+  }
+  return out;
+};
+
 export interface PublicationCheck { ok: boolean; issues: string[]; content?: PublicContent }
 
 /** Can this record be promoted to a new approved snapshot? Every minimum is enforced here. */
@@ -106,8 +127,10 @@ export const validateForPublication = (r: ListingRecord, ctx: SafetyContext, now
   if (!r.isFixture) {
     // Victoria: the price display and listing rules took effect on 1 October 2026 and their application to SDA
     // sales is not yet classified. Each pricing mode needs a recorded clearance (compliance.json).
-    if (c.address.state === 'VIC' && !victorianClearance(ctx.compliance, r.id, c.pricing.mode).cleared) {
-      issues.push(`Victorian pricing compliance is not cleared for "${c.pricing.mode}" (docs/victorian-pricing-compliance.md)`);
+    if (c.address.state === 'VIC') {
+      const clearance = victorianClearance(ctx.compliance, r.id, c.pricing.mode);
+      if (!clearance.cleared) issues.push(`Victorian pricing compliance is not cleared for "${c.pricing.mode}" (docs/victorian-pricing-compliance.md)`);
+      else issues.push(...victorianConditionIssues(clearance.conditions ?? [], c));
     }
     // Basic is real SDA design category for existing stock; it needs its classification validated first
     if (c.sda.designCategories?.includes('Basic') && !ctx.compliance?.basicClassification.confirmedListingIds.includes(r.id)) {
