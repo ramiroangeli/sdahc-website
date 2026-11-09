@@ -79,3 +79,20 @@ export async function withRetry(fn, { attempts = 5, baseMs = 400, sleep = (ms) =
   }
   throw last;
 }
+
+/**
+ * Who approved, for a publication started from the internal Listings Manager. The Listings Manager is where staff approve: the payload is
+ * authenticated by the signed request, and the person is a Publisher in the app's own staff list, so that approval is the authority and the
+ * Notion approvers list does not apply to it. (The command line flow, listings-sync, still uses src/data/listings/approvers.json.)
+ * The name ends up in the public snapshot, so it is a display name, never an email address.
+ */
+export function approverFor(payload, approvers = []) {
+  const a = payload?.approver;
+  if (payload?.authority === 'listings_manager' && a && /^[A-Za-z0-9:_-]{6,64}$/.test(a.id ?? '')) {
+    const raw = String(a.name ?? '');
+    const name = raw.includes('@') ? '' : raw.replace(/[^\p{L}\p{N} .,'&()-]/gu, '').trim().slice(0, 60);
+    return { id: a.id, name: name || 'SDA Home Choices', via: 'listings_manager' };
+  }
+  const listed = approvers.find((x) => x.notionUserId === a?.notionUserId) ?? null;
+  return listed ? { id: listed.notionUserId, name: listed.name, via: 'approvers_list' } : null;
+}

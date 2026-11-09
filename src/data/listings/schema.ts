@@ -212,14 +212,17 @@ export interface ApprovedSnapshot {
 export interface ComplianceConfig {
   victoria: {
     reviewedBy: string | null; reviewedAt: string | null; adviceReference: string | null; cleared: Record<PricingMode, boolean>;
-    /** Clearance for ONE listing and pricing mode, with its basis stated. It never clears any other listing. */
+    /**
+     * Clearance with its basis stated. `listingId` names ONE listing, or is "*" for a standing determination that covers every listing for that
+     * pricing mode (for example the business's position that its tenanted SDA investment sales are commercial sales). Both need the full record.
+     */
     determinations?: VictorianDetermination[];
   };
   basicClassification: { confirmedListingIds: string[] };
 }
 
 /**
- * A recorded determination for a single listing. `basis` is deliberately explicit: `internal_determination` is the
+ * A recorded determination for a single listing, or for all listings when `listingId` is "*". `basis` is deliberately explicit: `internal_determination` is the
  * business's own reasoned position and is NOT legal advice or a ruling; `external_advice` cites advice from a
  * licensed adviser or the regulator. Every field is required, so a clearance always names who, when and why.
  */
@@ -233,14 +236,15 @@ export interface VictorianDetermination {
   statement: string;
 }
 
-/** Is this listing cleared for its pricing mode in Victoria? Mode-wide clearance, or a complete per-listing determination. */
+/** Is this listing cleared for its pricing mode in Victoria? Mode-wide clearance, a complete standing determination ("*"), or a complete per-listing determination. */
 export const victorianClearance = (c: ComplianceConfig | undefined, listingId: string, mode: PricingMode): { cleared: boolean; basis?: string } => {
   if (!c) return { cleared: false };
   if (c.victoria.cleared[mode]) return { cleared: true, basis: 'mode-wide clearance' };
-  const d = (c.victoria.determinations ?? []).find((x) => x.listingId === listingId && x.pricingMode === mode);
+  const all = c.victoria.determinations ?? [];
+  const d = all.find((x) => x.listingId === listingId && x.pricingMode === mode) ?? all.find((x) => x.listingId === '*' && x.pricingMode === mode);
   const complete = !!d && [d.recordedBy, d.recordedAt, d.reference, d.statement].every((v) => typeof v === 'string' && v.trim().length >= 3)
     && (d.basis === 'internal_determination' || d.basis === 'external_advice');
-  return complete ? { cleared: true, basis: d!.basis } : { cleared: false };
+  return complete ? { cleared: true, basis: d!.listingId === '*' ? `standing ${d!.basis}` : d!.basis } : { cleared: false };
 };
 
 export interface Approver { notionUserId: string; name: string; githubHandle?: string }
