@@ -13,7 +13,8 @@ How a listing goes live, and what protects the live site. English on purpose: it
 8. Only then does it report `finished: succeeded`, which is the single signal the app turns into **Live**.
 
 ## Failure and retries
-- On any failure before the merge the pull request is closed and the branch deleted. `main`, and so the live site, is untouched.
+- A failure BEFORE the merge closes the pull request and deletes the branch: `main`, and so the live site, is untouched.
+- A failure AFTER the merge (deployment or live check) cannot undo the merge: the change is on `main`. The job reports `merged: true` and the merge commit, the app shows "merged, not yet confirmed live" (never Live), and publishing again resumes from the merge and only re-checks the deployment and the live site. Vercel keeps serving the previous production deployment until a new one succeeds.
 - Rerunning is safe: an existing branch and pull request are reused; if the file is already on `main` the job goes straight to deployment and live checks.
 - Logs of this public repository carry step names only: never listing text, prices or internal values.
 
