@@ -37,6 +37,8 @@ const appUrl = (process.env.LISTINGS_APP_URL ?? '').replace(/\/$/, ''); const se
 
 const log = (m) => console.log(`[publish-job] ${m}`);
 const REAL = REAL_MODES.includes(mode ?? '');
+// once the pull request has merged the change IS on main: every later failure must say so, and a rerun resumes from the merge
+const after = { merged: false, mergeCommit: null };
 if (!JOB_ID_RE.test(jobId ?? '') || !PUBLIC_ID_RE.test(publicId ?? '') || !MODES.includes(mode ?? '')) {
   // a mode that is not enabled is refused before anything runs; the report below needs a valid job id to be accepted
   console.error('[publish-job] invalid arguments (or an unknown mode)');
@@ -82,12 +84,12 @@ async function publishReal({ snapshot, checks, resumed }) {
   let pr = null; let mergeSha;
   try {
     if (resumed) {
-      mergeSha = await mainHead(gh);
+      mergeSha = await mainHead(gh); after.merged = true; after.mergeCommit = mergeSha;
       await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha });
     } else {
       log('opening the publication pull request');
       const opened = await openPublicationPr({ gh, snapshot, slug, jobId, mode });
-      if (opened.alreadyOnMain) { mergeSha = await mainHead(gh); await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha }); } else {
+      if (opened.alreadyOnMain) { mergeSha = await mainHead(gh); after.merged = true; after.mergeCommit = mergeSha; await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha }); } else {
         pr = opened;
         await report('pull_request', 'ok', { number: pr.prNumber, url: pr.prUrl, files: 1 });
         log('waiting for the required check');
@@ -98,6 +100,7 @@ async function publishReal({ snapshot, checks, resumed }) {
         log('merging');
         const m = await mergePr({ gh, prNumber: pr.prNumber, headSha: pr.headSha, title: `${mode === 'update' ? 'Update' : 'Publish'} ${slug} (version ${snapshot.version}) (#${pr.prNumber})` });
         mergeSha = m.sha; pr = null; // merged: nothing to clean up
+        after.merged = true; after.mergeCommit = mergeSha;
         await report('merge', 'ok', { sha: mergeSha });
       }
     }
@@ -252,6 +255,8 @@ async function main() {
 
 main().catch(async (e) => {
   log(`failed: ${e.code ?? 'error'}`);
-  await report('finished', 'failed', { code: e.code ?? 'error', message: String(e.message ?? e).slice(0, 300), ...(e.problems ? { problems: e.problems } : {}) });
+  // honest state: after the merge the change is on main even though the job failed; the app must not call it untouched
+  const msg = after.merged ? `The change is merged into the website but could not be confirmed live (${String(e.message ?? e).slice(0, 200)}). Run publish again to re-check; nothing needs to be redone.` : String(e.message ?? e).slice(0, 300);
+  await report('finished', 'failed', { code: e.code ?? 'error', message: msg, ...(after.merged ? { merged: true, mergeCommit: after.mergeCommit } : {}), ...(e.problems ? { problems: e.problems } : {}) });
   process.exit(1);
 });
