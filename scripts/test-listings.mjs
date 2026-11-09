@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { prepareFolder, readAccentPalette, snapToAccent, verifyFolder } from './prepare-listing-photos.mjs';
-import { checkManifest, overlayPage, parity, sign, signedHeaders, verifySignature, withRetry } from './lib/publish-job.mjs';
+import { approverFor, checkManifest, overlayPage, parity, sign, signedHeaders, verifySignature, withRetry } from './lib/publish-job.mjs';
 
 const L = await loadTs();
 const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
@@ -923,6 +923,20 @@ section('publication job started by the internal app (dry run only in this relea
     let k = 0; let gaveUp = false;
     try { await withRetry(async () => { k += 1; throw new Error('down'); }, { attempts: 3, sleep: async () => {} }); } catch { gaveUp = true; }
     t('retrying gives up after the configured attempts', gaveUp && k === 3);
+  }
+  {
+    const det = (over = {}) => ({ listingId: '*', pricingMode: 'contact_agent', basis: 'internal_determination', recordedBy: 'Owner', recordedAt: '2026-11-09', reference: 'https://example.test/reference', statement: 'Standing position recorded for the test.', ...over });
+    const cfg = (list) => ({ victoria: { reviewedBy: null, reviewedAt: null, adviceReference: null, cleared: { asking_price: false, price_guide: false, eoi: false, contact_agent: false }, determinations: list }, basicClassification: { confirmedListingIds: [] } });
+    t('a complete standing determination ("*") clears every listing for that pricing mode only', L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && L.victorianClearance(cfg([det()]), 'lst_bbbbbbbbbb', 'contact_agent').cleared && !L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'asking_price').cleared && !L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'eoi').cleared);
+    t('a standing determination still needs the full record and states that it is standing', !L.victorianClearance(cfg([det({ statement: '' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && !L.victorianClearance(cfg([det({ basis: 'hunch' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && L.victorianClearance(cfg([det()]), 'lst_aaaaaaaaaa', 'contact_agent').basis === 'standing internal_determination');
+    t('the default is unchanged: nothing is cleared without a recorded determination, and a per-listing one never clears another listing', !L.victorianClearance(cfg([]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && !L.victorianClearance(cfg([det({ listingId: 'lst_cccccccccc' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared && L.victorianClearance(cfg([det({ listingId: 'lst_aaaaaaaaaa' })]), 'lst_aaaaaaaaaa', 'contact_agent').cleared);
+    t('the live compliance file still clears nothing by default', JSON.parse(rd('src/data/listings/compliance.json')).victoria.determinations.every((d) => d.listingId !== '*'));
+    const p = { authority: 'listings_manager', approver: { id: 'app-0123456789ab', name: 'Ali Example' } };
+    t('approval from the Listings Manager is the authority: the id and display name come from the signed payload', JSON.stringify(approverFor(p, [])) === JSON.stringify({ id: 'app-0123456789ab', name: 'Ali Example', via: 'listings_manager' }));
+    t('the public approver name is never an email address, never markup, and has a default', approverFor({ ...p, approver: { id: 'app-0123456789ab', name: 'ali@sdahomechoices.com.au' } }, []).name === 'SDA Home Choices' && approverFor({ ...p, approver: { id: 'app-0123456789ab', name: '<b>Ali</b>' } }, []).name === 'bAlib' && approverFor({ ...p, approver: { id: 'app-0123456789ab' } }, []).name === 'SDA Home Choices');
+    t('an unsigned-looking or malformed approver is not accepted as the Listings Manager', approverFor({ authority: 'listings_manager', approver: { id: 'x' } }, []) === null && approverFor({ authority: 'someone_else', approver: { id: 'app-0123456789ab' } }, []) === null && approverFor({}, []) === null);
+    t('older payloads fall back to the Notion approvers list', approverFor({ approver: { notionUserId: 'u-1' } }, [{ notionUserId: 'u-1', name: 'Listed' }])?.via === 'approvers_list' && approverFor({ approver: { notionUserId: 'u-2' } }, [{ notionUserId: 'u-1', name: 'Listed' }]) === null);
+    t('the job script takes approval from approverFor and reports it as the check', /approverFor\(payload, approvers\)/.test(rd('scripts/listings-publish-job.mjs')) && /approved_in_listings_manager/.test(rd('scripts/listings-publish-job.mjs')) && !/approver_authorised/.test(rd('scripts/listings-publish-job.mjs')));
   }
   const wf = rd('.github/workflows/publish-listing.yml');
   const job = rd('scripts/listings-publish-job.mjs');

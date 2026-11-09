@@ -21,7 +21,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
-import { JOB_ID_RE, MODES, PUBLIC_ID_RE, checkManifest, overlayPage, parity, signedHeaders, withRetry } from './lib/publish-job.mjs';
+import { JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, overlayPage, parity, signedHeaders, withRetry } from './lib/publish-job.mjs';
 
 const argv = process.argv.slice(2);
 const val = (k) => { const i = argv.indexOf(k); return i > -1 ? argv[i + 1] : undefined; };
@@ -80,18 +80,18 @@ async function main() {
   const dataDir = join(repoRoot, 'src/data/listings');
   const jsonDir = (d) => (existsSync(join(dataDir, d)) ? readdirSync(join(dataDir, d)).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(join(dataDir, d, f), 'utf8'))) : []);
   const approvers = JSON.parse(readFileSync(join(dataDir, 'approvers.json'), 'utf8')).approvers;
-  const requested = payload.approver?.notionUserId;
-  const approver = approvers.find((a) => a.notionUserId === requested) ?? null;
-  const asApprover = approver ?? approvers[0] ?? null; // dry run only: reports honestly whether the requester is authorised
+  // approval comes from the Listings Manager (signed request, Publisher in the app's staff list); the Notion approvers list is the fallback for older payloads
+  const approver = approverFor(payload, approvers);
+  const authorised = approver ? [approver.id] : approvers.map((x) => x.notionUserId);
   const compliance = JSON.parse(readFileSync(join(dataDir, 'compliance.json'), 'utf8'));
 
   log('running the existing publication engine on the approved content');
-  const overlay = overlayPage(page, payload, asApprover ? { notionUserId: asApprover.notionUserId, name: asApprover.name } : null);
+  const overlay = overlayPage(page, payload, approver ? { notionUserId: approver.id, name: approver.name } : null);
   const actions = await L.propose({
     pages: [overlay],
     previous: new Map(jsonDir('approved').map((s) => [s.listingId, s])),
     withdrawn: new Set(jsonDir('withdrawn').map((w) => w.listingId)),
-    approvers: approvers.map((a) => a.notionUserId),
+    approvers: authorised,
     compliance,
     mediaBase,
     getManifest: async () => payload.manifest, // the photographs stay private: no public URL is read or written
@@ -99,7 +99,7 @@ async function main() {
   const action = actions.find((a) => a.id === publicId);
   const issues = action?.issues ?? [];
   const checks = [
-    { name: 'approver_authorised', ok: Boolean(approver), note: approver ? 'The requester is on the website approvers list.' : 'The requester is not on src/data/listings/approvers.json (a pull request by the code owner adds them). Needed before a real publication.' },
+    { name: 'approved_in_listings_manager', ok: Boolean(approver), note: approver ? 'Approved in the Listings Manager by a Publisher (signed request).' : 'No approval accompanied the request.' },
   ];
   if (!action || !action.snapshot) {
     await report('engine', 'failed', { kind: action?.kind ?? 'none', issues, checks });
