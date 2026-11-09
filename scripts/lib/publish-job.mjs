@@ -4,7 +4,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export const PUBLIC_ID_RE = /^lst_[a-f0-9]{10}$/;
 export const JOB_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export const MODES = ['dry_run'];
+export const MODES = ['dry_run', 'publish', 'update'];
+export const REAL_MODES = ['publish', 'update'];
 
 /* ---- request signing (shared secret between this repository's Actions and the internal app) ---- */
 export const sign = (secret, timestamp, body) => createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');

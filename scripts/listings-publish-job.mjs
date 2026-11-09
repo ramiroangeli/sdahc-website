@@ -2,25 +2,32 @@
 /*
   Publication job started by the internal Listings Manager (workflow .github/workflows/publish-listing.yml).
 
-    node scripts/listings-publish-job.mjs --job <uuid> --public-id <lst_...> --mode dry_run
+    node scripts/listings-publish-job.mjs --job <uuid> --public-id <lst_...> --mode dry_run|publish|update
 
   It reuses the EXISTING engine: the same propose() that listings-sync uses, the same safety guards and compliance gates, the same
   test suite, the same build and the same dist privacy scan. It adds only the plumbing around them.
 
-  DRY RUN (the only mode enabled in this release). It proves, without changing anything anywhere, that the approved draft WOULD publish:
+  DRY RUN. It proves, without changing anything anywhere, that the approved draft WOULD publish:
     - nothing is written to Notion, nothing is committed or pushed, no pull request is opened, no image is copied to the public store
     - the approved content comes from the app (signed request), the internal fields from the real Notion row (read only token)
     - the proposed snapshot must say exactly what was approved (parity check)
     - the site test suite, a production build with the snapshot, and the privacy scan of the output must pass
+  PUBLISH / UPDATE (real publication). After the same checks it: confirms the approved images are on the public media origin, opens a pull request
+  that changes ONLY src/data/listings/approved/<slug>.json, waits for the required CI check on that exact commit, merges it, waits for the Vercel
+  Production deployment and then proves the live listing page, every image and the catalogue. It reports "finished: succeeded" (the only signal the
+  app turns into Live) only after that proof. On any failure the pull request is closed and the branch deleted, so main and the live site are untouched.
   Progress and the result go back to the app over a signed request. This script prints step names only: never listing text, prices or
   internal values, because Actions logs of a public repository are public.
 
   Environment: LISTINGS_APP_URL, LISTINGS_CALLBACK_SECRET, NOTION_TOKEN, NOTION_PROPERTIES_DATA_SOURCE_ID, LISTINGS_MEDIA_BASE_URL
+  Real modes also: GITHUB_TOKEN, GITHUB_REPOSITORY, LISTINGS_SITE_URL (optional GITHUB_API_URL for rehearsals)
 */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
+import { REAL_MODES } from './lib/publish-job.mjs';
+import { REQUIRED_CHECK, abandon, githubClient, mainHead, mergePr, openPublicationPr, verifyLive, waitForChecks, waitForDeployment } from './lib/publish-git.mjs';
 import { JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, overlayPage, parity, signedHeaders, withRetry } from './lib/publish-job.mjs';
 
 const argv = process.argv.slice(2);
@@ -29,9 +36,10 @@ const jobId = val('--job'); const publicId = val('--public-id'); const mode = va
 const appUrl = (process.env.LISTINGS_APP_URL ?? '').replace(/\/$/, ''); const secret = process.env.LISTINGS_CALLBACK_SECRET ?? '';
 
 const log = (m) => console.log(`[publish-job] ${m}`);
+const REAL = REAL_MODES.includes(mode ?? '');
 if (!JOB_ID_RE.test(jobId ?? '') || !PUBLIC_ID_RE.test(publicId ?? '') || !MODES.includes(mode ?? '')) {
   // a mode that is not enabled is refused before anything runs; the report below needs a valid job id to be accepted
-  console.error('[publish-job] invalid arguments (or a mode that is not enabled in this release)');
+  console.error('[publish-job] invalid arguments (or an unknown mode)');
   if (JOB_ID_RE.test(jobId ?? '') && appUrl && secret) await report('finished', 'failed', { code: 'mode_not_enabled', message: 'This mode is not enabled in this release.' }).catch(() => {});
   process.exit(2);
 }
@@ -51,8 +59,87 @@ async function call(method, path, bodyObj) {
 async function report(step, status, detail) {
   try { await call('POST', '/api/listings/publish-callback', { jobId, step, status, detail: detail ?? null }); } catch (e) { log(`could not report ${step}: ${e.message}`); }
 }
-const run = (cmd, args, extraEnv = {}) => spawnSync(cmd, args, { cwd: repoRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, ...extraEnv } });
+// the tests and the build never see the write-capable GitHub token
+const childEnv = () => { const e = { ...process.env }; delete e.GITHUB_TOKEN; return e; };
+const run = (cmd, args, extraEnv = {}) => spawnSync(cmd, args, { cwd: repoRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...childEnv(), ...extraEnv } });
 const tail = (r) => `${r.stdout ?? ''}${r.stderr ?? ''}`.split('\n').slice(-12).join('\n').slice(0, 1500);
+
+/** The real half: public media present, one-file pull request, required checks, merge, deployment, live proof. */
+async function publishReal({ snapshot, checks, resumed }) {
+  const token = process.env.GITHUB_TOKEN; const repository = process.env.GITHUB_REPOSITORY; const siteUrl = process.env.LISTINGS_SITE_URL || 'https://sdahomechoices.com.au';
+  if (!token || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? '')) throw Object.assign(new Error('GitHub access is not available to this run'), { code: 'not_configured' });
+  const gh = githubClient({ token, repo: repository, api: process.env.GITHUB_API_URL || 'https://api.github.com' });
+  const slug = snapshot.content.slug;
+  const mediaBase = process.env.LISTINGS_MEDIA_BASE_URL.replace(/\/$/, '');
+  const photos = snapshot.content.photos.map((p) => ({ id: p.id, src: [...p.variants].sort((a, b) => b.w - a.w)[0].src }));
+
+  // 1. the approved images must already be on the public media origin (the app puts them there before it starts this job)
+  const media = await verifyMedia({ mediaBase, publicId, manifest: snapshot.content.photos });
+  checks.push({ name: 'public_media', ok: media.ok, note: media.note });
+  await report('media', media.ok ? 'ok' : 'failed', { checks, ...(media.ok ? {} : { issues: [media.note] }) });
+  if (!media.ok) throw Object.assign(new Error(media.note), { code: 'media_missing', reported: true });
+
+  let pr = null; let mergeSha;
+  try {
+    if (resumed) {
+      mergeSha = await mainHead(gh);
+      await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha });
+    } else {
+      log('opening the publication pull request');
+      const opened = await openPublicationPr({ gh, snapshot, slug, jobId, mode });
+      if (opened.alreadyOnMain) { mergeSha = await mainHead(gh); await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha }); } else {
+        pr = opened;
+        await report('pull_request', 'ok', { number: pr.prNumber, url: pr.prUrl, files: 1 });
+        log('waiting for the required check');
+        const c = await waitForChecks({ gh, branch: pr.branch, headSha: pr.headSha });
+        checks.push({ name: 'required_check', ok: c.ok, note: c.ok ? `The required check (${REQUIRED_CHECK}) passed on the exact commit.` : `The required check did not pass (${c.conclusion}).` });
+        await report('checks', c.ok ? 'ok' : 'failed', { checks, url: c.url ?? null });
+        if (!c.ok) throw Object.assign(new Error('the required check did not pass'), { code: 'checks_failed', reported: true });
+        log('merging');
+        const m = await mergePr({ gh, prNumber: pr.prNumber, headSha: pr.headSha, title: `${mode === 'update' ? 'Update' : 'Publish'} ${slug} (version ${snapshot.version}) (#${pr.prNumber})` });
+        mergeSha = m.sha; pr = null; // merged: nothing to clean up
+        await report('merge', 'ok', { sha: mergeSha });
+      }
+    }
+  } catch (e) {
+    if (pr) await abandon({ gh, prNumber: pr.prNumber, branch: pr.branch });
+    if (!e.reported) await report(e.code === 'merge_refused' ? 'merge' : 'pull_request', 'failed', { issues: [String(e.message).slice(0, 200)] });
+    throw Object.assign(e, { reported: true });
+  }
+
+  log('waiting for the Production deployment');
+  const dep = await waitForDeployment({ gh, sha: mergeSha });
+  const depOk = dep === null || dep.state === 'success';
+  checks.push({ name: 'deployment', ok: depOk, note: dep === null ? 'No deployment record was found; the live site checks below decide.' : dep.state === 'success' ? 'The Vercel Production deployment succeeded.' : `The Vercel Production deployment ended as ${dep.state}.` });
+  await report('deploy', depOk ? 'ok' : 'failed', { checks });
+  if (!depOk) throw Object.assign(new Error('the production deployment did not succeed'), { code: 'deploy_failed', reported: true });
+
+  log('checking the live site');
+  const live = await verifyLive({ siteUrl, slug, title: snapshot.content.title, photos });
+  for (const c of live.checks) checks.push({ name: `live_${c.name}`, ok: c.ok, note: c.note });
+  await report('verify', live.ok ? 'ok' : 'failed', { checks, url: live.url });
+  if (!live.ok) throw Object.assign(new Error('the live site does not yet serve the listing correctly'), { code: 'verify_failed', reported: true });
+
+  await report('finished', 'succeeded', { dryRun: false, live: true, slug, kind: mode, version: snapshot.version, contentHash: snapshot.contentHash, url: live.url, mergeCommit: mergeSha, photos: photos.length, checks });
+  log('published and verified');
+}
+
+/** The prepared images and manifest are on the public media origin, as WebP, in the approved order. */
+async function verifyMedia({ mediaBase, publicId: id, manifest }) {
+  try {
+    const m = await fetch(`${mediaBase}/${id}/manifest.json?v=${Date.now()}`, { headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(20000) });
+    if (!m.ok) return { ok: false, note: 'The public image manifest is not in place yet.' };
+    const body = await m.json();
+    if (JSON.stringify((body.photos ?? []).map((p) => p.id)) !== JSON.stringify(manifest.map((p) => p.id))) return { ok: false, note: 'The public image manifest does not list the approved photographs in the approved order.' };
+    let n = 0;
+    for (const p of manifest) for (const v of p.variants) {
+      const r = await fetch(v.src, { signal: AbortSignal.timeout(20000) });
+      if (!(r.status === 200 && /image\/webp/i.test(r.headers.get('content-type') ?? ''))) return { ok: false, note: 'An approved image is missing from the public store.' };
+      await r.arrayBuffer(); n += 1;
+    }
+    return { ok: true, note: `All ${manifest.length} photographs (${n} image files) are on the public store in the approved order.` };
+  } catch { return { ok: false, note: 'The public image store could not be checked.' }; }
+}
 
 async function main() {
   await report('started', 'running');
@@ -96,7 +183,11 @@ async function main() {
     mediaBase,
     getManifest: async () => payload.manifest, // the photographs stay private: no public URL is read or written
   });
-  const action = actions.find((a) => a.id === publicId);
+  let action = actions.find((a) => a.id === publicId);
+  const previousSnap = jsonDir('approved').find((x) => x.listingId === publicId) ?? null;
+  // a rerun after the pull request already merged: main holds exactly the approved content, so there is nothing new to propose
+  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, payload).length === 0;
+  if (resumed) action = { kind: 'already_published', id: publicId, snapshot: previousSnap, issues: [] };
   const issues = action?.issues ?? [];
   const checks = [
     { name: 'approved_in_listings_manager', ok: Boolean(approver), note: approver ? 'Approved in the Listings Manager by a Publisher (signed request).' : 'No approval accompanied the request.' },
@@ -105,7 +196,13 @@ async function main() {
     await report('engine', 'failed', { kind: action?.kind ?? 'none', issues, checks });
     throw Object.assign(new Error(`the engine would not publish this listing (${action?.kind ?? 'no result'}, ${issues.length} issue(s))`), { code: 'engine_refused', reported: true });
   }
-  checks.push({ name: 'engine_accepts', ok: true, note: `Proposed ${action.kind} v${action.snapshot.version}.` });
+  const wrongKind = REAL && !resumed && ((mode === 'publish' && action.kind !== 'new') || (mode === 'update' && action.kind !== 'version'));
+  if (wrongKind) {
+    const why = mode === 'publish' ? 'This listing is already published: use an update.' : 'This listing has not been published yet: use a first publication.';
+    await report('engine', 'failed', { kind: action.kind, issues: [why], checks });
+    throw Object.assign(new Error(why), { code: 'wrong_mode', reported: true });
+  }
+  checks.push({ name: 'engine_accepts', ok: true, note: resumed ? 'This exact content is already on the main branch.' : `Proposed ${action.kind} v${action.snapshot.version}.` });
   const problems = parity(action.snapshot.content, payload);
   checks.push({ name: 'matches_approved_draft', ok: problems.length === 0, note: problems.length ? `Differs from the approved draft: ${problems.join(', ')}.` : 'The proposed public content is exactly what was approved.' });
   if (problems.length) {
@@ -114,6 +211,12 @@ async function main() {
   }
   await report('engine', 'ok', { kind: action.kind, version: action.snapshot.version, slug: action.snapshot.content.slug, contentHash: action.snapshot.contentHash, checks });
 
+  if (resumed) {
+    // main already contains this snapshot and passed its checks to get there: go straight to proving the live site
+    await report('tests', 'ok', { checks: [{ name: 'site_tests', ok: true, note: 'Already merged: the required checks passed before the merge.' }] });
+    await report('build', 'ok', { checks: [{ name: 'build', ok: true, note: 'Already merged: the production build ran at deployment.' }] });
+    return publishReal({ snapshot: action.snapshot, checks, resumed: true });
+  }
   log('running the site test suite');
   const tests = run('npm', ['run', 'test:listings']);
   const testsOk = tests.status === 0;
@@ -141,6 +244,7 @@ async function main() {
   await report('build', pageBuilt && inSitemap && privacyOk ? 'ok' : 'failed', { checks });
   if (!pageBuilt || !inSitemap || !privacyOk) throw Object.assign(new Error('the build or the privacy scan failed'), { code: 'build_failed', reported: true });
 
+  if (REAL) return publishReal({ snapshot: action.snapshot, checks, resumed: false });
   const result = { dryRun: true, slug, kind: action.kind, version: action.snapshot.version, contentHash: action.snapshot.contentHash, photos: payload.manifest.photos.length, checks, wouldBlock: checks.filter((c) => !c.ok).map((c) => c.name) };
   await report('finished', 'succeeded', result);
   log('dry run finished: nothing was changed');
