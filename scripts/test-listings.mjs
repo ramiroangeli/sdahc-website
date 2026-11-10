@@ -800,11 +800,7 @@ t('the build-time loader never touches Notion or the network', !/notion/i.test(l
 t('no page, component or layout imports the Notion adapter', siteFiles.every((f) => !/listings\/(notion|propose)/.test(rd(f))));
 const pkg = JSON.parse(rd('package.json'));
 t('the build command is unchanged and no build hook calls Notion', pkg.scripts.build === 'astro build' && !('prebuild' in pkg.scripts) && !('postbuild' in pkg.scripts));
-const wf = stripYaml(rd('.github/workflows/listings-sync.yml'));
-t('the workflow is manual only', /workflow_dispatch/.test(wf) && !/^\s*schedule:/m.test(wf) && !/repository_dispatch/.test(wf) && !/^\s*push:/m.test(wf));
-t('the workflow never writes to main or triggers a deployment', !/HEAD:main/.test(wf) && !/push origin main/.test(wf) && !/deploy.?hook/i.test(wf) && !/curl/.test(wf) && /refs\/heads\/\$\{\{ steps\.branch\.outputs\.name \}\}/.test(wf));
-t('the workflow proposes and opens a pull request instead of publishing', /--propose --write/.test(wf) && /gh pr create/.test(wf));
-t('only the three known workflows exist, and the publish workflow cannot deploy by itself (no deploy hook, no Vercel call)', readdirSync(join(repoRoot, '.github/workflows')).sort().join() === 'ci.yml,listings-sync.yml,publish-listing.yml' && !/deploy.?hook|curl|vercel/i.test(stripYaml(rd('.github/workflows/publish-listing.yml'))));
+t('only the two known workflows exist (the retired Propose listing snapshot workflow is gone), and the publish workflow cannot deploy by itself (no deploy hook, no Vercel call)', readdirSync(join(repoRoot, '.github/workflows')).sort().join() === 'ci.yml,publish-listing.yml' && !/deploy.?hook|curl|vercel/i.test(stripYaml(rd('.github/workflows/publish-listing.yml'))));
 t('listing files are protected by code owners', /approved\//.test(rd('.github/CODEOWNERS')) && /withdrawn\//.test(rd('.github/CODEOWNERS')));
 t('Notion credentials live in a git-ignored env file', /^\.env\.listings$/m.test(rd('.gitignore')) && /^\.env$/m.test(rd('.gitignore')));
 const secretRe = /\b(secret_[A-Za-z0-9]{30,}|ntn_[A-Za-z0-9]{30,}|re_[A-Za-z0-9]{20,}|Bearer\s+[A-Za-z0-9._-]{30,})\b/;

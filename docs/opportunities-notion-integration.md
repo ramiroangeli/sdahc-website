@@ -86,6 +86,5 @@ Mientras hay un borrador pendiente, sigue publicada la última versión aprobada
 
 ## 6. Qué queda inerte
 
-- El workflow `listings-sync.yml` es solo `workflow_dispatch`, exige escribir `PROPOSE`, empuja únicamente a una rama `listing/...` y abre un PR. No tiene `schedule`, `repository_dispatch`, `push`, Deploy Hook ni `curl`. Una prueba lo comprueba.
-- Es el único workflow del repositorio.
+- El workflow `listings-sync.yml` (Propose listing snapshot) se retiró. Quedan dos workflows: `ci.yml` (el check requerido `site-checks`) y `publish-listing.yml` (la publicación desde el Listings Manager, sin Deploy Hook ni `curl`; una prueba lo comprueba).
 - No hay ninguna llamada a Notion en el build ni en el cargador de datos (probado).
