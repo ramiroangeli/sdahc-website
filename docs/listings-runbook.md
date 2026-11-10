@@ -56,7 +56,7 @@ Para revisar **un solo registro sin credenciales**, exporta la página de Notion
 7. **El revisor** (código propietario) mira la vista previa de Vercel (con `LISTINGS_MEDIA_BASE_URL` definida también en Preview) y el diff. Aprobar y fusionar el PR **es la aprobación de publicación**. Después se despliega `main`.
 8. Si el PR no se fusiona, no ocurre nada. Si Notion falla o la sincronización falla, no se propone nada.
 
-Alternativa sin local: el workflow manual `Propose listing snapshot` (Actions, "Run workflow", escribir `PROPOSE`) hace los pasos 3 a 6 en una rama `listing/...` y abre el PR. Necesita los secretos de Notion en GitHub y no despliega nada.
+El workflow manual `Propose listing snapshot` se retiró: las listings se publican desde el Listings Manager (flujo normal) y, solo para casos excepcionales, con estos pasos locales. El comando `npm run listings:withdraw` y el resto de la CLI siguen disponibles.
 
 ## 4. Fotografías (SharePoint a almacenamiento público)
 
