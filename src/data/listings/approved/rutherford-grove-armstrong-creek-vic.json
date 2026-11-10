@@ -1,20 +1,22 @@
 {
   "listingId": "lst_454f05d21f",
-  "version": 1,
-  "approvedBy": "Ramiro - SDAHC account",
-  "approvedById": "2e1d872b-594c-8122-be15-00028acc4f13",
-  "approvedAt": "2026-11-05T12:29:09.094Z",
+  "version": 2,
+  "approvedBy": "SDA Home Choices",
+  "approvedById": "app-cc8a4a7b33e7",
+  "approvedAt": "2026-11-10T13:21:59.214Z",
   "firstPublishedAt": "2026-11-05T12:29:09.094Z",
   "commercialStatus": "available",
   "featured": false,
-  "sourceEditedAt": "2026-11-05T12:25:00.000Z",
-  "contentHash": "bcde06cde37b874835b3d061966b8ff0c590258073e3efebbb6f80aaa538defa",
+  "sourceEditedAt": "2026-11-08T04:37:00.000Z",
+  "contentHash": "f62abffb94c90bbf534a8138ab998ff5152adee32626af3d66ada67a6ede0eaf",
   "content": {
     "slug": "rutherford-grove-armstrong-creek-vic",
     "type": "property",
-    "title": "Established Improved Liveability SDA Investment",
+    "title": "Armstrong Creek VIC | IL SDA Investment",
     "description": [
-      "An established Improved Liveability (IL) Specialist Disability Accommodation investment in Armstrong Creek, in the Geelong region. The property has three participant places plus Onsite Overnight Assistance (OOA) and has been enrolled with the NDIA since August 2021. Contact SDA Home Choices for further investment information."
+      "An established Improved Liveability (IL) Specialist Disability Accommodation investment in Armstrong Creek, in the Geelong region.",
+      "The property has 3 participant places + Onsite Overnight Assistance (OOA) and has been enrolled with the NDIA since August 2021.",
+      "Contact SDA Home Choices for further investment information."
     ],
     "address": {
       "street": "Rutherford Grove",
