@@ -766,7 +766,9 @@ section('doctor, delivery test, photo gate and an end-to-end CLI run against a l
   t('--propose --write produces the first snapshot for the pilot property', wr.code === 0 && existsSync(snapFile));
   const snapJson = existsSync(snapFile) ? JSON.parse(rf(snapFile, 'utf8')) : {};
   t('the snapshot has the public address, a hashed id and the authorised approver', snapJson.listingId === PID && snapJson.content?.address?.street === 'Rutherford Grove' && snapJson.content?.address?.postcode === '3217' && snapJson.approvedById === 'user-steve' && snapJson.version === 1 && L.contentHash(snapJson.content) === snapJson.contentHash);
-  t('the snapshot contains no house number, price, yield, CRM description, SharePoint link or internal id', !/1\/10|695|6\.5|vendor motivation|sharepoint|2e2909c1/i.test(JSON.stringify(snapJson)));
+  // the PUBLIC content only, with word boundaries: the snapshot also holds a content hash and timestamps, whose random digits (for example "695" or "6.5")
+// made this assertion fail about one run in a few dozen. A leak of a price, house number or id would still be caught.
+  t('the snapshot contains no house number, price, yield, CRM description, SharePoint link or internal id', !/\b1\/10\b|\b695\b|\b6\.5\b|vendor motivation|sharepoint|2e2909c1/i.test(JSON.stringify(snapJson.content ?? {})) && !/2e2909c1|sharepoint/i.test(JSON.stringify(snapJson)));
   const reads = requests.filter((r) => r.path.startsWith('/v1/'));
   t('the whole run used only reads: GET, plus the data source query which reads', reads.every((r) => r.method === 'GET' || (r.method === 'POST' && /\/query$/.test(r.path))));
   t('every Notion request carried the pinned version and the token', reads.every((r) => r.version === '2026-03-11' && r.auth));
