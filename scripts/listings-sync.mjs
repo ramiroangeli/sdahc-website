@@ -11,15 +11,18 @@
     3. DEPLOYMENT        the normal Vercel deployment of main
 
   Commands (see docs/listings-runbook.md):
+    --doctor [--online]              check the local configuration without printing any secret: which variables
+                                     are set, whether the ids are valid, and with --online whether Notion accepts
+                                     the token and can read the data source (read only)
     --schema                         compare the real data source with what the adapter expects and print the
                                      exact Notion changes still needed (read only)
     --preflight <pageId>             publication readiness report for one Properties row
       --from-file page.json          ...from an exported page, with no Notion credentials
     --propose [--write]              build proposed snapshots from rows with a live status (dry run by default;
                                      --write refuses to run on main or master)
-    --withdraw <id|slug> --reason "..." --by "Name" [--dry-run]
-                                     hide a listing now, WITHOUT Notion (emergency withdrawal)
-    --reinstate <id>                 remove a withdrawal
+    --withdraw <id|slug> [--dry-run]  hide a listing now, WITHOUT Notion (emergency withdrawal). The file is committed to a PUBLIC
+                                     repository, so it never carries a reason or a name; record those privately (Listings Manager)
+    --reinstate <id>                 remove a withdrawal file (a manual administrative step through a reviewed pull request; the Listings Manager has no reinstate)
 
   A row is proposed only when: its status is Published, Under Offer or Sold; a named approver is set AND
   that person's Notion user id is on src/data/listings/approvers.json (default deny); it has a valid public
@@ -50,8 +53,9 @@ const mediaBase = process.env.LISTINGS_MEDIA_BASE_URL;
 
 const readJsonDir = (dir) =>
   existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => ({ file: f, data: JSON.parse(readFileSync(join(dir, f), 'utf8')) })) : [];
-const compliance = () => JSON.parse(readFileSync(join(repoRoot, 'src/data/listings/compliance.json'), 'utf8'));
-const approverIds = () => JSON.parse(readFileSync(join(repoRoot, 'src/data/listings/approvers.json'), 'utf8')).approvers.map((a) => a.notionUserId);
+// approvers.json and compliance.json live beside the data; LISTINGS_DATA_DIR (tests only) points all of it at a temporary folder
+const compliance = () => JSON.parse(readFileSync(join(dataDir, 'compliance.json'), 'utf8'));
+const approverIds = () => JSON.parse(readFileSync(join(dataDir, 'approvers.json'), 'utf8')).approvers.map((a) => a.notionUserId);
 const currentBranch = () => { try { return execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' }).trim(); } catch { return ''; } };
 
 const L = await loadTs();
@@ -60,18 +64,13 @@ const L = await loadTs();
 
 if (has('--withdraw')) {
   const target = val('--withdraw');
-  const reason = val('--reason');
-  const by = val('--by');
-  if (!target || !reason || !by) { console.error('usage: --withdraw <id|slug> --reason "..." --by "Name"'); process.exit(2); }
-  // this file is committed to a PUBLIC repository: the reason must be short and neutral
-  if (reason.length > 120 || /[^\s@]+@[^\s@]+\.[a-z]{2,}|\$\s?\d|(?:\+?61|\b0)[\s-]?[2-478](?:[\s-]?\d){8}\b/i.test(reason)) {
-    console.error('The reason is committed to a public repository. Keep it under 120 characters and leave out emails, phone numbers and amounts (for example: "vendor request" or "details changed").');
-    process.exit(2);
-  }
+  if (!target) { console.error('usage: --withdraw <id|slug> [--dry-run]'); process.exit(2); }
+  // the file is committed to a PUBLIC repository: no free-text reason and no person's name, ever. A --reason or --by given out of habit is NOT stored.
+  if (val('--reason') !== undefined || val('--by') !== undefined) console.log('Note: --reason and --by are not stored. The withdrawal file is public; record the reason and who acted privately (the Listings Manager audit trail or your own records).');
   const snap = readJsonDir(approvedDir).map((x) => x.data).find((s) => s.listingId === target || s.content.slug === target);
   if (!snap) { console.error(`No approved listing found for "${target}".`); process.exit(1); }
-  const w = { listingId: snap.listingId, withdrawnAt: new Date().toISOString(), withdrawnBy: by, reason };
-  console.log(`${has('--dry-run') ? 'Would withdraw' : 'Withdrawing'} ${snap.content.slug} (${snap.listingId}) as ${by}: ${reason}`);
+  const w = { listingId: snap.listingId, withdrawnAt: new Date().toISOString(), withdrawnBy: 'SDA Home Choices', reason: 'withdrawn' };
+  console.log(`${has('--dry-run') ? 'Would withdraw' : 'Withdrawing'} ${snap.content.slug} (${snap.listingId})`);
   if (!has('--dry-run')) {
     mkdirSync(withdrawnDir, { recursive: true });
     writeFileSync(join(withdrawnDir, `${snap.listingId}.json`), `${JSON.stringify(w, null, 2)}\n`);
@@ -101,6 +100,62 @@ if (has('--preflight') && has('--from-file')) {
   console.log(`Preflight (offline) for ${val('--preflight')}, public id ${L.publicIdFor(page.id)}\n`);
   printReport(L.readinessReport(page, { mediaBaseUrl: mediaBase, authorisedApproverIds: approverIds(), compliance: compliance() }));
   process.exit(0);
+}
+
+/* ---------------------------------------------------------------- doctor */
+
+if (has('--doctor')) {
+  const ok = (m) => console.log(`  ok       ${m}`);
+  const bad = (m) => { console.log(`  MISSING  ${m}`); failed = true; };
+  const info = (m) => console.log(`  info     ${m}`);
+  let failed = false;
+  console.log('Notion integration check. Nothing is printed that could be a secret, and nothing is changed.\n');
+
+  const tok = process.env.NOTION_TOKEN;
+  if (!tok) bad('NOTION_TOKEN is not set. Put it in .env.listings (git-ignored), never in a committed file.');
+  else if (!/^(ntn_|secret_)[A-Za-z0-9]{20,}$/.test(tok)) bad('NOTION_TOKEN is set but does not look like a Notion integration token (expected the ntn_ or secret_ prefix).');
+  else ok('NOTION_TOKEN is set and has the shape of a Notion integration token (value not shown)');
+
+  const dsRaw = process.env.NOTION_PROPERTIES_DATA_SOURCE_ID;
+  let cfgOk = null;
+  if (!dsRaw) bad('NOTION_PROPERTIES_DATA_SOURCE_ID is not set. Use the DATA SOURCE id, not the database id.');
+  else {
+    try {
+      cfgOk = L.readNotionConfig({ ...process.env, NOTION_TOKEN: tok || 'x' });
+      ok(`data source id is a valid UUID (${cfgOk.dataSourceId.slice(0, 8)}...) and is not the database id; collection:// would be converted`);
+    } catch (e) { bad(e.message); }
+  }
+  ok(`API version ${process.env.NOTION_API_VERSION || L.NOTION_VERSION}${process.env.NOTION_API_VERSION ? ' (overridden)' : ' (pinned in the repository)'}`);
+  if (process.env.LISTINGS_MEDIA_BASE_URL) ok('LISTINGS_MEDIA_BASE_URL is set'); else info('LISTINGS_MEDIA_BASE_URL is not set yet (needed to preflight photographs and to propose a listing)');
+  const approvers = approverIds();
+  if (approvers.length) ok(`${approvers.length} authorised approver(s) in approvers.json`); else info('approvers.json is empty: nobody can approve a listing yet');
+
+  if (has('--online')) {
+    if (!cfgOk || !tok) bad('--online needs a valid token and data source id first');
+    else {
+      try {
+        const client = new L.NotionReadClient(cfgOk);
+        await client.retrieveSelf();
+        ok('Notion accepted the token (GET /v1/users/me)');
+        const ds = await client.retrieveDataSource();
+        const c = L.checkDataSourceSchema(ds);
+        ok('the integration can read the data source (it is shared with the integration)');
+        if (c.isValidatedDatabase) ok('existing CRM properties are all present with the expected types');
+        else bad(`existing CRM properties do not match: ${[...c.missingCore.map((n) => `${n} missing`), ...c.wrongCoreType.map((w) => `${w.name} is ${w.actual}`)].join('; ')}. Is this the right "Properties" database?`);
+        if (c.toAdd.length) info(`${c.toAdd.length} Web properties still to create (run: npm run listings:schema)`); else ok('all Web properties exist');
+      } catch (e) { bad(`Notion check failed: ${e.message}`); }
+    }
+  } else if (cfgOk && tok) info('run with --online to ask Notion whether the token works and can read the data source');
+
+  if (failed) {
+    console.log(`
+Minimum setup (details: docs/listings-runbook.md, section 1):
+  1. Notion, Settings, Connections: create an INTERNAL integration with ONLY "Read content".
+  2. On the Properties database: ... menu, Connections, add that integration (only this database).
+  3. Create .env.listings with NOTION_TOKEN and NOTION_PROPERTIES_DATA_SOURCE_ID.
+  4. Run: npm run listings:doctor -- --online`);
+  }
+  process.exit(failed ? 1 : 0);
 }
 
 /* ---------------------------------------------------------------- Notion commands (read only) */
@@ -148,7 +203,8 @@ try {
   if (has('--propose')) {
     if (!mediaBase) throw new Error('LISTINGS_MEDIA_BASE_URL is required to propose listings.');
     if (write) {
-      const branch = currentBranch();
+      // the guard protects the real data directory; tests write to a temporary LISTINGS_DATA_DIR instead
+      const branch = process.env.LISTINGS_DATA_DIR ? 'test' : currentBranch();
       if (!branch || ['main', 'master'].includes(branch)) throw new Error(`Refusing to write snapshots on "${branch || 'an unknown branch'}". Create a review branch first: git switch -c listing/<slug>`);
     }
     // 1. verify the data source before trusting any row
@@ -183,7 +239,7 @@ try {
     process.exit(failed ? 1 : 0);
   }
 
-  console.error('usage: --schema | --preflight <pageId> [--from-file f] | --propose [--write] | --withdraw <id|slug> --reason --by | --reinstate <id>');
+  console.error('usage: --schema | --preflight <pageId> [--from-file f] | --propose [--write] | --withdraw <id|slug> | --reinstate <id>');
   process.exit(2);
 } catch (e) {
   // the message never contains the token or any header: NotionApiError carries only status and code

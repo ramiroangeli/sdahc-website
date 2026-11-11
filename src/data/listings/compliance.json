@@ -8,7 +8,31 @@
       "price_guide": false,
       "eoi": false,
       "contact_agent": false
-    }
+    },
+    "determinations": [
+      {
+        "listingId": "lst_454f05d21f",
+        "pricingMode": "contact_agent",
+        "basis": "internal_determination",
+        "recordedBy": "Ramiro - SDAHC account, recording the commercial approval confirmed by Steve and Ali",
+        "recordedAt": "2026-11-05",
+        "reference": "https://www.consumer.vic.gov.au/licensing-and-registration/estate-agents/running-your-business/underquoting-information-for-real-estate-agents",
+        "statement": "SDAHC internal business determination, not legal advice and not a statutory exemption ruling. The property is marketed as a tenanted SDA investment, is already advertised on realcommercial, and shows no price (Contact Agent). Consumer Affairs Victoria states that the residential underquoting and Property Price Statement rules do not apply to commercial property sales, while Australian Consumer Law obligations (false or misleading representations) continue to apply. The legal classification of this property has not been confirmed by a lawyer or by the regulator. Applies to this listing and this pricing mode only."
+      },
+      {
+        "listingId": "*",
+        "pricingMode": "contact_agent",
+        "basis": "internal_determination",
+        "recordedBy": "Ramiro - SDAHC account (code owner), recorded by merging the pull request that adds this entry; extends the position recorded for lst_454f05d21f on 2026-11-05",
+        "recordedAt": "2026-11-09",
+        "reference": "https://www.consumer.vic.gov.au/licensing-and-registration/estate-agents/running-your-business/underquoting-information-for-real-estate-agents",
+        "conditions": [
+          "sda_dwelling",
+          "no_price_indication"
+        ],
+        "statement": "SDAHC internal business determination. It is not legal advice and not a statutory exemption ruling. CLASS COVERED: sales of Specialist Disability Accommodation (SDA) dwellings that SDAHC markets to investors as tenanted, income-producing investments, advertised with no price (Contact Agent). BASIS: Consumer Affairs Victoria's underquoting information says the underquoting rules and the Property Price Statement apply to residential property sales and do not apply to rural, commercial and industrial property sales, and that the Australian Consumer Law applies to agents selling any of them. SDAHC's position is that a tenanted SDA investment sold to an investor for its income is a commercial sale, and it already holds a recorded position of that kind for one listing (lst_454f05d21f). NOT ESTABLISHED: the legal classification of SDA investment properties has not been confirmed by a lawyer or by the regulator; the CAV page does not address advertisements with no price or 'contact agent' and is not clear on the scope of its sale price disclosure and reserve price requirements; advertising a property on a commercial portal, or commercial approval of the marketing, is not evidence that any exemption applies. SDAHC accepts the residual risk. ENFORCED BY THE PUBLICATION ENGINE for every listing that relies on this entry: Contact Agent only (no price, range or qualifier is ever published), the public text must not indicate a price, and the property must be an SDA dwelling. NOT REMOVED: Australian Consumer Law obligations (no false or misleading statements), and any requirement that applies if a sale proves to be residential. Removing this entry by pull request stops publication of every listing that relies on it."
+      }
+    ]
   },
   "basicClassification": {
     "confirmedListingIds": []

@@ -5,7 +5,7 @@ import OpportunitiesHero from '../components/OpportunitiesHero.astro';
 import ListingsCatalogue from '../components/ListingsCatalogue.astro';
 import { getPublicListings } from '../data/listings';
 
-const { statesCovered } = data;
+const { statesCovered, jurisdictions } = data;
 const listings = getPublicListings();
 
 /*
@@ -13,7 +13,8 @@ const listings = getPublicListings();
   "100+" headline are QLD 76, VIC 39, SA 26, NSW 8, WA 3, ACT 1 (153 geocoded, roughly 220
   records in total). These counts fluctuate and include pipeline opportunities, so they are
   deliberately not broken out per state on the page. NT is claimed through a portfolio but
-  not yet confirmed in the records, so it is excluded from statesCovered for now.
+  not yet confirmed in the records, so it is excluded from statesCovered (used only for the hero's locked
+  cards). The pills below use the static `jurisdictions` list: service coverage, not stock.
 */
 
 // Reference images for the 3-up row. GENERIC reference photography only (accessible housing,
@@ -33,130 +34,132 @@ const refImages = [
 ];
 ---
 <BaseLayout title="SDA Investment Opportunities | SDA Home Choices" description="Explore available SDA properties and discover exclusive off-market Specialist Disability Accommodation investment opportunities. Register your buyer mandate or speak to us about selling." breadcrumbs={[{ name: 'Opportunities', path: '/opportunities/' }]}>
-  <OpportunitiesHero listings={listings} lockedStates={statesCovered.slice(0, 3)} />
+  <div class="opp-page">
+    <OpportunitiesHero listings={listings} lockedStates={statesCovered.slice(0, 3)} />
 
-  <!-- Available properties. Dark band directly under the dark hero, so the states band's existing
-       fade-in from navy still lines up. With no published listing it shows an empty state. -->
-  <ListingsCatalogue />
+    <!-- Available properties. With no published listing it shows an empty state. -->
+    <ListingsCatalogue />
 
-  <section class="section opp-states-band"><div class="wrap">
-    <div class="opp-states">
-      <p class="opp-states-caption">Active mandates and listings across six states and territories.</p>
-      <div class="opp-pills">
-        {statesCovered.map((s) => <span class="opp-pill">{s}</span>)}
-      </div>
-    </div>
-  </div></section>
-
-  <section class="section opp-why-band"><div class="wrap">
-    <h2 class="opp-heading">Why off-market</h2>
-    <div class="opp-why-grid">
-      <div class="opp-why-card">
-        <span class="card-mark"></span>
-        <h3>A curated, confidential market</h3>
-        <p>Most SDA transactions of scale happen off-market. We match qualified buyers to opportunities without public listing, protecting price and tenant stability.</p>
-      </div>
-      <div class="opp-why-card">
-        <span class="card-mark"></span>
-        <h3>Specialist diligence built in</h3>
-        <p>Every opportunity is assessed against SDA design category, enrolment, tenancy and compliance, so you are evaluating real investable positions, not raw listings.</p>
-      </div>
-      <div class="opp-why-card">
-        <span class="card-mark"></span>
-        <h3>Access to the full picture</h3>
-        <p>Pricing is by EOI and detailed Information Memoranda are released under NDA, so serious parties see what they need to make a decision.</p>
-      </div>
-    </div>
-
-    <div class="opp-img-row">
-      {refImages.map((img) => (
-        <figure class="opp-img-cell">
-          {img.src ? (
-            <img src={img.src} alt={img.alt} loading="lazy" width={img.w} height={img.h} class="opp-img-cell-media" />
-          ) : (
-            <div class="opp-img-cell-media opp-img-ph" aria-hidden="true">
-              <svg class="opp-img-ph-icon" width="28" height="28" viewBox="0 0 24 24"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.3" /><circle cx="9" cy="10" r="1.4" fill="currentColor" /><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
-              <span class="opp-img-ph-dim">{img.w} x {img.h}</span>
-            </div>
-          )}
-        </figure>
-      ))}
-    </div>
-  </div></section>
-
-  <section class="section opp-access-band" id="access"><div class="wrap">
-    <h2 class="opp-heading">How access works</h2>
-    <div class="opp-step-grid">
-      <div class="opp-step-card">
-        <span class="opp-step-no">01</span>
-        <h3>Register your interest</h3>
-        <p>Tell us what you are looking for, or what you are selling.</p>
-      </div>
-      <div class="opp-step-card">
-        <span class="opp-step-no">02</span>
-        <h3>Sign an NDA</h3>
-        <p>A short mutual NDA unlocks confidential detail.</p>
-      </div>
-      <div class="opp-step-card">
-        <span class="opp-step-no">03</span>
-        <h3>Receive matched opportunities</h3>
-        <p>We share Information Memoranda that fit your brief.</p>
-      </div>
-      <div class="opp-step-card">
-        <span class="opp-step-no">04</span>
-        <h3>Submit an EOI</h3>
-        <p>Move to offer and diligence on the assets that fit.</p>
-      </div>
-    </div>
-  </div></section>
-
-  <section class="section opp-enquiry-band" id="enquiry"><div class="wrap opp-enquiry-grid">
-    <div class="opp-enquiry-info">
-      <h2 class="opp-heading opp-heading-left">Register your interest</h2>
-      <p class="opp-enquiry-intro">Tell us whether you are buying or selling and a little about your brief. The right person at SDA Home Choices will get back to you.</p>
-      <ul class="opp-enquiry-items">
-        <li class="opp-enquiry-item">
-          <span class="card-mark" aria-hidden="true"></span>
-          <p class="ci-label">Email</p>
-          <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>
-        </li>
-        <li class="opp-enquiry-item">
-          <span class="card-mark" aria-hidden="true"></span>
-          <p class="ci-label">Phone</p>
-          <a href="tel:+61408550441">+61 408 550 441</a>
-        </li>
-      </ul>
-    </div>
-
-    <div class="opp-enquiry-card">
-      <form class="form" data-endpoint="/api/opportunities/">
-        <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
-        <fieldset class="opp-radio-group">
-          <legend>I am a...</legend>
-          <label class="opp-radio"><input type="radio" name="enquiryType" value="Buyer" required /> Buyer</label>
-          <label class="opp-radio"><input type="radio" name="enquiryType" value="Vendor" required /> Vendor</label>
-        </fieldset>
-        <div>
-          <label for="oppName">Name</label>
-          <input type="text" id="oppName" name="name" required />
+    <section class="section opp-states-band"><div class="wrap">
+      <div class="opp-states">
+        <p class="opp-states-caption">National coverage across all eight states and territories.</p>
+        <div class="opp-pills">
+          {jurisdictions.map((s) => <span class="opp-pill">{s}</span>)}
         </div>
-        <div>
-          <label for="oppEmail">Email</label>
-          <input type="email" id="oppEmail" name="email" required />
+        <p class="opp-states-note">SDA Home Choices operates nationally. Property availability varies by location. Please contact our team to enquire about current listings and opportunities in your preferred state or territory.</p>
+      </div>
+    </div></section>
+
+    <section class="section opp-why-band"><div class="wrap">
+      <h2 class="opp-heading">Why off-market</h2>
+      <div class="opp-why-grid">
+        <div class="opp-why-card">
+          <span class="card-mark"></span>
+          <h3>A curated, confidential market</h3>
+          <p>Most SDA transactions of scale happen off-market. We match qualified buyers to opportunities without public listing, protecting price and tenant stability.</p>
         </div>
-        <div>
-          <label for="oppPhone">Phone</label>
-          <input type="tel" id="oppPhone" name="phone" required />
+        <div class="opp-why-card">
+          <span class="card-mark"></span>
+          <h3>Specialist diligence built in</h3>
+          <p>Every opportunity is assessed against SDA design category, enrolment, tenancy and compliance, so you are evaluating real investable positions, not raw listings.</p>
         </div>
-        <div>
-          <label for="oppMessage">Your brief or property</label>
-          <textarea id="oppMessage" name="message" required></textarea>
+        <div class="opp-why-card">
+          <span class="card-mark"></span>
+          <h3>Access to the full picture</h3>
+          <p>Pricing is by EOI and detailed Information Memoranda are released under NDA, so serious parties see what they need to make a decision.</p>
         </div>
-        <button type="submit" class="btn b1">Send enquiry</button>
-        <p class="form-status" role="status"></p>
-      </form>
-    </div>
-  </div></section>
+      </div>
+
+      <div class="opp-img-row">
+        {refImages.map((img) => (
+          <figure class="opp-img-cell">
+            {img.src ? (
+              <img src={img.src} alt={img.alt} loading="lazy" width={img.w} height={img.h} class="opp-img-cell-media" />
+            ) : (
+              <div class="opp-img-cell-media opp-img-ph" aria-hidden="true">
+                <svg class="opp-img-ph-icon" width="28" height="28" viewBox="0 0 24 24"><path d="M4 5h16v14H4z" fill="none" stroke="currentColor" stroke-width="1.3" /><circle cx="9" cy="10" r="1.4" fill="currentColor" /><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                <span class="opp-img-ph-dim">{img.w} x {img.h}</span>
+              </div>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div></section>
+
+    <section class="section opp-access-band" id="access"><div class="wrap">
+      <h2 class="opp-heading">How access works</h2>
+      <div class="opp-step-grid">
+        <div class="opp-step-card">
+          <span class="opp-step-no">01</span>
+          <h3>Register your interest</h3>
+          <p>Tell us what you are looking for, or what you are selling.</p>
+        </div>
+        <div class="opp-step-card">
+          <span class="opp-step-no">02</span>
+          <h3>Sign an NDA</h3>
+          <p>A short mutual NDA unlocks confidential detail.</p>
+        </div>
+        <div class="opp-step-card">
+          <span class="opp-step-no">03</span>
+          <h3>Receive matched opportunities</h3>
+          <p>We share Information Memoranda that fit your brief.</p>
+        </div>
+        <div class="opp-step-card">
+          <span class="opp-step-no">04</span>
+          <h3>Submit an EOI</h3>
+          <p>Move to offer and diligence on the assets that fit.</p>
+        </div>
+      </div>
+    </div></section>
+
+    <section class="section opp-enquiry-band" id="enquiry"><div class="wrap opp-enquiry-grid">
+      <div class="opp-enquiry-info">
+        <h2 class="opp-heading opp-heading-left">Register your interest</h2>
+        <p class="opp-enquiry-intro">Tell us whether you are buying or selling and a little about your brief. The right person at SDA Home Choices will get back to you.</p>
+        <ul class="opp-enquiry-items">
+          <li class="opp-enquiry-item">
+            <span class="card-mark" aria-hidden="true"></span>
+            <p class="ci-label">Email</p>
+            <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>
+          </li>
+          <li class="opp-enquiry-item">
+            <span class="card-mark" aria-hidden="true"></span>
+            <p class="ci-label">Phone</p>
+            <a href="tel:+61408550441">+61 408 550 441</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="opp-enquiry-card">
+        <form class="form" data-endpoint="/api/opportunities/">
+          <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
+          <fieldset class="opp-radio-group">
+            <legend>I am a...</legend>
+            <label class="opp-radio"><input type="radio" name="enquiryType" value="Buyer" required /> Buyer</label>
+            <label class="opp-radio"><input type="radio" name="enquiryType" value="Vendor" required /> Vendor</label>
+          </fieldset>
+          <div>
+            <label for="oppName">Name</label>
+            <input type="text" id="oppName" name="name" required />
+          </div>
+          <div>
+            <label for="oppEmail">Email</label>
+            <input type="email" id="oppEmail" name="email" required />
+          </div>
+          <div>
+            <label for="oppPhone">Phone</label>
+            <input type="tel" id="oppPhone" name="phone" required />
+          </div>
+          <div>
+            <label for="oppMessage">Your brief or property</label>
+            <textarea id="oppMessage" name="message" required></textarea>
+          </div>
+          <button type="submit" class="btn b1">Send enquiry</button>
+          <p class="form-status" role="status"></p>
+        </form>
+      </div>
+    </div></section>
+  </div>
 </BaseLayout>
 
 <!-- CSP note: this inline script is allow-listed in vercel.json by exact sha256 hash. Editing it requires recomputing and updating that hash, or the CSP will silently block it. -->
@@ -184,33 +187,32 @@ const refImages = [
   });
 </script>
 <style>
-:root{
-  --opp-depth:.85;
-}
+/* ===== one continuous page background =====
+   The whole page sits on a single background layer: a vertical navy gradient with soft blue and teal glows
+   placed at different heights. Every section is transparent, so nothing begins or ends at a section edge and
+   there are no seams between what used to be separate bands. Sections stay distinct through their content,
+   spacing, cards and borders. The hero, the catalogue, the coverage strip, the explainer, the access steps and
+   the enquiry form all read as one environment; the page ends on plain navy, which is the footer's own colour. */
+.opp-page{position:relative;overflow-x:clip;background:
+  radial-gradient(1200px 760px at 84% 2.5%,color-mix(in srgb,var(--blue) 24%,transparent) 0%,transparent 62%),
+  radial-gradient(900px 620px at 4% 11%,color-mix(in srgb,var(--teal) 11%,transparent) 0%,transparent 64%),
+  radial-gradient(1100px 700px at 92% 36%,color-mix(in srgb,var(--blue) 17%,transparent) 0%,transparent 64%),
+  radial-gradient(1000px 680px at 6% 58%,color-mix(in srgb,var(--blue) 14%,transparent) 0%,transparent 64%),
+  radial-gradient(1100px 720px at 88% 82%,color-mix(in srgb,var(--blue) 15%,transparent) 0%,transparent 64%),
+  linear-gradient(180deg,color-mix(in srgb,var(--navy2) 78%,var(--navy)) 0%,var(--navy) 34%,color-mix(in srgb,var(--navy2) 32%,var(--navy)) 62%,var(--navy) 100%)}
 
-/* ===== section colour rhythm =====
-   The page alternates light (paper) and dark (navy) bands down the page, closing on a deeper
-   navy2 "accent" band before the footer. Each band fades only on its OWN outgoing (bottom) edge
-   toward the next band's colour; the next band then starts flat at that same colour, so every
-   seam is a single soft gradient rather than two competing ones. The hero (its own component)
-   and the footer (plain navy) are the fixed colour anchors at each end of the sequence. */
-.opp-heading{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}
+.opp-heading{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}
 
-/* states coverage strip: LIGHT. Fades in from the hero's navy and out to the next (dark) band. */
-.opp-states-band{position:relative;overflow:hidden;background:var(--paper)}
-.opp-states-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--paper) 16%,var(--paper) 84%,var(--navy) 100%)}
-.opp-states-band>*{position:relative;z-index:1}
+/* states coverage strip */
+.opp-states-band{position:relative}
 .opp-states{text-align:center}
-.opp-states-caption{font-family:var(--sans);color:var(--slate);font-size:15px;margin:0 0 18px}
+.opp-states-caption{font-family:var(--sans);color:var(--pale);font-size:15px;margin:0 0 18px}
+.opp-states-note{font-family:var(--sans);color:var(--pale);font-size:14px;line-height:1.55;max-width:640px;margin:18px auto 0}
 .opp-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
-.opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--navy);border:1px solid color-mix(in srgb,var(--navy) 22%,transparent);background:color-mix(in srgb,var(--navy) 5%,transparent);border-radius:999px;padding:10px 20px}
+.opp-pill{display:inline-flex;align-items:center;font-family:var(--geo);font-size:13px;font-weight:600;letter-spacing:.08em;color:var(--white);border:1px solid color-mix(in srgb,var(--pale) 34%,transparent);background:color-mix(in srgb,var(--white) 6%,transparent);border-radius:999px;padding:10px 20px}
 
-/* why off-market: DARK. Receives the states-band fade-out (starts flat navy) and fades out at its
-   own bottom toward the light how-access-works band below. */
-.opp-why-band{position:relative;overflow:hidden;background:var(--navy)}
-.opp-why-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy) 86%,var(--paper) 100%)}
-.opp-why-band::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--opp-depth);background:radial-gradient(900px 560px at 50% 30%,rgba(4,118,217,.28) 0%,rgba(4,118,217,0) 62%)}
-.opp-why-band>*{position:relative;z-index:1}
+/* why off-market */
+.opp-why-band{position:relative}
 .opp-why-grid{margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
 .opp-why-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
 .opp-why-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
@@ -234,31 +236,25 @@ const refImages = [
 .opp-img-ph-icon{opacity:.8}
 .opp-img-ph-dim{font-family:var(--geo);font-size:11px;letter-spacing:.08em;color:var(--muted)}
 
-/* how access works: LIGHT. Receives the why-band's fade-out (starts flat paper) and fades out at
-   its own bottom toward the dark enquiry band below. Step cards flip to a light surface, used
-   only in this band so the base rule is changed in place rather than duplicated. */
-.opp-access-band{position:relative;overflow:hidden;background:var(--paper)}
-.opp-access-band::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--paper) 0%,var(--paper) 84%,var(--navy) 100%)}
-.opp-access-band>*{position:relative;z-index:1}
-.opp-access-band .opp-heading{color:var(--navy)}
+/* how access works: the same dark glass cards as the explainer, so the page keeps one surface language */
+.opp-access-band{position:relative}
 .opp-step-grid{margin-top:28px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;align-items:stretch}
-.opp-step-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--navy) 12%,transparent);border-radius:10px;background:#fff;box-shadow:0 10px 26px rgba(0,22,43,.06);transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
-.opp-step-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 45%,transparent);box-shadow:0 14px 32px rgba(0,22,43,.1)}
-.opp-step-no{display:block;font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.1em;color:var(--blue);margin-bottom:14px}
-.opp-step-card h3{font-family:var(--serif);font-weight:600;color:var(--navy);font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
-.opp-step-card p{font-family:var(--sans);color:var(--slate);font-size:14.5px;line-height:1.6;margin:0}
+.opp-step-card{display:flex;flex-direction:column;height:100%;padding:28px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);transition:transform .22s ease,border-color .22s ease,background .22s ease}
+.opp-step-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:rgba(255,255,255,.08)}
+.opp-step-no{display:block;font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.1em;color:color-mix(in srgb,var(--blue) 55%,var(--white));margin-bottom:14px}
+.opp-step-card h3{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(18px,1.8vw,21px);line-height:1.2;margin:0 0 12px}
+.opp-step-card p{font-family:var(--sans);color:var(--pale);font-size:14.5px;line-height:1.6;margin:0}
 @media(max-width:980px){.opp-step-grid{grid-template-columns:1fr 1fr;gap:22px}}
 @media(max-width:560px){.opp-step-grid{grid-template-columns:1fr}}
 
 @media(prefers-reduced-motion:reduce){
-  .opp-why-card,.opp-step-card{transition:background .22s ease,border-color .22s ease,box-shadow .22s ease}
+  .opp-why-card,.opp-step-card{transition:background .22s ease,border-color .22s ease}
   .opp-why-card:hover,.opp-step-card:hover{transform:none}
 }
 
-/* enquiry form: DARK, the last band before the footer. Starts flat navy (received from the access
-   band's fade-out) and stays flat navy through its own bottom edge, so the handoff into the
-   footer (also plain navy) is seamless with no fade needed. */
-.opp-enquiry-band{position:relative;overflow:hidden;background:var(--navy)}
+/* enquiry form: the last section before the footer. The page background ends on plain navy, the footer's own
+   colour, so the handoff is seamless. */
+.opp-enquiry-band{position:relative}
 .opp-enquiry-band>*{position:relative;z-index:1}
 .opp-heading-left{text-align:left;margin:0 0 20px}
 .opp-enquiry-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}

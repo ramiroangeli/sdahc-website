@@ -1,19 +1,25 @@
 ---
-import ListingImage from './ListingImage.astro';
 import ListingStatusBadge from './ListingStatusBadge.astro';
-import { DESIGN_LABEL, STATUS_LABEL, type PublicListing } from '../data/listings/schema';
-import { localityLine, streetLine } from '../data/listings/address';
+import { STATUS_LABEL, type PublicListing } from '../data/listings/schema';
+import { streetLine } from '../data/listings/address';
 
 /*
   Animated property-card fan for the /opportunities/ hero. Reusable: give it published listings.
 
   Desktop: three or five cards fanned around a featured one, each with its own rotation, depth and a
-  slow idle float. Hovering or focusing a card, or using the arrow buttons, brings it forward. A click
+  slow idle float. Hovering a card lifts it in place; focusing it or using the arrow buttons makes it the featured card. A click
   or Enter on a card always goes to that property, so there is never a hidden step before the link.
   Mobile: the same cards become a native swipe carousel (scroll-snap). No hover is needed anywhere.
 
-  The fan is padded with locked "Off-market" cards when there are fewer than three listings. Those
-  are decorative and non-interactive: they carry a state code only and invent no property.
+  Every card is a photograph-free icon card, so the hero looks the same whether or not a property has
+  photographs (those stay on the listing page and in the catalogue). A real property shows a house icon, its
+  state, its public status and its approved public address (street and suburb: never a house or unit number).
+  The whole card is one link to that property's page on this site.
+
+  The fan is padded with locked "Off-market" cards when there are fewer than three listings. Those are
+  decorative: they carry a state code only and invent no property. They move, tilt and glow on hover exactly
+  like real cards (that is purely visual), but they are not links, not focusable, not announced to assistive
+  technology and show no pointer cursor, so they never present themselves as available properties.
   Everything shown comes from PublicListing, so no private data can reach this component.
 */
 interface Props { listings: PublicListing[]; lockedStates: string[] }
@@ -38,7 +44,9 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
   <div class="hf-stage" role="group" aria-label="Featured SDA properties">
     {slots.map((s, i) => {
       const o = i - centre;
-      const vars = `--o:${o};--a:${Math.abs(o)};--i:${i}`;
+      // real properties glow blue and placeholders orange, so the two are always visibly different
+      const accent = s.kind === 'listing' ? 'var(--blue)' : 'var(--amber)';
+      const vars = `--o:${o};--a:${Math.abs(o)};--i:${i};--hf-accent:${accent}`;
       if (s.kind === 'locked') {
         return (
           <div class="hf-card hf-locked" data-hf-card data-active={o === 0 ? 'true' : 'false'} style={vars} aria-hidden="true">
@@ -56,21 +64,15 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
       const l = s.l;
       const label = `${streetLine(l.address)}, ${l.address.suburb} ${l.address.state}. ${STATUS_LABEL[l.commercialStatus]}. View property.`;
       return (
-        <a class="hf-card" href={`/opportunities/${l.slug}/`} data-hf-card data-hf-link data-active={o === 0 ? 'true' : 'false'} data-name={`${streetLine(l.address)}, ${l.address.suburb}`} style={vars} aria-label={label}>
+        <a class="hf-card hf-listing" href={`/opportunities/${l.slug}/`} data-hf-card data-hf-link data-active={o === 0 ? 'true' : 'false'} data-name={`${streetLine(l.address)}, ${l.address.suburb}`} style={vars} aria-label={label}>
           <div class="hf-float">
-            <div class="hf-photo"><ListingImage photo={l.photos[0]} sizes="(min-width: 900px) 300px, 74vw" loading={i === centre ? 'eager' : 'lazy'} demoTag={false} /></div>
-            <div class="hf-shade"></div>
-            <div class="hf-top">
-              <span class="hf-pill">{l.address.state}</span>
+            <div class="hf-house">
+              <svg width="52" height="52" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 4l8.5 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /><path d="M10 19.5v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg>
+              <p class="hf-street">{streetLine(l.address)}</p>
+              <p class="hf-loc">{l.address.suburb}</p>
               <ListingStatusBadge status={l.commercialStatus} />
             </div>
-            <div class="hf-bottom">
-              <p class="hf-street">{streetLine(l.address)}</p>
-              <p class="hf-loc">{localityLine(l.address)}</p>
-              {(l.sda.designCategories?.length ?? 0) > 0 && (
-                <p class="hf-chips">{l.sda.designCategories!.map((d) => <span title={DESIGN_LABEL[d]}>{d}</span>)}</p>
-              )}
-            </div>
+            <div class="hf-top"><span class="hf-pill">{l.address.state}</span></div>
             {l.isDemo && <span class="hf-demo">Demo</span>}
           </div>
         </a>
@@ -110,7 +112,6 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
     };
 
     linkIdx.forEach((i) => {
-      cards[i].addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && desktop.matches) set(i); });
       cards[i].addEventListener('focus', () => { if (desktop.matches) set(i, true); });
     });
 
@@ -130,29 +131,41 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
 /* five cards need a tighter spread and slightly smaller cards to stay inside the column */
 .hf[data-n="5"] .hf-stage{--w:clamp(180px,17vw,250px);--step:calc(var(--w) * .34)}
 
-.hf-card{display:block;position:absolute;left:50%;top:50%;width:var(--w);aspect-ratio:4/5;margin:calc(var(--w) * -.625) 0 0 calc(var(--w) * -.5);color:var(--white);text-decoration:none;border-radius:14px;
+.hf-card{--hf-accent:var(--blue);display:block;position:absolute;left:50%;top:50%;width:var(--w);aspect-ratio:4/5;margin:calc(var(--w) * -.625) 0 0 calc(var(--w) * -.5);color:var(--white);text-decoration:none;border-radius:14px;
   transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px)) rotate(calc(var(--o) * 7deg)) scale(calc(1 - var(--a) * .07));
   z-index:calc(10 - var(--a));
-  transition:transform .7s cubic-bezier(.2,.8,.2,1),box-shadow .5s ease;
+  transition:transform .55s cubic-bezier(.22,.8,.24,1),box-shadow .45s ease;
   box-shadow:0 18px 40px color-mix(in srgb,var(--navy) 55%,transparent);
   animation:hfIn .9s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i) * 90ms + 200ms)}
-.hf-card[data-active="true"]{transform:translate(0,-8px) rotate(0deg) scale(1.04);box-shadow:0 30px 60px color-mix(in srgb,var(--navy) 80%,transparent)}
-.hf-card:focus-visible{outline:3px solid var(--white);outline-offset:4px}
+/* the featured card: lifted and softly ringed in its own accent */
+.hf-card[data-active="true"]{transform:translate(0,-10px) rotate(0deg) scale(1.05);box-shadow:0 0 0 1px color-mix(in srgb,var(--hf-accent) 45%,transparent),0 0 26px color-mix(in srgb,var(--hf-accent) 20%,transparent),0 32px 60px color-mix(in srgb,var(--navy) 80%,transparent)}
+.hf-card:focus-visible{outline:3px solid var(--white);outline-offset:5px}
+/* hover: the card pops in place. It never reorders the fan (a card that moves out from under a still pointer
+   would hand the hover to its neighbour and loop), so the pointer always stays on the card it is over. It rises
+   above its neighbours, straightens a little, takes a crisp accent border, and a restrained accent glow sits
+   behind a deeper shadow. One smooth transition, no jumps. */
+.hf-card:focus-visible,.hf-card[data-active="true"]:focus-visible{z-index:30;transform:translate(0,-18px) rotate(0deg) scale(1.08);box-shadow:0 0 0 2px var(--hf-accent),0 0 44px color-mix(in srgb,var(--hf-accent) 46%,transparent),0 44px 80px color-mix(in srgb,var(--navy) 88%,transparent)}
+@media(hover:hover){
+  .hf-card:hover{z-index:30;transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px - 18px)) rotate(calc(var(--o) * 3.5deg)) scale(calc(1.07 - var(--a) * .04));box-shadow:0 0 0 2px var(--hf-accent),0 0 44px color-mix(in srgb,var(--hf-accent) 46%,transparent),0 44px 80px color-mix(in srgb,var(--navy) 88%,transparent)}
+  .hf-card[data-active="true"]:hover{transform:translate(0,-18px) rotate(0deg) scale(1.08)}
+  .hf-card:hover .hf-float{border-color:var(--hf-accent)}
+}
+.hf-card:focus-visible .hf-float{border-color:var(--hf-accent)}
 
 /* idle drift lives on an inner layer so it never fights the card's own transform */
-.hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);animation:hfFloat 9s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -1.7s)}
-.hf-photo{position:absolute;inset:0}
-.hf-shade{position:absolute;inset:0;background:linear-gradient(0deg,color-mix(in srgb,var(--navy) 92%,transparent) 0%,color-mix(in srgb,var(--navy) 50%,transparent) 32%,transparent 62%)}
+.hf-float{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 28%,transparent);background:var(--navy2);transition:border-color .3s ease;animation:hfFloat 7.5s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -2.1s)}
 .hf-top{position:absolute;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .hf-pill{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--white);background:color-mix(in srgb,var(--navy) 72%,transparent);border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:4px 8px}
-.hf-bottom{position:absolute;left:16px;right:16px;bottom:16px}
-.hf-street{font-family:var(--serif);font-weight:600;font-size:clamp(18px,1.7vw,22px);line-height:1.15;margin:0 0 4px}
-.hf-loc{font-family:var(--geo);font-size:12px;letter-spacing:.05em;color:var(--pale);margin:0}
-.hf-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
-.hf-chips span{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.1em;border:1px solid color-mix(in srgb,var(--blue) 75%,transparent);background:color-mix(in srgb,var(--navy) 60%,transparent);border-radius:2px;padding:3px 7px}
-.hf-demo{position:absolute;left:12px;top:48px;font-family:var(--geo);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:3px 6px}
+.hf-street{font-family:var(--serif);font-weight:600;font-size:clamp(19px,1.8vw,23px);line-height:1.15;margin:14px 0 4px;color:var(--white)}
+.hf-loc{font-family:var(--geo);font-size:13px;letter-spacing:.05em;color:var(--pale);margin:0 0 14px}
+/* a real property: a house icon over a blue SDAHC surface, address and status stacked beneath it */
+.hf-listing .hf-float{background:linear-gradient(160deg,color-mix(in srgb,var(--blue) 30%,var(--navy)) 0%,var(--navy) 100%);border-color:color-mix(in srgb,var(--blue) 45%,transparent)}
+.hf-house{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 16px 24px;text-align:center;color:color-mix(in srgb,var(--blue) 55%,var(--white))}
+.hf-house svg{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--blue) 55%,transparent))}
+.hf-demo{position:absolute;right:12px;top:12px;font-family:var(--geo);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:3px 6px}
 
 /* locked off-market card: darker, exclusive, never a link and never a real property */
+.hf-locked{cursor:default}
 .hf-locked .hf-float{background:linear-gradient(160deg,var(--navy) 0%,color-mix(in srgb,var(--navy2) 70%,var(--navy)) 100%);border-color:color-mix(in srgb,var(--amber) 38%,transparent)}
 .hf-lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--amber);text-align:center}
 .hf-lock-k{font-family:var(--serif);font-weight:600;font-size:20px;color:var(--white);margin:8px 0 0}
@@ -166,18 +179,21 @@ const interactive = slots.filter((s) => s.kind === 'listing').length;
 .hf-now{margin:0;min-width:22ch;text-align:center;font-family:var(--geo);font-size:12px;letter-spacing:.08em;color:var(--pale)}
 
 @keyframes hfIn{from{opacity:0;transform:translate(0,56px) rotate(0deg) scale(.86)}}
-@keyframes hfFloat{from{transform:translateY(0) rotate(0deg)}to{transform:translateY(-7px) rotate(.4deg)}}
+@keyframes hfFloat{from{transform:translateY(0) rotate(-.4deg)}to{transform:translateY(-11px) rotate(.6deg)}}
 
 /* mobile: the fan becomes a native swipe carousel. Nothing depends on hover; the arrows are hidden. */
 @media(max-width:899px){
   .hf-stage{display:flex;gap:14px;height:auto;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 24px 22px;margin:0 -24px;scrollbar-width:none;--w:min(72vw,290px)}
   .hf-stage::-webkit-scrollbar{display:none}
-  .hf-card,.hf-card[data-active="true"]{position:relative;left:auto;top:auto;margin:0;flex:0 0 var(--w);transform:none;scroll-snap-align:center;z-index:auto;animation:none;box-shadow:0 14px 30px color-mix(in srgb,var(--navy) 55%,transparent)}
+  .hf-card,.hf-card[data-active="true"],.hf-card:hover,.hf-card[data-active="true"]:hover,.hf-card:focus-visible{position:relative;left:auto;top:auto;margin:0;flex:0 0 var(--w);transform:none;scroll-snap-align:center;z-index:auto;animation:none;box-shadow:0 14px 30px color-mix(in srgb,var(--navy) 55%,transparent)}
   .hf-float{animation:none}
   .hf-ctrl{display:none}
 }
 @media(prefers-reduced-motion:reduce){
   .hf-card,.hf-float{animation:none}
   .hf-card{transition:box-shadow .2s ease}
+  /* no lift on hover or focus: each card keeps its resting pose and the emphasis is the accent border and glow only */
+  .hf-card:hover{transform:translate(calc(var(--o) * var(--step)),calc(var(--a) * 16px)) rotate(calc(var(--o) * 7deg)) scale(calc(1 - var(--a) * .07))}
+  .hf-card:focus-visible,.hf-card[data-active="true"]:focus-visible,.hf-card[data-active="true"]:hover{transform:translate(0,-10px) rotate(0deg) scale(1.05)}
 }
 </style>

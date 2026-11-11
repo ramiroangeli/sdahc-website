@@ -1,0 +1,35 @@
+# Required check for changes to main. The branch rules require the job below (site-checks) to pass before anything merges.
+# It runs on pull requests. Pull requests opened by the publication job use the token of the dedicated GitHub App, which (unlike the workflow
+# token) starts this pull_request run automatically, so the required check belongs to the pull request itself. The manual trigger is kept for
+# running the checks by hand on a branch; a manual run never satisfies the branch rules.
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  site-checks:
+    name: site-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LISTINGS_MEDIA_BASE_URL: ${{ vars.LISTINGS_MEDIA_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Listings tests (privacy, pricing, compliance, snapshots)
+        run: npm run test:listings
+      - name: Production build
+        run: npm run build
+      - name: Privacy scan of the build output
+        run: npm run check:privacy

@@ -3,46 +3,47 @@ import HeroCardFan from './HeroCardFan.astro';
 import type { PublicListing } from '../data/listings/schema';
 
 /*
-  /opportunities/ hero. Two equally weighted paths, side by side in importance:
-    A. Available properties: public listings, goes to the catalogue.
-    B. Off-market opportunities: darker and exclusive, goes to the existing NDA and registration steps.
-  The fan of property cards sits beside them. It renders with or without published listings; with
-  none, it shows locked off-market cards, so the page never looks empty and never shows a fake property.
-  Path B states confidentiality and never exposes anything confidential.
+  /opportunities/ hero. A full-width statement title, a small supporting line attached to it, then two
+  equally weighted paths beside a fan of property cards:
+    A. Available properties: public listings, in the SDAHC blue. Goes to the catalogue.
+    B. Off-market opportunities: confidential access, in the SDAHC orange. Goes to the existing NDA and
+       registration steps. It never exposes anything confidential.
+  The hero draws no background of its own: the page carries one continuous background (see opportunities.astro),
+  so there is no seam between the hero and the sections below.
+  It renders with or without published listings; with none, the fan shows locked off-market cards.
 */
 interface Props { listings: PublicListing[]; lockedStates: string[] }
 const { listings, lockedStates } = Astro.props;
 ---
 <section class="oh" aria-labelledby="oh-h1">
-  <div class="oh-bg" aria-hidden="true"><span class="b1"></span><span class="b2"></span></div>
+  <div class="wrap oh-top">
+    <h1 class="oh-h1" id="oh-h1"><span class="oh-l1">SDA Investment</span> <span class="oh-l2">Opportunities</span></h1>
+    <p class="oh-sub">Explore available SDA properties and discover exclusive off-market investment opportunities</p>
+  </div>
+
   <div class="wrap oh-grid">
-    <div class="oh-copy">
-      <h1 class="oh-h1" id="oh-h1">SDA Investment Opportunities</h1>
-      <p class="oh-sub">Explore available SDA properties and discover exclusive off-market investment opportunities.</p>
-
-      <div class="oh-paths">
-        <div class="oh-path oh-path-a">
-          <span class="oh-ico" aria-hidden="true">
-            <svg width="30" height="30" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /><path d="M10 19.5v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg>
-          </span>
-          <div class="oh-path-body">
-            <p class="oh-k">Listed publicly</p>
-            <h2 class="oh-path-h">Available properties</h2>
-            <p class="oh-path-d">Browse SDA properties we can show publicly, with location, status and photography.</p>
-            <a class="btn b1 oh-cta" href="#listings">Explore Available Properties<svg class="oh-arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-          </div>
+    <div class="oh-paths">
+      <div class="oh-path oh-path-a">
+        <span class="oh-ico" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /><path d="M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /><path d="M10 19.5v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+        </span>
+        <div class="oh-path-body">
+          <p class="oh-k">Listed publicly</p>
+          <h2 class="oh-path-h">Available properties</h2>
+          <p class="oh-path-d">Browse SDA properties we can show publicly, with location, status and photography.</p>
+          <a class="btn oh-cta oh-cta-a" href="#listings">Explore Available Properties<svg class="oh-arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
         </div>
+      </div>
 
-        <div class="oh-path oh-path-b">
-          <span class="oh-ico oh-ico-lock" aria-hidden="true">
-            <svg width="30" height="30" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><circle cx="12" cy="15" r="1.3" fill="currentColor" /></svg>
-          </span>
-          <div class="oh-path-body">
-            <p class="oh-k">Confidential access</p>
-            <h2 class="oh-path-h">Off-market opportunities</h2>
-            <p class="oh-path-d">Shared only with qualified buyers under NDA. No confidential detail is shown on this site.</p>
-            <a class="btn b2 oh-cta" href="#access">Access Off-Market Opportunities<svg class="oh-arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-          </div>
+      <div class="oh-path oh-path-b">
+        <span class="oh-ico oh-ico-lock" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /><circle cx="12" cy="15" r="1.3" fill="currentColor" /></svg>
+        </span>
+        <div class="oh-path-body">
+          <p class="oh-k">Confidential access</p>
+          <h2 class="oh-path-h">Off-market opportunities</h2>
+          <p class="oh-path-d">Shared only with qualified buyers under NDA. No confidential detail is shown on this site.</p>
+          <a class="btn oh-cta oh-cta-b" href="#access">Access Off-Market Opportunities<svg class="oh-arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
         </div>
       </div>
     </div>
@@ -54,53 +55,69 @@ const { listings, lockedStates } = Astro.props;
 </section>
 
 <style>
-.oh{position:relative;overflow:hidden;padding:var(--nav-clearance) 0 72px;min-height:min(100svh,860px);display:flex;align-items:center;background:
-  radial-gradient(900px 540px at 80% 22%,color-mix(in srgb,var(--blue) 20%,transparent),transparent 62%),
-  radial-gradient(720px 440px at 6% 92%,color-mix(in srgb,var(--teal) 12%,transparent),transparent 62%),
-  linear-gradient(165deg,var(--navy2) 0%,var(--navy) 64%)}
-.oh-bg{position:absolute;inset:0;pointer-events:none}
-.oh-bg span{position:absolute;border-radius:50%;filter:blur(90px);will-change:transform}
-.oh-bg .b1{width:46vw;height:46vw;max-width:640px;max-height:640px;right:-8%;top:-14%;background:color-mix(in srgb,var(--blue) 22%,transparent);animation:ohDrift1 34s ease-in-out infinite alternate}
-.oh-bg .b2{width:34vw;height:34vw;max-width:480px;max-height:480px;left:-6%;bottom:-18%;background:color-mix(in srgb,var(--teal) 14%,transparent);animation:ohDrift2 40s ease-in-out infinite alternate}
-@keyframes ohDrift1{to{transform:translate(-6%,8%) scale(1.12)}}
-@keyframes ohDrift2{to{transform:translate(8%,-6%) scale(1.1)}}
+.oh{position:relative;padding:calc(var(--nav-clearance) + 14px) 0 64px}
 
-.oh-grid{position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:40px;align-items:center;width:100%}
+/* ===== statement title =====
+   Barlow Condensed 700, capitals: the heaviest and most squared face already loaded by the site. It is sized
+   from the width of its own container (cqw), so it runs the full width of the content area at every viewport
+   rather than a fixed point size. --r1 is the measured width of the whole line in em; --ra and --rb the same for
+   each line when it is stacked on narrow screens. */
+.oh-top{container-type:inline-size;overflow-x:clip}
+.oh-h1{--r1:12.34;font-family:var(--cond);font-weight:700;text-transform:uppercase;letter-spacing:.012em;color:var(--white);margin:0;line-height:.92;font-size:calc(100cqw / var(--r1));white-space:nowrap;animation:ohUp .8s cubic-bezier(.16,1,.3,1) both}
+.oh-h1 span{display:inline}
+/* the supporting line: small, close to the title and visually attached to it */
+.oh-sub{font-family:var(--sans);font-size:clamp(13.5px,1.25vw,16px);line-height:1.45;letter-spacing:.015em;color:var(--pale);margin:12px 0 0;max-width:none;animation:ohUp .8s cubic-bezier(.16,1,.3,1) .1s both}
+
+.oh-grid{position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:40px;align-items:center;width:100%;margin-top:34px}
 .oh-stage{min-width:0}
 
-.oh-h1{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(36px,4.7vw,64px);line-height:1.04;letter-spacing:-.01em;margin:0;max-width:12ch;animation:ohUp .8s cubic-bezier(.16,1,.3,1) both}
-.oh-sub{font-family:var(--sans);color:var(--pale);font-size:clamp(16px,1.5vw,19px);line-height:1.55;max-width:46ch;margin:22px 0 0;animation:ohUp .8s cubic-bezier(.16,1,.3,1) .12s both}
+.oh-paths{display:grid;gap:16px}
+.oh-path{position:relative;display:flex;gap:18px;align-items:flex-start;padding:22px 22px 24px;border-radius:12px;border:1px solid transparent;animation:ohUp .8s cubic-bezier(.16,1,.3,1) both;transition:border-color .3s ease,box-shadow .3s ease}
 
-.oh-paths{display:grid;gap:16px;margin-top:34px}
-.oh-path{position:relative;display:flex;gap:18px;align-items:flex-start;padding:22px 22px 24px;border-radius:12px;animation:ohUp .8s cubic-bezier(.16,1,.3,1) both}
-.oh-path-a{animation-delay:.24s;background:color-mix(in srgb,var(--white) 9%,transparent);border:1px solid color-mix(in srgb,var(--blue) 60%,transparent)}
-/* off-market: darker and more exclusive, with a fine amber rule, same size and weight as path A */
-.oh-path-b{animation-delay:.34s;background:var(--navy);border:1px solid color-mix(in srgb,var(--pale) 22%,transparent);border-top:2px solid var(--amber);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--navy) 60%,transparent),0 18px 40px color-mix(in srgb,var(--navy) 70%,transparent)}
-.oh-ico{flex:0 0 auto;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;color:var(--white);background:color-mix(in srgb,var(--blue) 40%,transparent);border:1px solid color-mix(in srgb,var(--blue) 70%,transparent)}
-.oh-ico-lock{color:var(--amber);background:color-mix(in srgb,var(--amber) 14%,transparent);border-color:color-mix(in srgb,var(--amber) 55%,transparent)}
+/* A: the SDAHC blue. A clearly blue surface, solid blue icon and a bright blue rule */
+.oh-path-a{animation-delay:.2s;background:linear-gradient(135deg,color-mix(in srgb,var(--blue) 34%,var(--navy)) 0%,color-mix(in srgb,var(--blue) 12%,var(--navy)) 100%);border-color:color-mix(in srgb,var(--blue) 75%,transparent);border-top:3px solid var(--blue);box-shadow:0 18px 40px color-mix(in srgb,var(--navy) 60%,transparent)}
+/* B: the SDAHC orange. A clearly warm surface, solid orange icon and an orange rule */
+.oh-path-b{animation-delay:.3s;background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 24%,var(--navy)) 0%,color-mix(in srgb,var(--amber) 7%,var(--navy)) 100%);border-color:color-mix(in srgb,var(--amber) 70%,transparent);border-top:3px solid var(--amber);box-shadow:0 18px 40px color-mix(in srgb,var(--navy) 60%,transparent)}
+.oh-path-a:hover{border-color:var(--blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--blue) 60%,transparent),0 18px 44px color-mix(in srgb,var(--navy) 65%,transparent)}
+.oh-path-b:hover{border-color:var(--amber);box-shadow:0 0 0 1px color-mix(in srgb,var(--amber) 60%,transparent),0 18px 44px color-mix(in srgb,var(--navy) 65%,transparent)}
+
+.oh-ico{flex:0 0 auto;display:grid;place-items:center;width:54px;height:54px;border-radius:50%;color:var(--white);background:var(--blue)}
+.oh-ico-lock{color:var(--navy);background:var(--amber)}
 .oh-path-body{min-width:0}
-.oh-k{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--pale);margin:2px 0 6px}
-.oh-path-b .oh-k{color:var(--amber)}
-.oh-path-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(20px,2vw,25px);line-height:1.15;margin:0 0 8px}
-.oh-path-d{font-family:var(--sans);color:var(--pale);font-size:15px;line-height:1.55;margin:0 0 16px;max-width:42ch}
-.oh-cta{display:inline-flex;align-items:center;gap:8px}
+/* the labels: larger and bolder than before, each in its own colour */
+.oh-k{font-family:var(--geo);font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin:2px 0 8px;color:color-mix(in srgb,var(--blue) 55%,var(--white))}
+.oh-path-b .oh-k{color:color-mix(in srgb,var(--amber) 62%,var(--white))}
+.oh-path-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(21px,2vw,26px);line-height:1.15;margin:0 0 8px}
+.oh-path-d{font-family:var(--sans);color:color-mix(in srgb,var(--white) 82%,var(--pale));font-size:15px;line-height:1.55;margin:0 0 16px;max-width:42ch}
+
+.oh-cta{display:inline-flex;align-items:center;gap:8px;font-weight:700}
+.oh-cta-a{background:var(--blue);color:var(--white)}
+.oh-cta-a:hover{background:color-mix(in srgb,var(--blue) 82%,var(--white))}
+.oh-cta-b{background:var(--amber);color:var(--navy)}
+.oh-cta-b:hover{background:color-mix(in srgb,var(--amber) 82%,var(--white))}
 /* the whole tile is the tap target: the button link stretches over the tile */
 .oh-cta::after{content:"";position:absolute;inset:0;border-radius:12px}
 .oh-cta:focus-visible{outline:none}
 .oh-cta:focus-visible::after{outline:3px solid var(--white);outline-offset:3px}
 .oh-arrow{flex:0 0 auto}
-.oh-path-a:hover{border-color:var(--blue);background:color-mix(in srgb,var(--white) 12%,transparent)}
-.oh-path-b:hover{border-color:color-mix(in srgb,var(--amber) 70%,transparent)}
 
 @keyframes ohUp{from{opacity:0;transform:translateY(18px)}}
 
+/* tablet and mobile: the hero grid becomes a single column */
 @media(max-width:899px){
-  .oh{min-height:0;padding-bottom:48px;display:block}
-  .oh-grid{grid-template-columns:1fr;gap:34px}
-  .oh-h1{max-width:14ch}
+  .oh{padding-bottom:44px}
+  .oh-grid{grid-template-columns:1fr;gap:30px;margin-top:28px}
   .oh-path{padding:18px;gap:14px}
-  .oh-ico{width:44px;height:44px}
+  .oh-ico{width:46px;height:46px}
   .oh-path-d{margin-bottom:14px}
+}
+/* small screens: the title stacks on two lines and each line fills the width, so it stays large and never breaks mid-word */
+@media(max-width:699px){
+  .oh-h1{--ra:6.32;--rb:5.8;font-size:inherit;line-height:.94;white-space:normal}
+  .oh-h1 span{display:block;white-space:nowrap}
+  .oh-l1{font-size:calc(100cqw / var(--ra))}
+  .oh-l2{font-size:calc(100cqw / var(--rb))}
+  .oh-sub{margin-top:14px}
 }
 @media(max-width:520px){
   .oh-path{flex-direction:column;gap:12px}
@@ -108,6 +125,6 @@ const { listings, lockedStates } = Astro.props;
 }
 @media(prefers-reduced-motion:reduce){
   .oh-h1,.oh-sub,.oh-path{animation:none}
-  .oh-bg span{animation:none}
+  .oh-path{transition:none}
 }
 </style>

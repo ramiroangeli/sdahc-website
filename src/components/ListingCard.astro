@@ -27,6 +27,7 @@ const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase()
     <div class="lc-media">
       <ListingImage photo={listing.photos[0]} sizes="(min-width: 980px) 360px, (min-width: 620px) 50vw, 100vw" demoTag={false} />
       <span class="lc-state">{a.state}</span>
+      {listing.isPreview && <span class="lc-demo">Draft preview</span>}
       {listing.isDemo && <span class="lc-demo">Demo listing</span>}
     </div>
     <div class="lc-body">
@@ -42,7 +43,7 @@ const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase()
         </ul>
       )}
       <p class="lc-sum">{listing.summary}</p>
-      <p class="lc-foot"><span>{pricingLine(listing.pricing)}</span><span class="lc-more" aria-hidden="true">View details &rarr;</span></p>
+      <p class="lc-foot"><span>{listing.commercialStatus === 'sold' ? 'Sold' : pricingLine(listing.pricing)}</span><span class="lc-more" aria-hidden="true">View details &rarr;</span></p>
     </div>
   </article>
 </li>

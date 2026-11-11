@@ -4,6 +4,7 @@ import { normalisePriceDisplay } from './pricing';
 import { validateForPublication } from './versioning';
 import {
   ACCENTS,
+  victorianClearance,
   PRICING_MODES,
   STATES,
   type Accent,
@@ -168,7 +169,7 @@ export const publicIdFor = (notionPageId: string): string => `lst_${createHash('
 export interface MediaManifest {
   version: 1;
   photos: {
-    id: string; alt: string; width: number; height: number; accent: string; privacyReviewed: boolean;
+    id: string; alt: string; width: number; height: number; accent: string; privacyReviewed: boolean; kind?: string;
     files: { w: number; file: string }[];
   }[];
 }
@@ -176,18 +177,33 @@ export interface MediaManifest {
 /** Where a listing's prepared photos and manifest live: <media base>/<public id>/manifest.json. Derived, never typed. */
 export const manifestUrlFor = (publicId: string, mediaBaseUrl: string): string => `${mediaBaseUrl.replace(/\/$/, '')}/${publicId}/manifest.json`;
 
+/**
+ * Neutral accessibility text for an image with no description. It says only what is certain (a photograph or a floorplan and its place
+ * in the gallery): no invented visual detail, no address, nothing from the CRM. Same wording as the internal Listings Manager.
+ */
+export const fallbackAlt = (kind: 'photo' | 'floorplan', n: number, count: number): string =>
+  kind === 'floorplan'
+    ? (count > 1 ? `Floorplan ${n} of ${count} of the property` : 'Floorplan of the property')
+    : (count > 1 ? `Photograph ${n} of ${count} of the property` : 'Photograph of the property');
+
 export const manifestToPhotos = (m: MediaManifest, manifestUrl: string, mediaBaseUrl: string): { photos: Photo[]; issues: string[] } => {
   const issues: string[] = [];
   if (m?.version !== 1 || !Array.isArray(m.photos)) return { photos: [], issues: ['media manifest has an unexpected shape'] };
   const base = mediaBaseUrl.replace(/\/$/, '');
   const photos: Photo[] = [];
+  const kindOf = (p: { kind?: string }) => (p.kind === 'floorplan' ? 'floorplan' : 'photo');
+  const counts = { photo: m.photos.filter((p) => kindOf(p) === 'photo').length, floorplan: m.photos.filter((p) => kindOf(p) === 'floorplan').length };
+  const seen = { photo: 0, floorplan: 0 };
   for (const p of m.photos) {
+    seen[kindOf(p)] += 1;
     if (!p.privacyReviewed) { issues.push(`photo ${p.id}: privacy review (no house number, no identifiable person) not confirmed`); continue; }
-    if (!p.alt || p.alt.trim().length < 8) { issues.push(`photo ${p.id}: alt text is missing`); continue; }
+    // an empty description is allowed: the neutral fallback is used so the published alt is never empty
+    const alt = (p.alt ?? '').trim() || fallbackAlt(kindOf(p), seen[kindOf(p)], counts[kindOf(p)]);
+    if (alt.length > 200) { issues.push(`photo ${p.id}: alt text is longer than 200 characters`); continue; }
     if (!(ACCENTS as readonly string[]).includes(p.accent)) { issues.push(`photo ${p.id}: unknown accent "${p.accent}"`); continue; }
     const variants = p.files.map((f) => ({ w: f.w, src: new URL(f.file, manifestUrl).href }));
     if (variants.some((v) => !v.src.startsWith(`${base}/`))) { issues.push(`photo ${p.id}: file is not on the approved media origin`); continue; }
-    photos.push({ id: p.id, alt: p.alt.trim(), width: p.width, height: p.height, accent: p.accent as Accent, variants, privacyReviewed: true } as Photo);
+    photos.push({ id: p.id, alt, width: p.width, height: p.height, accent: p.accent as Accent, ...(p.kind === 'floorplan' ? { kind: 'floorplan' as const } : {}), variants, privacyReviewed: true } as Photo);
   }
   return { photos, issues };
 };
@@ -369,8 +385,9 @@ export const readinessReport = (page: NotionPage, o: { photos?: Photo[]; mediaBa
   const state = toStateCode(readText(p[NOTION.state])) ?? (parseTry(readText(p[NOTION.webPublicAddress]))?.state);
   const modeKey = ({ askingprice: 'asking_price', priceguide: 'price_guide', expressionsofinterest: 'eoi', eoi: 'eoi', contactagent: 'contact_agent' } as Record<string, PricingMode>)[readText(p[NOTION.webPricingMode]).toLowerCase().replace(/[^a-z]/g, '')];
   if (state === 'VIC') {
-    const cleared = modeKey ? o.compliance?.victoria.cleared[modeKey] : false;
-    add('Victorian pricing compliance', cleared ? 'ready' : 'missing', cleared ? `Cleared for ${modeKey}.` : `Not cleared${modeKey ? ` for ${modeKey}` : ''}. The Victorian rules in force from 1 October 2026 and their application to SDA sales need legal classification (docs/victorian-pricing-compliance.md), recorded in compliance.json.`);
+    const clearance = modeKey ? victorianClearance(o.compliance, publicIdFor(page.id), modeKey) : { cleared: false };
+    const cleared = clearance.cleared;
+    add('Victorian pricing compliance', cleared ? 'ready' : 'missing', cleared ? `Cleared for ${modeKey} (${clearance.basis}).` : `Not cleared${modeKey ? ` for ${modeKey}` : ''}. The Victorian rules in force from 1 October 2026 and their application to SDA sales need legal classification (docs/victorian-pricing-compliance.md), recorded in compliance.json.`);
   }
   if (cats.values.includes('Basic')) {
     const ok = o.compliance?.basicClassification.confirmedListingIds.includes(publicIdFor(page.id));
@@ -398,12 +415,18 @@ export const EXPECTED_CORE_TYPES: Record<string, string> = {
   [NOTION.state]: 'select',
   [NOTION.features]: 'multi_select',
   [NOTION.description]: 'rich_text',
-  [NOTION.deals]: 'relation',
   [NOTION.sharepointLink]: 'url',
   [NOTION.listingAgent]: 'rich_text',
   [NOTION.listingDate]: 'date',
   [NOTION.listingEndDate]: 'date',
 };
+
+/**
+ * Existing properties that are checked only when the integration can see them. A relation to another database
+ * is hidden from an integration that has no access to that database, and the read-only integration must NOT be
+ * given access to the Deals database (it holds financial deal data). Deals is never needed to publish.
+ */
+export const OPTIONAL_CORE_TYPES: Record<string, string> = { [NOTION.deals]: 'relation' };
 
 export const WEB_STATUS_OPTIONS = ['Not Published', 'Draft', 'In Review', 'Approved', 'Published', 'Under Offer', 'Sold', 'Withdrawn'];
 export const WEB_PRICING_OPTIONS = ['Asking Price', 'Price Guide', 'Expressions of Interest', 'Contact Agent'];
@@ -460,6 +483,10 @@ export const checkDataSourceSchema = (ds: DataSourceSchema): SchemaCheck => {
     if (!got) missingCore.push(name);
     else if (got.type !== expected) wrongCoreType.push({ name, expected, actual: String(got.type) });
   }
+  for (const [name, expected] of Object.entries(OPTIONAL_CORE_TYPES)) {
+    const got = byName.get(name);
+    if (got && got.type !== expected) wrongCoreType.push({ name, expected, actual: String(got.type) });
+  }
   const toAdd: SchemaCheck['toAdd'] = [];
   const wrongWebType: SchemaCheck['wrongWebType'] = [];
   const missingSelectOptions: SchemaCheck['missingSelectOptions'] = [];
@@ -490,7 +517,7 @@ const UUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$
 /** The database (container) id. The REST API needs the DATA SOURCE id; this one would 404. */
 export const KNOWN_DATABASE_ID = '2e2909c1-bb60-81b5-8806-ff710a8274ed';
 
-export interface NotionConfig { token: string; dataSourceId: string; version: string }
+export interface NotionConfig { token: string; dataSourceId: string; version: string; apiBase?: string }
 
 /**
  * Accepts a bare UUID, or the "collection://<uuid>" form the connector shows, and returns the plain UUID.
@@ -508,7 +535,13 @@ export const readNotionConfig = (env: Record<string, string | undefined>): Notio
   if (dataSourceId.replace(/-/g, '').toLowerCase() === KNOWN_DATABASE_ID.replace(/-/g, '')) {
     throw new Error('NOTION_PROPERTIES_DATA_SOURCE_ID is set to the DATABASE id. Use the data source id from Notion (see docs/listings-runbook.md).');
   }
-  return { token: env.NOTION_TOKEN, dataSourceId, version: env.NOTION_API_VERSION || NOTION_VERSION };
+  // NOTION_API_BASE exists only so the CLI can be exercised against a local mock server. It must be a loopback
+  // address, so a mistyped or malicious value can never redirect the token to another host.
+  const base = env.NOTION_API_BASE;
+  if (base && !/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/.test(base)) {
+    throw new Error('NOTION_API_BASE is for local tests only and must be http://127.0.0.1 or http://localhost');
+  }
+  return { token: env.NOTION_TOKEN, dataSourceId, version: env.NOTION_API_VERSION || NOTION_VERSION, ...(base ? { apiBase: base.replace(/\/$/, '') } : {}) };
 };
 
 /** Never carries headers, the token or the response body: only the status and Notion's error code. */
@@ -551,7 +584,7 @@ export class NotionReadClient {
       const wait = this.last + this.minInterval - this.now();
       if (wait > 0) await this.sleep(wait);
       this.last = this.now();
-      const res = await this.fetchImpl(`https://api.notion.com${path}`, {
+      const res = await this.fetchImpl(`${this.cfg.apiBase ?? 'https://api.notion.com'}${path}`, {
         method,
         headers: { Authorization: `Bearer ${this.cfg.token}`, 'Notion-Version': this.cfg.version, ...(body ? { 'Content-Type': 'application/json' } : {}) },
         ...(body ? { body: JSON.stringify(body) } : {}),
@@ -567,6 +600,11 @@ export class NotionReadClient {
       const backoff = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 60) * 1000 : 500 * 2 ** attempt + Math.floor(Math.random() * 250);
       await this.sleep(backoff);
     }
+  }
+
+  /** GET the integration's own bot user. Read only. It proves the token is accepted, and nothing more. */
+  retrieveSelf(): Promise<{ object: string; type?: string }> {
+    return this.request('GET', '/v1/users/me', 'token check');
   }
 
   /** GET the data source (its property schema). Read only. */

@@ -94,10 +94,13 @@ const variantSchema = z.object({
 
 const realPhotoSchema = z.object({
   id: z.string().regex(/^[a-f0-9]{10,}$/),
-  alt: z.string().min(8).max(200),
+  /** A description is optional for staff ("Kitchen" is enough). The published value is never empty: see fallbackAlt in notion.ts. */
+  alt: z.string().min(1).max(200),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   accent: z.enum(ACCENTS),
+  /** A floorplan is a drawing, not a photograph: shown whole on a neutral ground. Absent means photograph. */
+  kind: z.literal('floorplan').optional(),
   variants: z.array(variantSchema).min(1).max(6),
   /** A human confirmed no house number, letterbox, sign or person is identifiable in the frame. */
   privacyReviewed: z.literal(true),
@@ -142,6 +145,8 @@ export const publicListingSchema = publicContentSchema.extend({
   publishedAt: z.string(),
   updatedAt: z.string(),
   isDemo: z.boolean(),
+  /** Local draft preview only (astro dev). Never present in a build. */
+  isPreview: z.boolean().optional(),
 }).strict();
 
 export type PublicAddress = z.infer<typeof publicAddressSchema>;
@@ -205,9 +210,48 @@ export interface ApprovedSnapshot {
  * request. Default deny: nothing is cleared until a named person records it after taking advice.
  */
 export interface ComplianceConfig {
-  victoria: { reviewedBy: string | null; reviewedAt: string | null; adviceReference: string | null; cleared: Record<PricingMode, boolean> };
+  victoria: {
+    reviewedBy: string | null; reviewedAt: string | null; adviceReference: string | null; cleared: Record<PricingMode, boolean>;
+    /**
+     * Clearance with its basis stated. `listingId` names ONE listing, or is "*" for a standing determination that covers every listing for that
+     * pricing mode (for example the business's position that its tenanted SDA investment sales are commercial sales). Both need the full record.
+     */
+    determinations?: VictorianDetermination[];
+  };
   basicClassification: { confirmedListingIds: string[] };
 }
+
+/**
+ * A recorded determination for a single listing, or for all listings when `listingId` is "*". `basis` is deliberately explicit: `internal_determination` is the
+ * business's own reasoned position and is NOT legal advice or a ruling; `external_advice` cites advice from a
+ * licensed adviser or the regulator. Every field is required, so a clearance always names who, when and why.
+ */
+export interface VictorianDetermination {
+  listingId: string;
+  pricingMode: PricingMode;
+  basis: 'internal_determination' | 'external_advice';
+  recordedBy: string;
+  recordedAt: string;
+  reference: string;
+  statement: string;
+  /**
+   * Conditions the position relies on, checked by the publication engine on every listing that uses it, so the record cannot quietly stretch
+   * beyond what it states. A condition this code does not recognise fails closed. Known: "sda_dwelling" (the listing carries an SDA design
+   * category), "no_price_indication" (the public text never hints at a price, with words such as "offers over", "guide" or "reserve").
+   */
+  conditions?: string[];
+}
+
+/** Is this listing cleared for its pricing mode in Victoria? Mode-wide clearance, a complete standing determination ("*"), or a complete per-listing determination. */
+export const victorianClearance = (c: ComplianceConfig | undefined, listingId: string, mode: PricingMode): { cleared: boolean; basis?: string; conditions?: string[] } => {
+  if (!c) return { cleared: false };
+  if (c.victoria.cleared[mode]) return { cleared: true, basis: 'mode-wide clearance' };
+  const all = c.victoria.determinations ?? [];
+  const d = all.find((x) => x.listingId === listingId && x.pricingMode === mode) ?? all.find((x) => x.listingId === '*' && x.pricingMode === mode);
+  const complete = !!d && [d.recordedBy, d.recordedAt, d.reference, d.statement].every((v) => typeof v === 'string' && v.trim().length >= 3)
+    && (d.basis === 'internal_determination' || d.basis === 'external_advice');
+  return complete ? { cleared: true, basis: d!.listingId === '*' ? `standing ${d!.basis}` : d!.basis, conditions: d!.conditions ?? [] } : { cleared: false };
+};
 
 export interface Approver { notionUserId: string; name: string; githubHandle?: string }
 

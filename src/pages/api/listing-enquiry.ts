@@ -2,7 +2,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { Resend } from 'resend';
 import { getPublicListings } from '../../data/listings';
-import { createEmailSink, dryRunSink, hashKey, parseEnquiry, RateLimiter, toRecord } from '../../lib/enquiries';
+import { createEmailSink, dryRunSink, hashKey, parseEnquiry, RateLimiter, resolveRecipient, toRecord } from '../../lib/enquiries';
 import { isAllowedOrigin, json } from '../../lib/enquiry-http';
 
 /*
@@ -19,7 +19,7 @@ import { isAllowedOrigin, json } from '../../lib/enquiry-http';
 const perIp = new RateLimiter(5, 10 * 60 * 1000);
 const perEmail = new RateLimiter(3, 60 * 60 * 1000);
 
-const mode = () => import.meta.env.LISTINGS_ENQUIRY_MODE || (import.meta.env.DEV ? 'dry-run' : '');
+const mode = () => (import.meta.env.DEV && process.env.LISTINGS_LOCAL_PREVIEW === '1' ? 'dry-run' : import.meta.env.LISTINGS_ENQUIRY_MODE) || (import.meta.env.DEV ? 'dry-run' : '');
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   const devHosts = import.meta.env.DEV ? ['localhost:4321', '127.0.0.1:4321'] : [];
@@ -43,6 +43,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   // server-side allowlist: only a currently published listing can receive an enquiry
   const listing = getPublicListings(now).find((l) => l.id === parsed.value.listingId);
   if (!listing) return json({ ok: false, error: 'This listing is no longer available.' }, 404);
+  // a sold property cannot be enquired about (its page no longer offers the form; this stops a stale page or a script)
+  if (listing.commercialStatus === 'sold') return json({ ok: false, error: 'This property has been sold. Please contact us to discuss similar properties.' }, 409);
 
   const record = toRecord(parsed.value, now);
   if (m === 'dry-run') {
@@ -55,7 +57,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const resend = new Resend(key);
   const sink = createEmailSink(
     (msg) => resend.emails.send({ from: 'SDA Home Choices <noreply@send.sdahomechoices.com.au>', ...msg }),
-    'steve@sdahomechoices.com.au',
+    resolveRecipient('steve@sdahomechoices.com.au', import.meta.env.LISTINGS_ENQUIRY_TEST_TO, process.env.VERCEL_ENV),
   );
   const out = await sink.deliver(record, listing);
   return out.ok ? json({ ok: true }) : json({ ok: false, error: 'Could not send. Please try again.' }, 502);

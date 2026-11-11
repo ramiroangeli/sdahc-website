@@ -31,3 +31,7 @@ backup_15072026/
 
 # local Notion read-only credentials for scripts/listings-sync.mjs (never commit)
 .env.listings
+
+# local-only draft preview of a real listing (never commit; see scripts/local-preview.mjs)
+.local-preview/
+.env.local

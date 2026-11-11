@@ -1,3 +1,5 @@
 {
-  "approvers": []
+  "approvers": [
+    { "notionUserId": "2e1d872b-594c-8122-be15-00028acc4f13", "name": "Ramiro - SDAHC account" }
+  ]
 }

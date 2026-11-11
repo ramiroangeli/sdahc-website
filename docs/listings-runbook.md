@@ -26,7 +26,7 @@ El sitio compila solo con los ficheros de `src/data/listings/approved/` y `withd
    ```
    Usa el UUID del data source. **No** el id de la base (`2e2909c1-bb60-81b5-...`), y no hace falta `collection://` (se acepta y se convierte).
 6. Los comandos `npm run listings:*` cargan ese fichero con `node --env-file-if-exists`. Ningún comando imprime el token ni lo incluye en un error (hay una prueba).
-7. Comprueba: `npm run listings:schema`.
+7. Comprueba la configuración sin imprimir ningún secreto: `npm run listings:doctor` (local) y `npm run listings:doctor -- --online` (pregunta a Notion si acepta el token y si la integración puede leer el data source). Luego `npm run listings:schema`.
 
 Para revisar **un solo registro sin credenciales**, exporta la página de Notion a JSON y ejecuta `node scripts/listings-sync.mjs --preflight <pageId> --from-file pagina.json`.
 
@@ -56,19 +56,24 @@ Para revisar **un solo registro sin credenciales**, exporta la página de Notion
 7. **El revisor** (código propietario) mira la vista previa de Vercel (con `LISTINGS_MEDIA_BASE_URL` definida también en Preview) y el diff. Aprobar y fusionar el PR **es la aprobación de publicación**. Después se despliega `main`.
 8. Si el PR no se fusiona, no ocurre nada. Si Notion falla o la sincronización falla, no se propone nada.
 
-Alternativa sin local: el workflow manual `Propose listing snapshot` (Actions, "Run workflow", escribir `PROPOSE`) hace los pasos 3 a 6 en una rama `listing/...` y abre el PR. Necesita los secretos de Notion en GitHub y no despliega nada.
+El workflow manual `Propose listing snapshot` se retiró: las listings se publican desde el Listings Manager (flujo normal) y, solo para casos excepcionales, con estos pasos locales. El comando `npm run listings:withdraw` y el resto de la CLI siguen disponibles.
 
 ## 4. Fotografías (SharePoint a almacenamiento público)
 
 SharePoint se mantiene como biblioteca original. Flujo manual:
 
 1. Alguien copia a `Marketing / Approved for Website` solo las fotos elegidas (los originales no se tocan).
-2. Se descargan a una carpeta local: `npm run listings:photos -- --in <carpeta> --out <salida>` (orientación corregida, **EXIF y GPS eliminados**, 480/960/1600 px WebP, nombres por hash, máscara de color).
+2. Se descargan a una carpeta local: `npm run listings:photos -- --in <carpeta> --out <salida> --id <id público>` (el id lo imprime `listings:preflight`; la salida queda en `<salida>/<id público>/`, que es exactamente el prefijo de subida) (orientación corregida, **EXIF y GPS eliminados**, 480/960/1600 px WebP, nombres por hash, máscara de color).
 3. En `manifest.json`: escribir el **alt** de cada foto y poner `privacyReviewed: true` tras revisar cada encuadre (números en fachada, buzones, carteles, matrículas, personas, objetos personales).
-4. Subir la carpeta **a mano** a Vercel Blob (almacenamiento público) bajo `<id público>/`, de forma que el manifest quede en `<LISTINGS_MEDIA_BASE_URL>/<id público>/manifest.json`. Sube con una caducidad de caché conservadora (ver sección 6).
-5. Añadir el dominio de Blob a `img-src` en la CSP de `vercel.json` (mediante PR).
+4. Comprobar la carpeta antes de subirla: `npm run listings:photos:verify -- <salida>/<id público>`. Rechaza una carpeta sin alt, sin revisión de privacidad, con metadatos, con nombres que no sean el hash o con imágenes que no estén en el manifest.
+5. Subir la carpeta **a mano** a Vercel Blob (almacenamiento público) bajo `<id público>/`, de forma que el manifest quede en `<LISTINGS_MEDIA_BASE_URL>/<id público>/manifest.json`. Sube con una caducidad de caché conservadora (ver sección 6).
+6. Añadir el dominio de Blob a `img-src` en la CSP de `vercel.json` (mediante PR).
 
 **Vercel Blob sigue siendo la opción preferida**, pero no he podido verificar la configuración de tu cuenta: la conexión a Vercel solo ve que existen dos proyectos separados (`sdahc-website` y `sdahc-intelligence-app`) y rechaza el acceso a los detalles del equipo. Antes de subir nada hay que confirmar si ya existe un almacén Blob en `sdahc-website` y su dominio público. No activé ni creé almacenamiento.
+
+### Prueba real de entrega de consultas
+
+`npm run listings:test-delivery` muestra, sin enviar nada, el remitente, el destinatario y el asunto que se usarían y si hay clave. `npm run listings:test-delivery -- --send` envía **un** correo de prueba, claramente rotulado, por el mismo camino que el endpoint (mismo sumidero, mismo remitente Resend y mismo buzón). Solo acepta destinatarios `@sdahomechoices.com.au`. Es un paso explícito porque envía un correo real. El endpoint solo acepta consultas de un listing publicado, así que la prueba a través del endpoint se repite en el primer Preview con el snapshot propuesto y `LISTINGS_ENQUIRY_MODE=email` definido para Preview.
 
 ## 5. Cambio de estado comercial
 
@@ -81,15 +86,15 @@ Under Offer, Sold, destacado o fecha de fin no cambian el contenido público, pe
 **Procedimiento**
 1. En una rama desde `main`:
    ```
-   npm run listings:withdraw -- <slug|id> --reason "motivo" --by "Nombre"
+   npm run listings:withdraw -- <slug|id>
    ```
-   Escribe `src/data/listings/withdrawn/<id>.json`. El motivo se commitea en un repositorio público: máximo 120 caracteres, sin correos, teléfonos ni importes (por ejemplo "vendor request"). **Esa retirada anula cualquier estado de Notion** (aunque diga Published) hasta que alguien ejecute `--reinstate`, también por PR.
+   **Camino normal: el Listings Manager** (Publisher, dirección escrita y motivo privado); este comando es solo la salida de emergencia. Escribe `src/data/listings/withdrawn/<id>.json` con palabras constantes (`withdrawnBy: "SDA Home Choices"`, `reason: "withdrawn"`): el repositorio es público, así que **nunca** lleva un motivo ni un nombre (si se pasan `--reason` o `--by` no se guardan; anota el motivo en privado). **Esa retirada anula cualquier estado de Notion** (aunque diga Published) hasta que alguien ejecute `--reinstate`, también por PR (proceso administrativo manual: el Listings Manager no tiene reinstalación; la retirada allí es permanente).
 2. Comprueba localmente, tras compilar:
    ```
    npm run build
-   npm run check:withdrawal -- <slug>
+   npm run check:withdrawal -- <slug> --dist .vercel/output/static
    ```
-   Falla si el build aún contiene la ruta, la entrada del catálogo o del hero, cualquier enlace interno, la referencia en el sitemap, el canonical, el JSON-LD o cualquier fichero con su nombre. Con la ficha publicada devuelve error y tras la retirada pasa (verificado con una ficha de prueba).
+   (`--dist .vercel/output/static` comprueba lo que ve un visitante; el bundle de funciones del servidor sigue conteniendo los datos del listing, que ya eran públicos en el repositorio, y por eso no se analiza.) Falla si el build aún contiene la ruta, la entrada del catálogo o del hero, cualquier enlace interno, la referencia en el sitemap, el canonical, el JSON-LD o cualquier fichero con su nombre. Con la ficha publicada devuelve error y tras la retirada pasa (verificado con una ficha de prueba).
 3. PR con ese único fichero, revisión rápida de un propietario, fusión y despliegue.
 4. **Confirma en producción** que el despliegue nuevo está Ready:
    - `curl -sI https://sdahomechoices.com.au/opportunities/<slug>/` debe dar 404.
