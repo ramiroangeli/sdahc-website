@@ -1,7 +1,7 @@
 // Tests for scripts/lib/publish-git.mjs against a fake GitHub (in memory) and a fake production site. No network, no git, no secrets.
 // Called from scripts/test-listings.mjs with its t() and section() helpers.
 import { createHash } from 'node:crypto';
-import { REQUIRED_CHECK, abandon, artifactPath, assertOnlyArtifact, branchFor, githubClient, mergePr, openPublicationPr, snapshotText, verifyLive, waitForChecks, waitForDeployment } from './lib/publish-git.mjs';
+import { REQUIRED_CHECK, abandon, artifactPath, assertOnlyArtifact, assertOnlyTombstone, branchFor, githubClient, mergePr, openPublicationPr, openWithdrawalPr, snapshotText, tombstoneFor, tombstoneText, verifyLive, verifyWithdrawn, waitForChecks, waitForDeployment, withdrawnPath } from './lib/publish-git.mjs';
 
 const sha1 = (text) => createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 const rid = (() => { let n = 1000; return () => (n += 1); })();
@@ -137,6 +137,53 @@ export default async function run({ t, section }) {
     t('repeating the status change finds the same branch and pull request', again.branch === r.branch && again.prNumber === r.prNumber);
     const back = await openPublicationPr({ gh, snapshot: { ...prev, commercialStatus: 'under_offer' }, slug: SLUG, jobId: 'job-t', mode: 'update' });
     t('a different status gets a different branch (no collision with the earlier one)', back.branch !== r.branch);
+  }
+
+  section('withdrawal: one-file pull request with constant words only, and proof that the listing is gone');
+  {
+    const ID = 'lst_0123456789'; const AT = '2026-11-11T05:00:00.000Z';
+    const SENTINEL = 'PRIVATE-REASON-4f9a-sentinel';
+    t('the withdrawal file path is derived from the listing id only, and a bad id is refused', withdrawnPath(ID) === `src/data/listings/withdrawn/${ID}.json` && (() => { try { withdrawnPath('../x'); return false; } catch (e) { return e.code === 'bad_id'; } })());
+    t('the tombstone is constant words: id, time, "SDA Home Choices" and "withdrawn", nothing else', JSON.stringify(tombstoneFor(ID, AT)) === JSON.stringify({ listingId: ID, withdrawnAt: AT, withdrawnBy: 'SDA Home Choices', reason: 'withdrawn' }) && tombstoneText(tombstoneFor(ID, AT)).endsWith('}\n'));
+    t('only its own withdrawal file may change: nothing else, no second file, no approved snapshot', (() => {
+      const bad = (c) => { try { assertOnlyTombstone(c, ID); return false; } catch (e) { return e.code === 'unexpected_files'; } };
+      assertOnlyTombstone([withdrawnPath(ID)], ID);
+      return bad([]) && bad(['package.json']) && bad([withdrawnPath(ID), artifactPath(SLUG)]) && bad([artifactPath(SLUG)]) && bad(['src/data/listings/withdrawn/lst_9999999999.json']);
+    })());
+    {
+      const { s, gh } = fakeGitHub({ state: { files: { main: { 'package.json': '{}\n', [artifactPath(SLUG)]: snapshotText(snap()) } } } });
+      const r = await openWithdrawalPr({ gh, listingId: ID, slug: SLUG, at: AT, jobId: 'job-w' });
+      t('a withdrawal changes exactly one new file, on its own branch, and does not touch the approved snapshot', s.files[r.branch][withdrawnPath(ID)] === tombstoneText(tombstoneFor(ID, AT)) && s.files[r.branch][artifactPath(SLUG)] === s.files.main[artifactPath(SLUG)] && r.branch === `withdraw/${ID}`);
+      const all = JSON.stringify([s.lastCommit, s.prs]);
+      t('the pull request title, body and commit say only what happened publicly: no reason, no person', r.title === `Withdraw ${SLUG} from public marketing` && s.lastCommit.message.startsWith(`Withdraw ${SLUG} from public marketing`) && !all.includes(SENTINEL) && !/@/.test(all) && !/Approved by|requested by/i.test(all));
+      const again = await openWithdrawalPr({ gh, listingId: ID, slug: SLUG, at: AT, jobId: 'job-w' });
+      t('repeating the request finds the same branch and pull request', again.branch === r.branch && again.prNumber === r.prNumber && s.prs.length === 1);
+    }
+    {
+      const { gh } = fakeGitHub({ state: { files: { main: { 'package.json': '{}\n', [withdrawnPath(ID)]: '{"listingId":"lst_0123456789","withdrawnAt":"2020-01-01T00:00:00.000Z","withdrawnBy":"x","reason":"y"}\n' } } } });
+      t('a withdrawal that is already on main (a rerun after the merge, or made another way) opens nothing', (await openWithdrawalPr({ gh, listingId: ID, slug: SLUG, at: AT, jobId: 'j' })).alreadyOnMain === true);
+    }
+    {
+      const { gh } = fakeGitHub({ alsoTouch: 'package.json' });
+      let err; try { await openWithdrawalPr({ gh, listingId: ID, slug: SLUG, at: AT, jobId: 'j' }); } catch (e) { err = e; }
+      t('a withdrawal that would change any other file is refused before the pull request', err?.code === 'unexpected_files');
+      let bad; try { await openWithdrawalPr({ gh: fakeGitHub().gh, listingId: ID, slug: 'Bad Slug', at: AT, jobId: 'j' }); } catch (e) { bad = e; }
+      t('an unsafe slug is refused (it goes into a title)', bad?.code === 'bad_slug');
+    }
+    const site = (o = {}) => async (url) => {
+      const u = new URL(url); const res = (status, body = '') => ({ ok: status < 400, status, headers: new Headers(), text: async () => body, body: null });
+      if (u.pathname === `/opportunities/${SLUG}/`) return o.pageUp ? res(200, 'page') : res(404);
+      if (u.pathname === '/opportunities/') return o.catalogueLinks ? res(200, `<a href="/opportunities/${SLUG}/">x</a>`) : o.noCatalogue ? res(500) : res(200, '<a href="/opportunities/other-street-vic/">y</a>');
+      if (u.pathname === '/sitemap-index.xml') return o.noIndex ? res(404) : res(200, '<sitemapindex><sitemap><loc>https://www.example.test/sitemap-0.xml</loc></sitemap></sitemapindex>');
+      if (u.pathname === '/sitemap-0.xml') return o.noSitemap ? res(500) : res(200, o.sitemapLists ? `<loc>https://www.example.test/opportunities/${SLUG}/</loc>` : '<loc>https://www.example.test/opportunities/other-street-vic/</loc>');
+      return res(404);
+    };
+    const args = { siteUrl: 'https://www.example.test', slug: SLUG, sleep: async () => {}, attempts: 2 };
+    const ok = await verifyWithdrawn({ ...args, fetchImpl: site() });
+    t('live proof of a withdrawal: page 404, catalogue clear, sitemap clear', ok.ok && ok.checks.length === 3 && ok.url === `https://www.example.test/opportunities/${SLUG}/`);
+    t('it fails while the page is still served, still linked from the catalogue, still in the sitemap, or when the catalogue or sitemap cannot be read', !(await verifyWithdrawn({ ...args, fetchImpl: site({ pageUp: true }) })).ok && !(await verifyWithdrawn({ ...args, fetchImpl: site({ catalogueLinks: true }) })).ok && !(await verifyWithdrawn({ ...args, fetchImpl: site({ sitemapLists: true }) })).ok && !(await verifyWithdrawn({ ...args, fetchImpl: site({ noCatalogue: true }) })).ok && !(await verifyWithdrawn({ ...args, fetchImpl: site({ noSitemap: true }) })).ok);
+    let n = 0; const flaky = async (...a) => (n++ < 6 ? site({ pageUp: true })(...a) : site()(...a));
+    t('while the new deployment propagates the proof retries and then succeeds', (await verifyWithdrawn({ ...args, attempts: 4, fetchImpl: flaky })).ok);
   }
 
   section('real publication: deployment and live-site proof (fake GitHub, fake site)');

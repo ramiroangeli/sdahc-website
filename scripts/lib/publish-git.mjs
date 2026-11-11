@@ -4,6 +4,7 @@
 //
 // Rules this module enforces:
 //   - the ONLY file a publication may change is src/data/listings/approved/<slug>.json (anything else is refused before the commit)
+//   - the ONLY file a withdrawal may change is src/data/listings/withdrawn/<id>.json, and it carries no reason and no person (the site is public)
 //   - nothing is merged until the required check has passed on the exact commit being merged
 //   - a failed or abandoned run closes its pull request and deletes its branch; main is untouched, so the live site is untouched
 //   - every step is safe to repeat: a rerun finds the existing branch / pull request / merged file and carries on
@@ -212,4 +213,93 @@ async function verifyOnce({ base, slug, title, photos, status, fetchImpl, bust }
   const catHtml = cat && cat.ok ? await cat.text() : '';
   checks.push({ name: 'catalogue', ok: catHtml.includes(`/opportunities/${slug}/`), note: 'The catalogue links to the listing.' });
   return checks;
+}
+
+/* ---------------------------------------------------------------- withdrawal (remove a listing from public marketing) */
+export const WITHDRAWN_RE = /^src\/data\/listings\/withdrawn\/lst_[a-f0-9]{10}\.json$/;
+export const withdrawnPath = (listingId) => {
+  if (!/^lst_[a-f0-9]{10}$/.test(listingId ?? '')) throw Object.assign(new Error('the listing id is not safe to use as a file name'), { code: 'bad_id' });
+  return `src/data/listings/withdrawn/${listingId}.json`;
+};
+/**
+ * The public tombstone. Constant words only: this file, its pull request, its commit and the Actions log are all public, so the reason for a
+ * withdrawal and the person who asked never appear here (they live only in the Listings Manager's private audit trail).
+ */
+export const tombstoneFor = (listingId, at) => ({ listingId, withdrawnAt: at, withdrawnBy: 'SDA Home Choices', reason: 'withdrawn' });
+export const tombstoneText = (t) => `${JSON.stringify(t, null, 2)}\n`;
+export function assertOnlyTombstone(changed, listingId) {
+  const want = withdrawnPath(listingId);
+  if (changed.length !== 1 || changed[0] !== want || !WITHDRAWN_RE.test(changed[0])) throw Object.assign(new Error('a withdrawal may change only its own withdrawal file'), { code: 'unexpected_files' });
+}
+
+/**
+ * Opens (or finds) the withdrawal pull request. { alreadyOnMain: true } when main already holds a withdrawal for this listing (a rerun after the merge,
+ * or a withdrawal made another way): nothing to open. Otherwise { branch, headSha, prNumber, prUrl, title } ready for checks.
+ */
+export async function openWithdrawalPr({ gh, listingId, slug, at, jobId, defaultBranch = 'main' }) {
+  const path = withdrawnPath(listingId);
+  if (!SLUG_RE.test(slug ?? '')) throw Object.assign(new Error('the listing slug is not safe to use in a title'), { code: 'bad_slug' });
+  const text = tombstoneText(tombstoneFor(listingId, at));
+  const onMain = await gh.call('GET', `/contents/${path}?ref=${defaultBranch}`, null, { allow: [404] });
+  if (onMain.status === 200) return { alreadyOnMain: true };
+
+  const branch = `withdraw/${listingId}`;
+  const base = (await gh.call('GET', `/git/ref/heads/${defaultBranch}`)).data.object.sha;
+  const existing = await gh.call('GET', `/git/ref/heads/${branch}`, null, { allow: [404] });
+  if (existing.status === 404) await gh.call('POST', '/git/refs', { ref: `refs/heads/${branch}`, sha: base });
+  const onBranch = await gh.call('GET', `/contents/${path}?ref=${branch}`, null, { allow: [404] });
+  if (!(onBranch.status === 200 && onBranch.data?.sha === sha1blob(text))) {
+    const put = await gh.call('PUT', `/contents/${path}`, {
+      message: `Withdraw ${slug} from public marketing\n\nApproved in the Listings Manager. Job ${jobId}.`,
+      content: enc(text), branch, ...(onBranch.status === 200 ? { sha: onBranch.data.sha } : {}),
+    });
+    if (put.data?.commit?.sha === undefined) throw Object.assign(new Error('GitHub did not confirm the commit'), { code: 'commit_failed' });
+  }
+  const cmp = (await gh.call('GET', `/compare/${defaultBranch}...${branch}`)).data;
+  assertOnlyTombstone((cmp.files ?? []).map((f) => f.filename), listingId);
+  const headSha = cmp.commits?.length ? cmp.commits[cmp.commits.length - 1].sha : (await gh.call('GET', `/git/ref/heads/${branch}`)).data.object.sha;
+  const open = (await gh.call('GET', `/pulls?state=open&head=${encodeURIComponent(`${gh.repo}:${branch}`)}`)).data ?? [];
+  let pr = open[0];
+  const title = `Withdraw ${slug} from public marketing`;
+  if (!pr) {
+    pr = (await gh.call('POST', '/pulls', {
+      title, head: branch, base: defaultBranch,
+      body: `Opened by the Listings Manager publication job \`${jobId}\`.\n\nChanges one file only: \`${path}\`.\nThe pull request is merged by the job once the required check \`${REQUIRED_CHECK}\` passes on this exact commit.`,
+    })).data;
+  }
+  return { branch, headSha, prNumber: pr.number, prUrl: pr.html_url, title };
+}
+
+/**
+ * Proof that the listing is really gone from the live site: its page answers 404, the catalogue does not link to it and no sitemap lists it.
+ * Retries while the new deployment propagates.
+ */
+export async function verifyWithdrawn({ siteUrl, slug, fetchImpl = fetch, sleep = sleepDefault, attempts = 18, pollMs = 10000 }) {
+  const base = siteUrl.replace(/\/$/, '');
+  const needle = `/opportunities/${slug}`;
+  let last = [];
+  for (let i = 0; i < attempts; i += 1) {
+    const get = async (url) => { try { return await fetchImpl(url, { redirect: 'follow', headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(20000) }); } catch { return null; } };
+    const bust = `${Date.now()}${i}`;
+    const checks = [];
+    const page = await get(`${base}/opportunities/${slug}/?v=${bust}`);
+    checks.push({ name: 'page_gone', ok: !!page && (page.status === 404 || page.status === 410), note: page ? `The listing page answers HTTP ${page.status}.` : 'The listing page could not be reached.' });
+    const cat = await get(`${base}/opportunities/?v=${bust}`);
+    const catHtml = cat && cat.ok ? await cat.text() : null;
+    checks.push({ name: 'catalogue_clear', ok: catHtml !== null && !catHtml.includes(needle), note: catHtml === null ? 'The catalogue could not be read.' : 'The catalogue no longer links to the listing.' });
+    let sitemapOk = false; let listed = false; let read = 0;
+    const idx = await get(`${base}/sitemap-index.xml?v=${bust}`);
+    const idxText = idx && idx.ok ? await idx.text() : '';
+    const maps = [...idxText.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]).filter((u) => u.startsWith(base));
+    for (const u of maps.length ? maps : [`${base}/sitemap-0.xml`]) {
+      const r = await get(`${u}?v=${bust}`);
+      if (r && r.ok) { read += 1; if ((await r.text()).includes(needle)) listed = true; }
+    }
+    sitemapOk = read > 0 && !listed;
+    checks.push({ name: 'sitemap_clear', ok: sitemapOk, note: read === 0 ? 'The sitemap could not be read.' : listed ? 'The sitemap still lists the listing.' : 'The sitemap no longer lists the listing.' });
+    last = checks;
+    if (checks.every((c) => c.ok)) return { ok: true, checks, url: `${base}/opportunities/${slug}/` };
+    if (i < attempts - 1) await sleep(pollMs);
+  }
+  return { ok: false, checks: last, url: `${base}/opportunities/${slug}/` };
 }

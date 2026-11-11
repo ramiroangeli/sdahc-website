@@ -2,7 +2,7 @@
 /*
   Publication job started by the internal Listings Manager (workflow .github/workflows/publish-listing.yml).
 
-    node scripts/listings-publish-job.mjs --job <uuid> --public-id <lst_...> --mode dry_run|publish|update
+    node scripts/listings-publish-job.mjs --job <uuid> --public-id <lst_...> --mode dry_run|publish|update|withdraw
 
   It reuses the EXISTING engine: the same propose() that listings-sync uses, the same safety guards and compliance gates, the same
   test suite, the same build and the same dist privacy scan. It adds only the plumbing around them.
@@ -16,6 +16,11 @@
   that changes ONLY src/data/listings/approved/<slug>.json, waits for the required CI check on that exact commit, merges it, waits for the Vercel
   Production deployment and then proves the live listing page, every image and the catalogue. It reports "finished: succeeded" (the only signal the
   app turns into Live) only after that proof. On any failure the pull request is closed and the branch deleted, so main and the live site are untouched.
+  WITHDRAW. Removes the listing from public marketing: a one-file pull request that adds src/data/listings/withdrawn/<id>.json (constant words only: no reason
+  and no person, because this repository, its pull requests and these logs are public; the reason lives only in the Listings Manager's private audit trail).
+  Notion is not consulted. Before any pull request it proves the build WITHOUT the listing is clean (check:withdrawal: no route, catalogue entry, link or
+  sitemap entry) and passes the privacy scan; then required check, merge, deployment, and live proof that the page answers 404 and the catalogue and sitemap
+  no longer list it. A rerun after the merge only verifies. The approved snapshot and the public photographs stay (history, and any later manual administrative process; no automatic deletion).
   Progress and the result go back to the app over a signed request. This script prints step names only: never listing text, prices or
   internal values, because Actions logs of a public repository are public.
 
@@ -27,7 +32,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { REAL_MODES } from './lib/publish-job.mjs';
-import { REQUIRED_CHECK, abandon, githubClient, mainHead, mergePr, openPublicationPr, verifyLive, waitForChecks, waitForDeployment } from './lib/publish-git.mjs';
+import { REQUIRED_CHECK, abandon, githubClient, mainHead, mergePr, openPublicationPr, openWithdrawalPr, tombstoneFor, tombstoneText, verifyLive, verifyWithdrawn, waitForChecks, waitForDeployment, withdrawnPath } from './lib/publish-git.mjs';
 import { COMMERCIAL_STATUSES, JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, overlayPage, parity, signedHeaders, statusParity, withRetry } from './lib/publish-job.mjs';
 
 const argv = process.argv.slice(2);
@@ -144,11 +149,92 @@ async function verifyMedia({ mediaBase, publicId: id, manifest }) {
   } catch { return { ok: false, note: 'The public image store could not be checked.' }; }
 }
 
+/** WITHDRAW: take a published listing out of public marketing. See the header. Nothing private is read, written or printed here. */
+async function withdraw(payload) {
+  if (payload.action !== 'withdraw' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/.test(payload.at ?? '')) throw Object.assign(new Error('the withdrawal request is not valid'), { code: 'payload_mismatch' });
+  await report('payload', 'ok');
+  const dataDir = join(repoRoot, 'src/data/listings');
+  const jsonDir = (d) => (existsSync(join(dataDir, d)) ? readdirSync(join(dataDir, d)).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(join(dataDir, d, f), 'utf8'))) : []);
+  const snap = jsonDir('approved').find((x) => x.listingId === publicId);
+  if (!snap) throw Object.assign(new Error('this listing is not published, so there is nothing to withdraw'), { code: 'not_published' });
+  const slug = snap.content.slug;
+  const resumed = jsonDir('withdrawn').some((w) => w.listingId === publicId);
+  const checks = [];
+  await report('engine', 'ok', { kind: resumed ? 'already_withdrawn' : 'withdraw', slug, checks: [{ name: 'listing_found', ok: true, note: resumed ? 'The withdrawal is already on the main branch.' : 'The listing is published and not withdrawn.' }] });
+
+  const token = process.env.GITHUB_TOKEN; const repository = process.env.GITHUB_REPOSITORY; const siteUrl = process.env.LISTINGS_SITE_URL || 'https://sdahomechoices.com.au';
+  if (!token || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? '')) throw Object.assign(new Error('GitHub access is not available to this run'), { code: 'not_configured' });
+  const gh = githubClient({ token, repo: repository, api: process.env.GITHUB_API_URL || 'https://api.github.com' });
+
+  if (resumed) {
+    await report('build', 'ok', { checks: [{ name: 'build', ok: true, note: 'Already withdrawn: the build without the listing ran at deployment.' }] });
+  } else {
+    // the build WITHOUT the listing, in this runner's workspace only (never committed), must be clean before any pull request exists
+    log('building the site without the listing');
+    mkdirSync(join(dataDir, 'withdrawn'), { recursive: true });
+    writeFileSync(join(repoRoot, withdrawnPath(publicId)), tombstoneText(tombstoneFor(publicId, payload.at)));
+    const mediaBase = (process.env.LISTINGS_MEDIA_BASE_URL ?? '').replace(/\/$/, '');
+    const build = run('npm', ['run', 'build'], { LISTINGS_MEDIA_BASE_URL: mediaBase });
+    const buildOk = build.status === 0;
+    const gone = buildOk ? run('node', ['scripts/check-withdrawal.mjs', publicId, '--dist', '.vercel/output/static']) : build;
+    const goneOk = buildOk && gone.status === 0;
+    const privacy = buildOk ? run('npm', ['run', 'check:privacy']) : build;
+    const privacyOk = buildOk && privacy.status === 0;
+    checks.push({ name: 'build', ok: buildOk, note: buildOk ? 'The production build without the listing succeeds.' : tail(build) });
+    checks.push({ name: 'withdrawal_clean', ok: goneOk, note: goneOk ? 'The build has no page, catalogue entry, link or sitemap entry for the listing.' : tail(gone) });
+    checks.push({ name: 'privacy_scan', ok: privacyOk, note: privacyOk ? 'The privacy scan of the build output is clean.' : tail(privacy) });
+    await report('build', buildOk && goneOk && privacyOk ? 'ok' : 'failed', { checks });
+    if (!(buildOk && goneOk && privacyOk)) throw Object.assign(new Error('the build without the listing, or its privacy scan, failed'), { code: 'build_failed', reported: true });
+  }
+
+  let pr = null; let mergeSha;
+  try {
+    const opened = resumed ? { alreadyOnMain: true } : await openWithdrawalPr({ gh, listingId: publicId, slug, at: payload.at, jobId });
+    if (opened.alreadyOnMain) {
+      mergeSha = await mainHead(gh); after.merged = true; after.mergeCommit = mergeSha;
+      await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha });
+    } else {
+      pr = opened;
+      await report('pull_request', 'ok', { number: pr.prNumber, url: pr.prUrl, files: 1 });
+      log('waiting for the required check');
+      const c = await waitForChecks({ gh, headSha: pr.headSha });
+      checks.push({ name: 'required_check', ok: c.ok, note: c.ok ? `The required check (${REQUIRED_CHECK}) passed on the exact commit.` : c.conclusion === 'not_started' ? `The required check (${REQUIRED_CHECK}) did not start on the pull request.` : `The required check did not pass (${c.conclusion}).` });
+      await report('checks', c.ok ? 'ok' : 'failed', { checks, url: c.url ?? null });
+      if (!c.ok) throw Object.assign(new Error('the required check did not pass'), { code: 'checks_failed', reported: true });
+      log('merging');
+      const m = await mergePr({ gh, prNumber: pr.prNumber, headSha: pr.headSha, title: `${pr.title} (#${pr.prNumber})` });
+      mergeSha = m.sha; pr = null; after.merged = true; after.mergeCommit = mergeSha;
+      await report('merge', 'ok', { sha: mergeSha });
+    }
+  } catch (e) {
+    if (pr) await abandon({ gh, prNumber: pr.prNumber, branch: pr.branch });
+    if (!e.reported) await report(e.code === 'merge_refused' ? 'merge' : 'pull_request', 'failed', { issues: [String(e.message).slice(0, 200)] });
+    throw Object.assign(e, { reported: true });
+  }
+
+  log('waiting for the Production deployment');
+  const dep = await waitForDeployment({ gh, sha: mergeSha });
+  const depOk = dep === null || dep.state === 'success';
+  checks.push({ name: 'deployment', ok: depOk, note: dep === null ? 'No deployment record was found; the live site checks below decide.' : dep.state === 'success' ? 'The Vercel Production deployment succeeded.' : `The Vercel Production deployment ended as ${dep.state}.` });
+  await report('deploy', depOk ? 'ok' : 'failed', { checks });
+  if (!depOk) throw Object.assign(new Error('the production deployment did not succeed'), { code: 'deploy_failed', reported: true });
+
+  log('checking the live site');
+  const gone = await verifyWithdrawn({ siteUrl, slug });
+  for (const c of gone.checks) checks.push({ name: `live_${c.name}`, ok: c.ok, note: c.note });
+  await report('verify', gone.ok ? 'ok' : 'failed', { checks });
+  if (!gone.ok) throw Object.assign(new Error('the live site still shows the listing'), { code: 'verify_failed', reported: true });
+
+  await report('finished', 'succeeded', { dryRun: false, live: false, withdrawn: true, slug, kind: 'withdraw', mergeCommit: mergeSha, checks });
+  log('withdrawn and verified');
+}
+
 async function main() {
   await report('started', 'running');
   log('fetching the approved content from the app');
   const payload = await call('GET', `/api/listings/publish-payload?job=${jobId}`);
   if (payload.publicId !== publicId || payload.mode !== mode || payload.version !== 1) throw Object.assign(new Error('the payload does not match the job'), { code: 'payload_mismatch' });
+  if (mode === 'withdraw') return withdraw(payload);
   await report('payload', 'ok', { photos: payload.manifest.photos.length });
 
   const mediaBase = process.env.LISTINGS_MEDIA_BASE_URL;

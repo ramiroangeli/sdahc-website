@@ -29,7 +29,7 @@ on:
         description: 'Public listing id (lst_...)'
         required: true
       mode:
-        description: 'dry_run changes nothing; publish and update change the live site'
+        description: 'dry_run changes nothing; publish, update and withdraw change the live site'
         required: true
         type: choice
         default: dry_run
@@ -37,6 +37,7 @@ on:
           - dry_run
           - publish
           - update
+          - withdraw
 
 # the workflow's own token can only read; every write goes through the GitHub App token created below (contents, pull requests; read of checks
 # and deployments)
