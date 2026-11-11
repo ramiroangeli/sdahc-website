@@ -29,3 +29,11 @@ How a listing goes live, and what protects the live site. English on purpose: it
 - Workflow permissions: Read and write permissions is NOT needed (the workflow declares its own). **Allow GitHub Actions to create and approve pull requests** is no longer needed for publication (the App opens the pull request); leave it as it is.
 - Variable `LISTINGS_SITE_URL` (optional, default `https://sdahomechoices.com.au`).
 - Apply `docs/github-ruleset-main.json` (Settings > Rules > Rulesets > Import) only after `ci.yml` is on `main`.
+
+## Commercial status (Available, Under offer, Sold)
+
+- The status is chosen in the Listings Manager by a Publisher and travels in the signed payload (`content.commercialStatus`) only when it changes. Notion's Web Listing Status is **not** consulted: the job overlays the property with the approved content and takes the status from the payload, else from the snapshot already on `main`, else Available for a first publication. A content update therefore never resets Under offer or Sold.
+- A status-only change keeps the snapshot's version and content hash and moves only `commercialStatus` (the engine's `status` kind, now accepted for `update`). It has its own branch name, a pull request titled "Update <slug> (status: sold)" and no person's name anywhere.
+- The Listing End Date is read from the existing snapshot only; a Notion value cannot enter a snapshot through the portal. No scheduler exists: a snapshot's end date takes effect only at the next build.
+- The live check also confirms the status badge, and for Sold that the page carries no enquiry form and no "Enquire about this property".
+- A Sold listing stays public and in the catalogue (badge Sold, no price), its page says it has been sold and offers a general enquiry route, structured data carries no offer, and the enquiry endpoint answers 409.

@@ -43,7 +43,7 @@ const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase()
         </ul>
       )}
       <p class="lc-sum">{listing.summary}</p>
-      <p class="lc-foot"><span>{pricingLine(listing.pricing)}</span><span class="lc-more" aria-hidden="true">View details &rarr;</span></p>
+      <p class="lc-foot"><span>{listing.commercialStatus === 'sold' ? 'Sold' : pricingLine(listing.pricing)}</span><span class="lc-more" aria-hidden="true">View details &rarr;</span></p>
     </div>
   </article>
 </li>

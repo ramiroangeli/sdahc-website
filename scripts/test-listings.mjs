@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { prepareFolder, readAccentPalette, snapToAccent, verifyFolder } from './prepare-listing-photos.mjs';
-import { approverFor, checkManifest, overlayPage, parity, sign, signedHeaders, verifySignature, withRetry } from './lib/publish-job.mjs';
+import { approverFor, checkManifest, effectiveStatus, overlayPage, parity, sign, signedHeaders, statusParity, verifySignature, withRetry } from './lib/publish-job.mjs';
 
 const L = await loadTs();
 const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
@@ -208,6 +208,7 @@ t('JSON-LD has no coordinates and no house number', !/geo|latitude|longitude/i.t
 t('JSON-LD has no offer without a public price', !('offers' in ld));
 const ldAsk = L.listingJsonLd(askListing, 'https://sdahomechoices.com.au/');
 t('JSON-LD offer carries only the approved AUD price', ldAsk.offers.price === 695000 && ldAsk.offers.priceCurrency === 'AUD');
+t('JSON-LD of a SOLD listing carries no offer, even with an approved price', !('offers' in L.listingJsonLd({ ...askListing, commercialStatus: 'sold' }, 'https://sdahomechoices.com.au/')) && 'offers' in L.listingJsonLd({ ...askListing, commercialStatus: 'under_offer' }, 'https://sdahomechoices.com.au/'));
 t('JSON-LD URL is the numberless slug', ld.url === 'https://sdahomechoices.com.au/opportunities/rutherford-grove-armstrong-creek-vic/');
 t('Open Graph image is the widest real photo', L.listingOgImage(eoiListing) === `${MEDIA}/a1b2c3d4e5f6-960.webp`);
 t('a demo listing never provides an Open Graph image', L.listingOgImage(fx[0]) === undefined);
@@ -527,6 +528,23 @@ const run = (pages, extra = {}) => L.propose({ pages, previous: new Map(), withd
   t('edited public copy becomes version 2 with the slug frozen', edited[0].kind === 'version' && edited[0].snapshot.version === 2 && edited[0].snapshot.content.slug === out[0].snapshot.content.slug);
   const lost = await run([pg({ [N.webApprovedBy]: P_.person('user-eve', 'Eve') })], { previous: new Map([[PID(A.id), out[0].snapshot]]) });
   t('a row that now fails validation proposes nothing and leaves the previous version alone', lost[0].kind === 'failed' && !lost[0].snapshot);
+  {
+    // the portal overlay (never Notion) decides the status: a content update must not reset Under offer or Sold to Available
+    const prevOffer = { ...out[0].snapshot, commercialStatus: 'under_offer' };
+    const asPortal = (props, prev, payload) => overlayPage(pg(props), { content: { title: 'SDA property, Armstrong Creek', description: 'First public paragraph.\n\nSecond public paragraph.', publicAddress: 'Rutherford Grove, Armstrong Creek VIC 3217', pricingMode: 'eoi', displayPrice: null, featured: true, ...payload } }, { notionUserId: 'user-steve', name: 'SDA Home Choices' }, prev);
+    const upd = await run([asPortal({}, prevOffer, { description: 'A reworded public description.' })], { previous: new Map([[PID(A.id), prevOffer]]), approvers: ['user-steve'] });
+    t('a content update through the portal keeps an Under offer listing Under offer', upd[0].kind === 'version' && upd[0].snapshot.commercialStatus === 'under_offer');
+    const toSold = await run([asPortal({}, out[0].snapshot, { commercialStatus: 'sold' })], { previous: new Map([[PID(A.id), out[0].snapshot]]), approvers: ['user-steve'] });
+    t('a requested status with identical content is a status move: same version, same hash, new status', toSold[0].kind === 'status' && toSold[0].snapshot.commercialStatus === 'sold' && toSold[0].snapshot.version === out[0].snapshot.version && toSold[0].snapshot.contentHash === out[0].snapshot.contentHash);
+    t('a status move keeps the approver of the version (nobody new is named)', toSold[0].snapshot.approvedBy === out[0].snapshot.approvedBy && toSold[0].snapshot.approvedById === out[0].snapshot.approvedById);
+    const notionSold = await run([asPortal({ [N.webStatus]: P_.sel('Withdrawn') }, out[0].snapshot, {})], { previous: new Map([[PID(A.id), out[0].snapshot]]), approvers: ['user-steve'] });
+    t('Notion Web Listing Status (even Withdrawn or Not Published) is not a gate for a portal publication', notionSold[0].kind === 'unchanged');
+    const ended = await run([asPortal({ [N.listingEndDate]: P_.date('2020-01-01') }, out[0].snapshot, {})], { previous: new Map([[PID(A.id), out[0].snapshot]]), approvers: ['user-steve'] });
+    t('a Notion Listing End Date can never enter a snapshot through the portal', ended[0].kind === 'unchanged');
+    const keeps = { ...out[0].snapshot, listingEndDate: '2031-06-30' };
+    const kept = await run([asPortal({}, keeps, { commercialStatus: 'sold' })], { previous: new Map([[PID(A.id), keeps]]), approvers: ['user-steve'] });
+    t('an end date already in the snapshot is preserved by a status move', kept[0].snapshot.listingEndDate === '2031-06-30' && kept[0].snapshot.commercialStatus === 'sold');
+  }
   const tomb = await run([pg()], { withdrawn: new Set([PID(A.id)]) });
   t('an explicitly withdrawn listing is never proposed again', tomb[0].kind === 'withdrawn' && !tomb[0].snapshot);
   const twin = await run([pg(), pg({}, '2e2909c1-0000-0000-0000-00000000a009')]);
@@ -909,6 +927,19 @@ section('publication job started by the internal app (dry run only in this relea
   t('parity: a snapshot that says what was approved has no differences', parity(content, payload).length === 0);
   t('parity names every difference (title, text, address, mode, price, photo order) and nothing else', JSON.stringify(parity({ ...content, title: 'x', description: ['y'], address: { ...content.address, suburb: 'Elsewhere' }, pricing: { mode: 'eoi' }, photos: [content.photos[1], content.photos[0]] }, payload)) === JSON.stringify(['title', 'description', 'address', 'pricing mode', 'display price', 'photo order']));
   t('parity: an empty approved title is not compared (the engine derives the default)', parity({ ...content, title: 'SDA property, Exampleton' }, { ...payload, content: { ...payload.content, title: '' } }).length === 0);
+  t('effectiveStatus: the requested status, else the website status, else Available', effectiveStatus({ content: { commercialStatus: 'sold' } }, { commercialStatus: 'available' }) === 'sold' && effectiveStatus({ content: {} }, { commercialStatus: 'under_offer' }) === 'under_offer' && effectiveStatus({ content: {} }, null) === 'available' && effectiveStatus({ content: { commercialStatus: 'bogus' } }, { commercialStatus: 'sold' }) === 'sold');
+  t('the overlay takes status and end date from the portal and the existing snapshot, never from Notion', L.readText(overlayPage({ ...page, properties: { ...page.properties, 'Web Listing Status': { type: 'select', select: { name: 'Withdrawn' } }, 'Listing End Date': { type: 'date', date: { start: '2020-01-01' } } } }, payload, null, { commercialStatus: 'sold', listingEndDate: '2031-06-30' }).properties['Web Listing Status']) === 'Sold' && L.readText(overlayPage(page, payload, null, { listingEndDate: '2031-06-30' }).properties['Listing End Date']) === '2031-06-30' && L.readText(overlayPage(page, payload, null, null).properties['Listing End Date']) === '');
+  t('statusParity: nothing asked passes; a mismatch is named', statusParity({ commercialStatus: 'sold' }, { content: {} }).length === 0 && statusParity({ commercialStatus: 'sold' }, { content: { commercialStatus: 'sold' } }).length === 0 && statusParity({ commercialStatus: 'available' }, { content: { commercialStatus: 'sold' } })[0] === 'commercial status');
+  {
+    const jobSrc = rd('scripts/listings-publish-job.mjs');
+    t('the job accepts a status move as an update, checks the requested status against the snapshot, and proves it on the live page', /action\.kind !== 'version' && action\.kind !== 'status'/.test(jobSrc) && /statusParity\(action\.snapshot, payload\)/.test(jobSrc) && /verifyLive\(\{[^}]*status: snapshot\.commercialStatus/.test(jobSrc));
+    t('the job resumes a merged status move only when the status also matches, and rejects an invalid or non-Available first-publication status', /statusParity\(previousSnap, payload\)\.length === 0/.test(jobSrc) && /mode === 'publish' && asked !== 'available'/.test(jobSrc));
+    const slugPage = rd('src/pages/opportunities/[slug].astro');
+    const soldBranch = slugPage.slice(slugPage.indexOf('{sold ? ('), slugPage.indexOf(') : ('));
+    t('a Sold page has no price row, no purchase enquiry, no access steps and no enquiry form, and offers a general enquiry route', /const sold = listing\.commercialStatus === 'sold'/.test(slugPage) && /\.\.\.\(sold \? \[\]/.test(slugPage) && /\{!sold && \(/.test(slugPage) && !/ListingEnquiryForm/.test(soldBranch) && /href="\/contact-us\/"/.test(soldBranch) && /This property has been sold/.test(soldBranch));
+    t('the enquiry endpoint refuses an enquiry about a sold listing', /commercialStatus === 'sold'\) return json\(\{ ok: false[^)]*409\)/.test(rd('src/pages/api/listing-enquiry.ts')));
+    t('a sold card in the catalogue does not show a price', /commercialStatus === 'sold' \? 'Sold' : pricingLine/.test(rd('src/components/ListingCard.astro')));
+  }
   t('the manifest check refuses photographs outside a gallery review, non-hash ids and an empty gallery', checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: true }] }).length === 0 && checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: false }] }).length > 0 && checkManifest({ version: 1, photos: [{ id: 'x', privacyReviewed: true }] }).length > 0 && checkManifest({ version: 1, photos: [] }).length > 0);
 
   {

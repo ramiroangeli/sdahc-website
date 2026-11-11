@@ -43,6 +43,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   // server-side allowlist: only a currently published listing can receive an enquiry
   const listing = getPublicListings(now).find((l) => l.id === parsed.value.listingId);
   if (!listing) return json({ ok: false, error: 'This listing is no longer available.' }, 404);
+  // a sold property cannot be enquired about (its page no longer offers the form; this stops a stale page or a script)
+  if (listing.commercialStatus === 'sold') return json({ ok: false, error: 'This property has been sold. Please contact us to discuss similar properties.' }, 409);
 
   const record = toRecord(parsed.value, now);
   if (m === 'dry-run') {

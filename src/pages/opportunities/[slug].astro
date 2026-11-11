@@ -19,10 +19,12 @@ export function getStaticPaths() {
 const { listing } = Astro.props;
 const { sda, address } = listing;
 const price = formatPricing(listing.pricing);
+// a sold property is not offered: no price, no purchase enquiry, no access steps (a general enquiry route instead)
+const sold = listing.commercialStatus === 'sold';
 const facts: [string, string][] = [
   ['Address', formatPublicAddress(address)],
   ['Type', TYPE_LABEL[listing.type]],
-  [price.label, price.value ? `${price.value} AUD` : price.label === 'Contact Agent' ? 'Enquire for details' : 'Registrations open'],
+  ...(sold ? [] : [[price.label, price.value ? `${price.value} AUD` : price.label === 'Contact Agent' ? 'Enquire for details' : 'Registrations open'] as [string, string]]),
   ...(sda.designCategories?.length ? [['Design category', sda.designCategories.map((d) => DESIGN_LABEL[d]).join(', ')] as [string, string]] : []),
   ...(sda.buildingType ? [['Build type', sda.buildingType] as [string, string]] : []),
   ...(sda.bedrooms ? [['Bedrooms', String(sda.bedrooms)] as [string, string]] : []),
@@ -60,29 +62,42 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
           <dl class="ld-facts">
             {facts.map(([k, v]) => (<><dt>{k}</dt><dd>{v}</dd></>))}
           </dl>
-          <a class="btn b1 ld-cta" href="#enquire">Enquire about this property</a>
+          {sold
+            ? <><p class="ld-sold-note">This property has been sold and is no longer available.</p><a class="btn b1 ld-cta" href="/opportunities/#listings">See available properties</a></>
+            : <a class="btn b1 ld-cta" href="#enquire">Enquire about this property</a>}
         </div>
-        <div class="ld-panel ld-panel-soft">
-          <h2 class="ld-panel-h">How access works</h2>
-          <ol class="ld-steps">
-            <li>Register your interest below.</li>
-            <li>Sign a short mutual NDA.</li>
-            <li>Receive the Information Memorandum.</li>
-            <li>Submit an EOI.</li>
-          </ol>
-        </div>
+        {!sold && (
+          <div class="ld-panel ld-panel-soft">
+            <h2 class="ld-panel-h">How access works</h2>
+            <ol class="ld-steps">
+              <li>Register your interest below.</li>
+              <li>Sign a short mutual NDA.</li>
+              <li>Receive the Information Memorandum.</li>
+              <li>Submit an EOI.</li>
+            </ol>
+          </div>
+        )}
       </aside>
     </div>
   </div></section>
 
-  <section class="section ld-enquire" id="enquire"><div class="wrap ld-enquire-grid">
-    <div>
-      <h2 class="ld-h2">Enquire about this property</h2>
-      <p class="ld-lead">Tell us a little about your brief. The right person at SDA Home Choices will respond and, where it is a fit, send the NDA.</p>
+  {sold ? (
+    <section class="section ld-enquire" id="enquire"><div class="wrap"><div class="ld-sold">
+      <h2 class="ld-h2">This property has been sold</h2>
+      <p class="ld-lead">If you are looking for a similar SDA property, tell us about your brief and we will contact you when a suitable property becomes available, including off-market opportunities.</p>
       <p class="ld-lead">Prefer to talk? Call <a href="tel:+61408550441">+61 408 550 441</a> or email <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>.</p>
-    </div>
-    <div class="ld-card"><ListingEnquiryForm listingId={listing.id} listingTitle={listing.title} /></div>
-  </div></section>
+      <p><a class="btn b1" href="/contact-us/">Tell us what you are looking for</a></p>
+    </div></div></section>
+  ) : (
+    <section class="section ld-enquire" id="enquire"><div class="wrap ld-enquire-grid">
+      <div>
+        <h2 class="ld-h2">Enquire about this property</h2>
+        <p class="ld-lead">Tell us a little about your brief. The right person at SDA Home Choices will respond and, where it is a fit, send the NDA.</p>
+        <p class="ld-lead">Prefer to talk? Call <a href="tel:+61408550441">+61 408 550 441</a> or email <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>.</p>
+      </div>
+      <div class="ld-card"><ListingEnquiryForm listingId={listing.id} listingTitle={listing.title} /></div>
+    </div></section>
+  )}
 </BaseLayout>
 
 <style>
@@ -110,6 +125,8 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
 .ld-facts dt{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);padding-top:3px}
 .ld-facts dd{margin:0;color:var(--white)}
 .ld-cta{display:inline-block}
+.ld-sold-note{margin:0 0 16px;font-family:var(--sans);font-size:16px;line-height:1.5;color:var(--white)}
+.ld-sold{max-width:66ch}
 .ld-steps{margin:0;padding-left:20px;font-family:var(--sans);font-size:15px;line-height:1.6;color:var(--pale)}
 .ld-steps li{margin:0 0 6px}
 

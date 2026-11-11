@@ -19,7 +19,8 @@ export const artifactPath = (slug) => {
   return `src/data/listings/approved/${slug}.json`;
 };
 export const snapshotText = (snapshot) => `${JSON.stringify(snapshot, null, 2)}\n`;
-export const branchFor = (publicId, version, contentHash) => `publish/${publicId}-v${version}-${String(contentHash).replace(/[^a-f0-9]/gi, '').slice(0, 10)}`;
+export const branchFor = (publicId, version, contentHash, tag = '') => `publish/${publicId}-v${version}-${String(contentHash).replace(/[^a-f0-9]/gi, '').slice(0, 10)}${tag ? `-${String(tag).replace(/[^a-f0-9]/gi, '').slice(0, 8)}` : ''}`;
+const STATUS_WORDS = { available: 'available', under_offer: 'under offer', sold: 'sold' };
 
 /** Refuses anything but the single approved artifact. `changed` is the list of paths the commit would touch. */
 export function assertOnlyArtifact(changed, slug) {
@@ -60,7 +61,12 @@ export async function openPublicationPr({ gh, snapshot, slug, jobId, mode, defau
   const onMain = await gh.call('GET', `/contents/${path}?ref=${defaultBranch}`, null, { allow: [404] });
   if (onMain.status === 200 && onMain.data?.sha === sha1blob(text)) return { alreadyOnMain: true };
 
-  const branch = branchFor(snapshot.listingId, snapshot.version, snapshot.contentHash);
+  // a status-only change keeps the version and the content hash, so its branch needs its own name
+  let mainVersion = null;
+  try { mainVersion = onMain.status === 200 ? JSON.parse(Buffer.from(onMain.data.content ?? '', 'base64').toString('utf8')).version : null; } catch { mainVersion = null; }
+  const statusOnly = mainVersion !== null && mainVersion === snapshot.version;
+  const what = statusOnly ? `${slug} (status: ${STATUS_WORDS[snapshot.commercialStatus] ?? 'changed'})` : `${slug} (version ${snapshot.version})`;
+  const branch = branchFor(snapshot.listingId, snapshot.version, snapshot.contentHash, statusOnly ? sha1blob(text) : '');
   const base = (await gh.call('GET', `/git/ref/heads/${defaultBranch}`)).data.object.sha;
   const existing = await gh.call('GET', `/git/ref/heads/${branch}`, null, { allow: [404] });
   if (existing.status === 404) await gh.call('POST', '/git/refs', { ref: `refs/heads/${branch}`, sha: base });
@@ -69,7 +75,7 @@ export async function openPublicationPr({ gh, snapshot, slug, jobId, mode, defau
   const onBranch = await gh.call('GET', `/contents/${path}?ref=${branch}`, null, { allow: [404] });
   if (!(onBranch.status === 200 && onBranch.data?.sha === sha1blob(text))) {
     const put = await gh.call('PUT', `/contents/${path}`, {
-      message: `${mode === 'update' ? 'Update' : 'Publish'} ${slug} (version ${snapshot.version})\n\nApproved in the Listings Manager. Job ${jobId}.`,
+      message: `${mode === 'update' ? 'Update' : 'Publish'} ${what}\n\nApproved in the Listings Manager. Job ${jobId}.`,
       content: enc(text), branch, ...(onBranch.status === 200 ? { sha: onBranch.data.sha } : onMain.status === 200 && existing.status === 404 ? { sha: onMain.data.sha } : {}),
     });
     if (put.data?.commit?.sha === undefined) throw Object.assign(new Error('GitHub did not confirm the commit'), { code: 'commit_failed' });
@@ -83,12 +89,12 @@ export async function openPublicationPr({ gh, snapshot, slug, jobId, mode, defau
   let pr = open[0];
   if (!pr) {
     pr = (await gh.call('POST', '/pulls', {
-      title: `${mode === 'update' ? 'Update' : 'Publish'} ${slug} (version ${snapshot.version})`,
+      title: `${mode === 'update' ? 'Update' : 'Publish'} ${what}`,
       head: branch, base: defaultBranch,
       body: `Opened by the Listings Manager publication job \`${jobId}\`.\n\nChanges one file only: \`${path}\`.\nThe pull request is merged by the job once the required check \`${REQUIRED_CHECK}\` passes on this exact commit.`,
     })).data;
   }
-  return { branch, headSha, prNumber: pr.number, prUrl: pr.html_url };
+  return { branch, headSha, prNumber: pr.number, prUrl: pr.html_url, title: pr.title ?? `${mode === 'update' ? 'Update' : 'Publish'} ${what}` };
 }
 
 /**
@@ -166,17 +172,17 @@ const decode = (s) => s.replace(/&amp;/g, '&').replace(/&#39;|&#x27;|&apos;/g, "
  * the approved order, every image answers as WebP, and the catalogue links to the page. Retries while the new deployment propagates.
  * Returns { ok, checks:[{name, ok, note}] }. Notes never contain listing text.
  */
-export async function verifyLive({ siteUrl, slug, title, photos, fetchImpl = fetch, sleep = sleepDefault, attempts = 18, pollMs = 10000 }) {
+export async function verifyLive({ siteUrl, slug, title, photos, status, fetchImpl = fetch, sleep = sleepDefault, attempts = 18, pollMs = 10000 }) {
   const base = siteUrl.replace(/\/$/, '');
   let last = [];
   for (let i = 0; i < attempts; i += 1) {
-    last = await verifyOnce({ base, slug, title, photos, fetchImpl, bust: `${Date.now()}${i}` });
+    last = await verifyOnce({ base, slug, title, photos, status, fetchImpl, bust: `${Date.now()}${i}` });
     if (last.every((c) => c.ok)) return { ok: true, checks: last, url: `${base}/opportunities/${slug}/` };
     if (i < attempts - 1) await sleep(pollMs);
   }
   return { ok: false, checks: last, url: `${base}/opportunities/${slug}/` };
 }
-async function verifyOnce({ base, slug, title, photos, fetchImpl, bust }) {
+async function verifyOnce({ base, slug, title, photos, status, fetchImpl, bust }) {
   const checks = [];
   const get = async (url, init) => { try { return await fetchImpl(url, { redirect: 'follow', headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(20000), ...init }); } catch { return null; } };
   const page = await get(`${base}/opportunities/${slug}/?v=${bust}`);
@@ -184,6 +190,11 @@ async function verifyOnce({ base, slug, title, photos, fetchImpl, bust }) {
   checks.push({ name: 'listing_page', ok: !!page && page.status === 200 && html.length > 0, note: page ? `The listing page answers HTTP ${page.status}.` : 'The listing page could not be reached.' });
   const flat = decode(html);
   checks.push({ name: 'listing_title', ok: html !== '' && flat.includes(title), note: 'The approved title is on the page.' });
+  if (status) {
+    checks.push({ name: 'listing_status', ok: html !== '' && html.includes(`lsb-${status}`), note: `The page shows the ${STATUS_WORDS[status] ?? status} status.` });
+    // a sold property must not be offered for purchase: no purchase enquiry on its page
+    if (status === 'sold') checks.push({ name: 'sold_page', ok: html !== '' && !flat.includes('Enquire about this property') && !html.includes('data-le-form'), note: 'The page does not offer the sold property for enquiry.' });
+  }
   const order = photos.map((p) => flat.indexOf(`${p.id}`));
   const inOrder = order.every((n, i) => n > -1 && (i === 0 || n > order[i - 1]));
   checks.push({ name: 'gallery', ok: html !== '' && inOrder, note: inOrder ? `All ${photos.length} photographs are on the page in the approved order.` : 'Not every approved photograph is on the page in the approved order yet.' });
