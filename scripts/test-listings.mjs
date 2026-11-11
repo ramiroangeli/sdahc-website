@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { prepareFolder, readAccentPalette, snapToAccent, verifyFolder } from './prepare-listing-photos.mjs';
-import { approverFor, checkManifest, effectiveStatus, overlayPage, parity, sign, signedHeaders, statusParity, verifySignature, withRetry } from './lib/publish-job.mjs';
+import { MODES as MODES_FROM_LIB, approverFor, checkManifest, effectiveStatus, overlayPage, parity, sign, signedHeaders, statusParity, verifySignature, withRetry } from './lib/publish-job.mjs';
 
 const L = await loadTs();
 const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
@@ -626,12 +626,14 @@ section('schema manifest, public-repository privacy and offline withdrawal');
   writeFileSync(join(tmp, 'approved', 'x.json'), JSON.stringify(L.FIXTURE_SNAPSHOTS[0]));
   const env = { PATH: process.env.PATH, LISTINGS_DATA_DIR: tmp };
   const cli = (...args) => spawnSync('node', [join(repoRoot, 'scripts/listings-sync.mjs'), ...args], { env, encoding: 'utf8' });
-  const r1 = cli('--withdraw', 'rutherford-grove-armstrong-creek-vic', '--reason', 'vendor request', '--by', 'Tester');
+  const SENTINEL = 'PRIVATE-REASON-4f9a-sentinel';
+  const r1 = cli('--withdraw', 'rutherford-grove-armstrong-creek-vic', '--reason', SENTINEL, '--by', 'Tester Person');
   const file = join(tmp, 'withdrawn', 'fx_001.json');
-  t('emergency withdrawal runs with no Notion credentials and no network', r1.status === 0 && existsSync(file) && JSON.parse(readFileSync(file, 'utf8')).withdrawnBy === 'Tester');
+  t('emergency withdrawal runs with no Notion credentials and no network', r1.status === 0 && existsSync(file) && JSON.parse(readFileSync(file, 'utf8')).withdrawnBy === 'SDA Home Choices');
+  t('the emergency withdrawal file carries constant words only: no reason, no name, nothing the operator typed', (() => { const f = readFileSync(file, 'utf8'); return !f.includes(SENTINEL) && !f.includes('Tester') && JSON.parse(f).reason === 'withdrawn' && Object.keys(JSON.parse(f)).sort().join() === 'listingId,reason,withdrawnAt,withdrawnBy' && !(r1.stdout + r1.stderr).includes(SENTINEL) && /not stored/.test(r1.stdout); })());
   t('the withdrawal output tells the operator how to verify the build', /check:withdrawal/.test(r1.stdout));
-  t('a reason with an email, amount or phone number is refused (public repository)', cli('--withdraw', 'fx_001', '--reason', 'call 0412 345 678', '--by', 'T').status === 2 && cli('--withdraw', 'fx_001', '--reason', 'owner a@b.co wants out', '--by', 'T').status === 2 && cli('--withdraw', 'fx_001', '--reason', 'x'.repeat(130), '--by', 'T').status === 2);
-  t('an unknown listing is refused', cli('--withdraw', 'nope', '--reason', 'x', '--by', 'T').status === 1);
+  t('the emergency withdrawal works with no flags at all and refuses a missing target', cli('--withdraw', 'fx_001', '--dry-run').status === 0 && cli('--withdraw').status === 2);
+  t('an unknown listing is refused', cli('--withdraw', 'nope').status === 1);
   t('reinstating removes the withdrawal, also without Notion', cli('--reinstate', 'fx_001').status === 0 && !existsSync(file));
   const r2 = cli('--schema');
   t('commands that need Notion fail closed without credentials and never print a token', r2.status === 1 && !/secret_|ntn_|Bearer/.test(r2.stdout + r2.stderr));
@@ -939,6 +941,15 @@ section('publication job started by the internal app (dry run only in this relea
     t('a Sold page has no price row, no purchase enquiry, no access steps and no enquiry form, and offers a general enquiry route', /const sold = listing\.commercialStatus === 'sold'/.test(slugPage) && /\.\.\.\(sold \? \[\]/.test(slugPage) && /\{!sold && \(/.test(slugPage) && !/ListingEnquiryForm/.test(soldBranch) && /href="\/contact-us\/"/.test(soldBranch) && /This property has been sold/.test(soldBranch));
     t('the enquiry endpoint refuses an enquiry about a sold listing', /commercialStatus === 'sold'\) return json\(\{ ok: false[^)]*409\)/.test(rd('src/pages/api/listing-enquiry.ts')));
     t('a sold card in the catalogue does not show a price', /commercialStatus === 'sold' \? 'Sold' : pricingLine/.test(rd('src/components/ListingCard.astro')));
+  }
+  {
+    const jobSrc = rd('scripts/listings-publish-job.mjs');
+    const wf = jobSrc.slice(jobSrc.indexOf('async function withdraw('), jobSrc.indexOf('\nasync function main()'));
+    t('withdraw mode exists in the job, the helper modes and the workflow choices (and the workflow can still not deploy by itself)', /if \(mode === 'withdraw'\) return withdraw\(payload\)/.test(jobSrc) && MODES_FROM_LIB.includes('withdraw') && /- withdraw/.test(rd('.github/workflows/publish-listing.yml')) && !/deploy.?hook|curl|vercel/i.test(stripYaml(rd('.github/workflows/publish-listing.yml'))));
+    t('the withdraw path never reads or writes anything private: no Notion, no reason, no person, no content, only constant words', wf.length > 500 && !/Notion|queryAll|notion_read|reason|requestedBy|approval|email|actor/i.test(wf.replace(/reason:\s*'withdrawn'/g, '')) && !/console\.log\([^)]*payload/.test(wf));
+    t('the withdraw path proves the build without the listing (public output only) and the privacy scan BEFORE any pull request, then verifies the live site', wf.indexOf('check-withdrawal.mjs') > -1 && wf.indexOf("'--dist', '.vercel/output/static'") > -1 && wf.indexOf('check:privacy') < wf.indexOf('openWithdrawalPr') && wf.indexOf('openWithdrawalPr') < wf.indexOf('waitForChecks') && wf.indexOf('waitForChecks') < wf.indexOf('mergePr') && wf.indexOf('mergePr') < wf.indexOf('verifyWithdrawn'));
+    t('a withdrawal reports success as withdrawn and never as live, and a rerun after the merge only verifies', /withdrawn: true/.test(wf) && /live: false/.test(wf) && /const resumed = jsonDir\('withdrawn'\)/.test(wf));
+    t('the emergency CLI no longer takes a public reason or name', !/val\('--reason'\)\s*;/.test(rd('scripts/listings-sync.mjs')) && /withdrawnBy: 'SDA Home Choices', reason: 'withdrawn'/.test(rd('scripts/listings-sync.mjs')));
   }
   t('the manifest check refuses photographs outside a gallery review, non-hash ids and an empty gallery', checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: true }] }).length === 0 && checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: false }] }).length > 0 && checkManifest({ version: 1, photos: [{ id: 'x', privacyReviewed: true }] }).length > 0 && checkManifest({ version: 1, photos: [] }).length > 0);
 

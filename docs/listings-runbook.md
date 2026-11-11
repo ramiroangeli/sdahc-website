@@ -86,15 +86,15 @@ Under Offer, Sold, destacado o fecha de fin no cambian el contenido público, pe
 **Procedimiento**
 1. En una rama desde `main`:
    ```
-   npm run listings:withdraw -- <slug|id> --reason "motivo" --by "Nombre"
+   npm run listings:withdraw -- <slug|id>
    ```
-   Escribe `src/data/listings/withdrawn/<id>.json`. El motivo se commitea en un repositorio público: máximo 120 caracteres, sin correos, teléfonos ni importes (por ejemplo "vendor request"). **Esa retirada anula cualquier estado de Notion** (aunque diga Published) hasta que alguien ejecute `--reinstate`, también por PR.
+   **Camino normal: el Listings Manager** (Publisher, dirección escrita y motivo privado); este comando es solo la salida de emergencia. Escribe `src/data/listings/withdrawn/<id>.json` con palabras constantes (`withdrawnBy: "SDA Home Choices"`, `reason: "withdrawn"`): el repositorio es público, así que **nunca** lleva un motivo ni un nombre (si se pasan `--reason` o `--by` no se guardan; anota el motivo en privado). **Esa retirada anula cualquier estado de Notion** (aunque diga Published) hasta que alguien ejecute `--reinstate`, también por PR.
 2. Comprueba localmente, tras compilar:
    ```
    npm run build
-   npm run check:withdrawal -- <slug>
+   npm run check:withdrawal -- <slug> --dist .vercel/output/static
    ```
-   Falla si el build aún contiene la ruta, la entrada del catálogo o del hero, cualquier enlace interno, la referencia en el sitemap, el canonical, el JSON-LD o cualquier fichero con su nombre. Con la ficha publicada devuelve error y tras la retirada pasa (verificado con una ficha de prueba).
+   (`--dist .vercel/output/static` comprueba lo que ve un visitante; el bundle de funciones del servidor sigue conteniendo los datos del listing, que ya eran públicos en el repositorio, y por eso no se analiza.) Falla si el build aún contiene la ruta, la entrada del catálogo o del hero, cualquier enlace interno, la referencia en el sitemap, el canonical, el JSON-LD o cualquier fichero con su nombre. Con la ficha publicada devuelve error y tras la retirada pasa (verificado con una ficha de prueba).
 3. PR con ese único fichero, revisión rápida de un propietario, fusión y despliegue.
 4. **Confirma en producción** que el despliegue nuevo está Ready:
    - `curl -sI https://sdahomechoices.com.au/opportunities/<slug>/` debe dar 404.

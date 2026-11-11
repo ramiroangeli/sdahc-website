@@ -20,8 +20,8 @@
       --from-file page.json          ...from an exported page, with no Notion credentials
     --propose [--write]              build proposed snapshots from rows with a live status (dry run by default;
                                      --write refuses to run on main or master)
-    --withdraw <id|slug> --reason "..." --by "Name" [--dry-run]
-                                     hide a listing now, WITHOUT Notion (emergency withdrawal)
+    --withdraw <id|slug> [--dry-run]  hide a listing now, WITHOUT Notion (emergency withdrawal). The file is committed to a PUBLIC
+                                     repository, so it never carries a reason or a name; record those privately (Listings Manager)
     --reinstate <id>                 remove a withdrawal
 
   A row is proposed only when: its status is Published, Under Offer or Sold; a named approver is set AND
@@ -64,18 +64,13 @@ const L = await loadTs();
 
 if (has('--withdraw')) {
   const target = val('--withdraw');
-  const reason = val('--reason');
-  const by = val('--by');
-  if (!target || !reason || !by) { console.error('usage: --withdraw <id|slug> --reason "..." --by "Name"'); process.exit(2); }
-  // this file is committed to a PUBLIC repository: the reason must be short and neutral
-  if (reason.length > 120 || /[^\s@]+@[^\s@]+\.[a-z]{2,}|\$\s?\d|(?:\+?61|\b0)[\s-]?[2-478](?:[\s-]?\d){8}\b/i.test(reason)) {
-    console.error('The reason is committed to a public repository. Keep it under 120 characters and leave out emails, phone numbers and amounts (for example: "vendor request" or "details changed").');
-    process.exit(2);
-  }
+  if (!target) { console.error('usage: --withdraw <id|slug> [--dry-run]'); process.exit(2); }
+  // the file is committed to a PUBLIC repository: no free-text reason and no person's name, ever. A --reason or --by given out of habit is NOT stored.
+  if (val('--reason') !== undefined || val('--by') !== undefined) console.log('Note: --reason and --by are not stored. The withdrawal file is public; record the reason and who acted privately (the Listings Manager audit trail or your own records).');
   const snap = readJsonDir(approvedDir).map((x) => x.data).find((s) => s.listingId === target || s.content.slug === target);
   if (!snap) { console.error(`No approved listing found for "${target}".`); process.exit(1); }
-  const w = { listingId: snap.listingId, withdrawnAt: new Date().toISOString(), withdrawnBy: by, reason };
-  console.log(`${has('--dry-run') ? 'Would withdraw' : 'Withdrawing'} ${snap.content.slug} (${snap.listingId}) as ${by}: ${reason}`);
+  const w = { listingId: snap.listingId, withdrawnAt: new Date().toISOString(), withdrawnBy: 'SDA Home Choices', reason: 'withdrawn' };
+  console.log(`${has('--dry-run') ? 'Would withdraw' : 'Withdrawing'} ${snap.content.slug} (${snap.listingId})`);
   if (!has('--dry-run')) {
     mkdirSync(withdrawnDir, { recursive: true });
     writeFileSync(join(withdrawnDir, `${snap.listingId}.json`), `${JSON.stringify(w, null, 2)}\n`);
