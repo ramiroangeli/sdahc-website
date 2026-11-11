@@ -2,18 +2,24 @@
 // `wide` is an opt-in override for a single caller (the Research Hub) that needs the title and
 // standfirst to use substantially more of the available .wrap width than the default. It leaves
 // every other PageHeader instance byte-for-byte unchanged, since they all omit this prop.
-interface Props { eyebrow?: string; title: string; standfirst?: string; wide?: boolean; }
-const { eyebrow, title, standfirst, wide = false } = Astro.props;
+// `updated` (opt-in, for research and data pages) shows "Updated <date>" from page-dates.json, so
+// readers and AI engines can see how current the figures are. Pages without it are unchanged.
+import { updatedFor, formatDate } from '../data/seo';
+interface Props { eyebrow?: string; title: string; standfirst?: string; wide?: boolean; updated?: boolean; }
+const { eyebrow, title, standfirst, wide = false, updated = false } = Astro.props;
+const updatedIso = updated ? updatedFor(Astro.url.pathname) : undefined;
 ---
 <section class="pagehead"><div class="wrap">
   {eyebrow && <p class="eyebrow">{eyebrow}</p>}
   <h1 class={wide ? 'ph-title ph-title-wide' : 'ph-title'}>{title}</h1>
   {standfirst && <p class={wide ? 'ph-standfirst ph-standfirst-wide' : 'ph-standfirst'}>{standfirst}</p>}
+  {updatedIso && <p class="ph-updated">Updated <time datetime={updatedIso}>{formatDate(updatedIso)}</time></p>}
 </div></section>
 <style>
 .pagehead{padding:calc(150px + var(--nav-top)) 0 60px;position:relative;background:radial-gradient(1000px 520px at 78% 10%,rgba(4,118,217,.10),transparent 60%),var(--navy)}
 .ph-title{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(34px,5.2vw,60px);line-height:1.04;letter-spacing:-.01em;margin:0;max-width:20ch}
 .ph-standfirst{font-family:var(--sans);color:var(--pale);font-size:clamp(17px,2.1vw,21px);line-height:1.5;max-width:60ch;margin:22px 0 0}
+.ph-updated{font-family:var(--geo);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:22px 0 0}
 .ph-title-wide{max-width:none}
 .ph-standfirst-wide{max-width:70ch}
 </style>

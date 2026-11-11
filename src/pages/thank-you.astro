@@ -11,7 +11,7 @@ const downloads = Object.fromEntries(
     .map(([id, r]) => [id, { href: r.pdf!.href, filename: r.pdf!.filename, label: r.pdf!.downloadLabel }])
 );
 ---
-<BaseLayout title="Thank You | SDA Home Choices" description="Thank you for reaching out to SDA Home Choices. We've received your request and our team will be in touch shortly.">
+<BaseLayout title="Thank You | SDA Home Choices" description="Thank you for reaching out to SDA Home Choices. We've received your request and our team will be in touch shortly." noindex>
   <PageHeader
     title="Thank you"
   />

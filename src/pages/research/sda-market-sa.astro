@@ -1,10 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
+import { researchArticle } from '../../data/seo';
 import AustraliaMap from '../../components/AustraliaMap.astro';
+const schema = [researchArticle("SDA Market: South Australia", "South Australia ranks fifth nationally by enrolled dwellings, with the most diversified design category mix of any state, a broad participant base that comes with meaningful exposure to Value for Money policy risk.", "/research/sda-market-sa/")];
 ---
-<BaseLayout title="SDA Market: South Australia | SDA Home Choices" description="South Australia ranks fifth nationally by enrolled dwellings, with the most diversified design category mix of any state, a broad participant base that comes with meaningful exposure to Value for Money policy risk.">
+<BaseLayout title="SDA Market: South Australia | SDA Home Choices" description="South Australia ranks fifth nationally by enrolled dwellings, with the most diversified design category mix of any state, a broad participant base that comes with meaningful exposure to Value for Money policy risk." breadcrumbs={[{ name: 'Research', path: '/research/' }, { name: "SDA Market: South Australia", path: '/research/sda-market-sa/' }]} schema={schema}>
   <PageHeader
+    updated
     eyebrow="SDAHC Research"
     title="SDA Market: South Australia"
     standfirst="South Australia ranks fifth nationally by enrolled dwellings, with the most diversified design category mix of any state, a broad participant base that comes with meaningful exposure to Value for Money policy risk."

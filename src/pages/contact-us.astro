@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { SITE, ORG_ID } from '../data/seo';
+const schema = [{ '@type': 'ContactPage', '@id': `${SITE}/contact-us/#page`, url: `${SITE}/contact-us/`, name: 'Contact SDA Home Choices', about: { '@id': ORG_ID } }];
 ---
-<BaseLayout title="Contact us | SDA Home Choices" description="Talk to SDA Home Choices about buying, selling or understanding the SDA market across Australia.">
+<BaseLayout title="Contact us | SDA Home Choices" description="Talk to SDA Home Choices about buying, selling or understanding the SDA market across Australia." breadcrumbs={[{ name: 'Contact us', path: '/contact-us/' }]} schema={schema}>
   <PageHeader
     eyebrow="Get in touch"
     title="Contact us"

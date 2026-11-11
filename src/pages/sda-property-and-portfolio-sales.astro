@@ -1,8 +1,20 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { service, faqPage } from '../data/seo';
+
+// The FAQ is rendered from this list and repeated in the FAQPage schema, so the two never drift.
+const faqs = [
+  { q: 'Does the property need to be fully occupied?', a: 'No. We consider completed properties that are fully occupied, partly occupied or vacant. Occupancy and income certainty will influence the buyer audience, price positioning and recommended sale approach.' },
+  { q: 'Will my property be publicly advertised?', a: 'Not necessarily. We discuss the merits of a confidential approach, a targeted campaign or broader market exposure before agreeing the strategy. Off-market is an option, not an automatic recommendation.' },
+  { q: 'Do I need to purchase an advisory review before appointing SDAHC to sell?', a: 'Not in every case. Some assets have sufficient information and a clear basis for proceeding to market. Others require a deeper review of performance, pricing or available options. We explain the recommended scope before you commit.' },
+];
+const schema = [
+  service('SDA property and portfolio sales', 'Sale of completed Specialist Disability Accommodation properties and portfolios, whether fully occupied, partly occupied or vacant, with realistic price positioning, well-prepared information and a targeted approach to buyers.', '/sda-property-and-portfolio-sales/'),
+  faqPage(faqs),
+];
 ---
-<BaseLayout title="SDA Property and Portfolio Sales | SDA Home Choices" description="We help owners bring completed Specialist Disability Accommodation properties and portfolios to market with realistic price positioning and a targeted approach to buyers.">
+<BaseLayout title="SDA Property and Portfolio Sales | SDA Home Choices" description="We help owners bring completed Specialist Disability Accommodation properties and portfolios to market with realistic price positioning and a targeted approach to buyers." breadcrumbs={[{ name: 'Our services', path: '/our-services-and-expertise/' }, { name: 'SDA property and portfolio sales', path: '/sda-property-and-portfolio-sales/' }]} schema={schema}>
   <PageHeader
     eyebrow="SDA Property & Portfolio Sales"
     title="Sell your SDA property or portfolio with a clear commercial strategy."
@@ -76,18 +88,12 @@ import PageHeader from '../components/PageHeader.astro';
     <div class="prose">
       <h2>Common questions about selling SDA property.</h2>
       <div class="faq">
-        <details>
-          <summary>Does the property need to be fully occupied?</summary>
-          <p>No. We consider completed properties that are fully occupied, partly occupied or vacant. Occupancy and income certainty will influence the buyer audience, price positioning and recommended sale approach.</p>
-        </details>
-        <details>
-          <summary>Will my property be publicly advertised?</summary>
-          <p>Not necessarily. We discuss the merits of a confidential approach, a targeted campaign or broader market exposure before agreeing the strategy. Off-market is an option, not an automatic recommendation.</p>
-        </details>
-        <details>
-          <summary>Do I need to purchase an advisory review before appointing SDAHC to sell?</summary>
-          <p>Not in every case. Some assets have sufficient information and a clear basis for proceeding to market. Others require a deeper review of performance, pricing or available options. We explain the recommended scope before you commit.</p>
-        </details>
+        {faqs.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
       </div>
     </div>
   </section>

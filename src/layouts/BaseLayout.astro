@@ -3,16 +3,31 @@ import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Analytics from '@vercel/analytics/astro';
+import { organization, website, breadcrumbList, type Crumb } from '../data/seo';
 
 // `extraFontsHref` is an opt-in per-page Google Fonts stylesheet URL, used only by pages that
 // need fonts beyond the corporate set (currently just the Research Hub). Every other caller
 // omits it, so no extra font is ever requested on corporate pages that don't use it.
-interface Props { title?: string; description?: string; ogImage?: string; extraFontsHref?: string }
+// `breadcrumbs` adds a BreadcrumbList to the page's structured data (Home is prepended for you).
+// `schema` appends page-specific schema.org nodes (Dataset, Service, FAQPage, ProfilePage...).
+// `noindex` keeps utility pages (thank-you, etc.) out of search results.
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  extraFontsHref?: string;
+  breadcrumbs?: Crumb[];
+  schema?: Record<string, unknown>[];
+  noindex?: boolean;
+}
 const {
   title = 'SDA Home Choices',
   description = 'Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation in Australia.',
   ogImage = '/images/og-brand.jpg',
   extraFontsHref,
+  breadcrumbs,
+  schema = [],
+  noindex = false,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
@@ -21,31 +36,16 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
 // image a scraper happens to pick from the page body. A page can still override ogImage with its
 // own path (or pass ogImage="" to opt out and fall back to the plain "summary" card).
 const ogImageUrl = ogImage ? new URL(ogImage, Astro.site).href : undefined;
-const org = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "SDA Home Choices",
-  "legalName": "SDA Home Choices Pty Ltd",
-  "url": Astro.site?.href,
-  "logo": new URL('/favicon-512.png', Astro.site).href,
-  "description": "Specialist advisory and transactions firm for Australia's Specialist Disability Accommodation (SDA) market.",
-  "email": "research@sdahomechoices.com.au",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "17 Sternlight Street",
-    "addressLocality": "Noosaville",
-    "addressRegion": "QLD",
-    "postalCode": "4566",
-    "addressCountry": "AU"
-  },
-  "areaServed": "AU",
-  "sameAs": ["https://www.linkedin.com/company/sda-home-choices/"]
-};
-const website = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "SDA Home Choices",
-  "url": Astro.site?.href
+// One JSON-LD graph per page: the firm, the website, an optional breadcrumb trail and any
+// page-specific nodes. Nodes link to each other by @id (see src/data/seo.ts).
+const graph = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    organization,
+    website,
+    ...(breadcrumbs ? [breadcrumbList([{ name: 'Home', path: '/' }, ...breadcrumbs])] : []),
+    ...schema,
+  ],
 };
 ---
 <!DOCTYPE html>
@@ -55,6 +55,7 @@ const website = {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>{title}</title>
   <meta name="description" content={description} />
+  {noindex && <meta name="robots" content="noindex, follow" />}
   <link rel="canonical" href={canonical} />
   <!-- favicons -->
   <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -78,8 +79,7 @@ const website = {
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
   {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
-  <script type="application/ld+json" set:html={JSON.stringify(org)} />
-  <script type="application/ld+json" set:html={JSON.stringify(website)} />
+  <script type="application/ld+json" set:html={JSON.stringify(graph)} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Sans+3:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />

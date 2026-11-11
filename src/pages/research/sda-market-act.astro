@@ -1,10 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHeader from '../../components/PageHeader.astro';
+import { researchArticle } from '../../data/seo';
 import AustraliaMap from '../../components/AustraliaMap.astro';
+const schema = [researchArticle("SDA Market: ACT", "The ACT is one of Australia’s smallest SDA markets, distinguished by a near-perfect balance between enrolled dwellings and active participants, offset by the thinnest SIL provider ecosystem of any jurisdiction.", "/research/sda-market-act/")];
 ---
-<BaseLayout title="SDA Market: ACT | SDA Home Choices" description="The ACT is one of Australia’s smallest SDA markets, distinguished by a near-perfect balance between enrolled dwellings and active participants, offset by the thinnest SIL provider ecosystem of any jurisdiction.">
+<BaseLayout title="SDA Market: ACT | SDA Home Choices" description="The ACT is one of Australia’s smallest SDA markets, distinguished by a near-perfect balance between enrolled dwellings and active participants, offset by the thinnest SIL provider ecosystem of any jurisdiction." breadcrumbs={[{ name: 'Research', path: '/research/' }, { name: "SDA Market: ACT", path: '/research/sda-market-act/' }]} schema={schema}>
   <PageHeader
+    updated
     eyebrow="SDAHC Research"
     title="SDA Market: ACT"
     standfirst="The ACT is one of Australia’s smallest SDA markets, distinguished by a near-perfect balance between enrolled dwellings and active participants, offset by the thinnest SIL provider ecosystem of any jurisdiction."

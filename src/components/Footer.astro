@@ -1,11 +1,15 @@
 ---
 import { Image } from 'astro:assets';
+import { PHONE, OFFICES } from '../data/seo';
+// Phone and office locations are repeated here on every page (and in the
+// Organization schema) so search and AI engines see consistent business details site-wide.
+const tel = `tel:${PHONE.replace(/\s/g, '')}`;
 ---
 <footer><div class="wrap">
   <div class="frow">
     <div><b>SDAHC Research</b><a href="/research/">Market, Administration &amp; Provider reports</a></div>
-    <div><b>Contact</b><a href="/contact-us/">Get in touch</a></div>
-    <div><b>Coverage</b>National · Australia-wide</div>
+    <div><b>Contact</b><a href="/contact-us/">Get in touch</a><br /><a href={tel}>{PHONE}</a></div>
+    <div><b>Coverage</b>National · Australia-wide{OFFICES.map((o) => <><br />{o.locality} {o.region}</>)}</div>
     <div><b>Specialisation</b>Specialist Disability Accommodation</div>
     <div><b>Legal</b><a href="/privacy-policy/">Privacy policy</a><br /><a href="/terms-of-use/">Terms of Use</a><br /><a href="/accessibility/">Accessibility</a></div>
   </div>
