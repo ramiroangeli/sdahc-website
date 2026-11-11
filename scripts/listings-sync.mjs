@@ -22,7 +22,7 @@
                                      --write refuses to run on main or master)
     --withdraw <id|slug> [--dry-run]  hide a listing now, WITHOUT Notion (emergency withdrawal). The file is committed to a PUBLIC
                                      repository, so it never carries a reason or a name; record those privately (Listings Manager)
-    --reinstate <id>                 remove a withdrawal
+    --reinstate <id>                 remove a withdrawal file (a manual administrative step through a reviewed pull request; the Listings Manager has no reinstate)
 
   A row is proposed only when: its status is Published, Under Offer or Sold; a named approver is set AND
   that person's Notion user id is on src/data/listings/approvers.json (default deny); it has a valid public
@@ -239,7 +239,7 @@ try {
     process.exit(failed ? 1 : 0);
   }
 
-  console.error('usage: --schema | --preflight <pageId> [--from-file f] | --propose [--write] | --withdraw <id|slug> --reason --by | --reinstate <id>');
+  console.error('usage: --schema | --preflight <pageId> [--from-file f] | --propose [--write] | --withdraw <id|slug> | --reinstate <id>');
   process.exit(2);
 } catch (e) {
   // the message never contains the token or any header: NotionApiError carries only status and code

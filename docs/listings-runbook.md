@@ -88,7 +88,7 @@ Under Offer, Sold, destacado o fecha de fin no cambian el contenido público, pe
    ```
    npm run listings:withdraw -- <slug|id>
    ```
-   **Camino normal: el Listings Manager** (Publisher, dirección escrita y motivo privado); este comando es solo la salida de emergencia. Escribe `src/data/listings/withdrawn/<id>.json` con palabras constantes (`withdrawnBy: "SDA Home Choices"`, `reason: "withdrawn"`): el repositorio es público, así que **nunca** lleva un motivo ni un nombre (si se pasan `--reason` o `--by` no se guardan; anota el motivo en privado). **Esa retirada anula cualquier estado de Notion** (aunque diga Published) hasta que alguien ejecute `--reinstate`, también por PR.
+   **Camino normal: el Listings Manager** (Publisher, dirección escrita y motivo privado); este comando es solo la salida de emergencia. Escribe `src/data/listings/withdrawn/<id>.json` con palabras constantes (`withdrawnBy: "SDA Home Choices"`, `reason: "withdrawn"`): el repositorio es público, así que **nunca** lleva un motivo ni un nombre (si se pasan `--reason` o `--by` no se guardan; anota el motivo en privado). **Esa retirada anula cualquier estado de Notion** (aunque diga Published) hasta que alguien ejecute `--reinstate`, también por PR (proceso administrativo manual: el Listings Manager no tiene reinstalación; la retirada allí es permanente).
 2. Comprueba localmente, tras compilar:
    ```
    npm run build

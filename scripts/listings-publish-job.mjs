@@ -20,7 +20,7 @@
   and no person, because this repository, its pull requests and these logs are public; the reason lives only in the Listings Manager's private audit trail).
   Notion is not consulted. Before any pull request it proves the build WITHOUT the listing is clean (check:withdrawal: no route, catalogue entry, link or
   sitemap entry) and passes the privacy scan; then required check, merge, deployment, and live proof that the page answers 404 and the catalogue and sitemap
-  no longer list it. A rerun after the merge only verifies. The approved snapshot and the public photographs stay (reinstatement needs them).
+  no longer list it. A rerun after the merge only verifies. The approved snapshot and the public photographs stay (history, and any later manual administrative process; no automatic deletion).
   Progress and the result go back to the app over a signed request. This script prints step names only: never listing text, prices or
   internal values, because Actions logs of a public repository are public.
 
