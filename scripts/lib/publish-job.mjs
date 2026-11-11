@@ -24,10 +24,31 @@ const paragraphs = (raw) => String(raw ?? '').split(/\n\s*\n/).map((s) => s.repl
  * The Notion row as it WOULD read after the approved fields are synchronised: the real row (internal fields intact, used by the
  * safety checks) with only the Web* properties replaced by the approved draft. Nothing is written to Notion.
  */
-export function overlayPage(page, payload, approver) {
+export const COMMERCIAL_STATUSES = ['available', 'under_offer', 'sold'];
+const STATUS_NOTION = { available: 'Published', under_offer: 'Under Offer', sold: 'Sold' };
+
+/**
+ * The commercial status this job publishes: the one the Publisher requested in the signed payload, else the status the website already
+ * shows (a content update never changes it), else Available for a first publication. Notion's own Web Listing Status is never consulted.
+ */
+export const effectiveStatus = (payload, previous) => {
+  const asked = payload?.content?.commercialStatus;
+  if (COMMERCIAL_STATUSES.includes(asked)) return asked;
+  return COMMERCIAL_STATUSES.includes(previous?.commercialStatus) ? previous.commercialStatus : 'available';
+};
+
+/** Does the snapshot carry the commercial status the Publisher asked for? (Nothing asked means nothing to compare.) */
+export const statusParity = (snapshot, payload) => {
+  const asked = payload?.content?.commercialStatus;
+  return asked === undefined || asked === null || snapshot?.commercialStatus === asked ? [] : ['commercial status'];
+};
+
+export function overlayPage(page, payload, approver, previous = null) {
   const c = payload.content;
   const props = { ...page.properties };
-  props['Web Listing Status'] = { type: 'select', select: { name: 'Published' } };
+  // Notion is the CRM, not the authority for public marketing status or end dates: both come from the portal and the existing snapshot
+  props['Web Listing Status'] = { type: 'select', select: { name: STATUS_NOTION[effectiveStatus(payload, previous)] } };
+  props['Listing End Date'] = { type: 'date', date: previous?.listingEndDate ? { start: previous.listingEndDate } : null };
   props['Web Public Address'] = text(c.publicAddress);
   props['Web Description'] = text(c.description);
   props['Web Title'] = text(c.title);

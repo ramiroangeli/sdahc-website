@@ -28,7 +28,7 @@ import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { REAL_MODES } from './lib/publish-job.mjs';
 import { REQUIRED_CHECK, abandon, githubClient, mainHead, mergePr, openPublicationPr, verifyLive, waitForChecks, waitForDeployment } from './lib/publish-git.mjs';
-import { JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, overlayPage, parity, signedHeaders, withRetry } from './lib/publish-job.mjs';
+import { COMMERCIAL_STATUSES, JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, overlayPage, parity, signedHeaders, statusParity, withRetry } from './lib/publish-job.mjs';
 
 const argv = process.argv.slice(2);
 const val = (k) => { const i = argv.indexOf(k); return i > -1 ? argv[i + 1] : undefined; };
@@ -98,7 +98,7 @@ async function publishReal({ snapshot, checks, resumed }) {
         await report('checks', c.ok ? 'ok' : 'failed', { checks, url: c.url ?? null });
         if (!c.ok) throw Object.assign(new Error('the required check did not pass'), { code: 'checks_failed', reported: true });
         log('merging');
-        const m = await mergePr({ gh, prNumber: pr.prNumber, headSha: pr.headSha, title: `${mode === 'update' ? 'Update' : 'Publish'} ${slug} (version ${snapshot.version}) (#${pr.prNumber})` });
+        const m = await mergePr({ gh, prNumber: pr.prNumber, headSha: pr.headSha, title: `${pr.title} (#${pr.prNumber})` });
         mergeSha = m.sha; pr = null; // merged: nothing to clean up
         after.merged = true; after.mergeCommit = mergeSha;
         await report('merge', 'ok', { sha: mergeSha });
@@ -118,7 +118,7 @@ async function publishReal({ snapshot, checks, resumed }) {
   if (!depOk) throw Object.assign(new Error('the production deployment did not succeed'), { code: 'deploy_failed', reported: true });
 
   log('checking the live site');
-  const live = await verifyLive({ siteUrl, slug, title: snapshot.content.title, photos });
+  const live = await verifyLive({ siteUrl, slug, title: snapshot.content.title, photos, status: snapshot.commercialStatus });
   for (const c of live.checks) checks.push({ name: `live_${c.name}`, ok: c.ok, note: c.note });
   await report('verify', live.ok ? 'ok' : 'failed', { checks, url: live.url });
   if (!live.ok) throw Object.assign(new Error('the live site does not yet serve the listing correctly'), { code: 'verify_failed', reported: true });
@@ -157,6 +157,8 @@ async function main() {
   const cfg = L.readNotionConfig(process.env);
   if (!cfg) throw Object.assign(new Error('Notion read access is not configured'), { code: 'not_configured' });
 
+  const asked = payload.content?.commercialStatus;
+  if (asked !== undefined && asked !== null && (!COMMERCIAL_STATUSES.includes(asked) || (mode === 'publish' && asked !== 'available'))) throw Object.assign(new Error('the requested commercial status is not valid for this request'), { code: 'payload_mismatch' });
   const manifestProblems = checkManifest(payload.manifest);
   if (manifestProblems.length) throw Object.assign(new Error(manifestProblems[0]), { code: 'manifest_invalid', problems: manifestProblems });
 
@@ -176,7 +178,8 @@ async function main() {
   const compliance = JSON.parse(readFileSync(join(dataDir, 'compliance.json'), 'utf8'));
 
   log('running the existing publication engine on the approved content');
-  const overlay = overlayPage(page, payload, approver ? { notionUserId: approver.id, name: approver.name } : null);
+  const previousSnap = jsonDir('approved').find((x) => x.listingId === publicId) ?? null;
+  const overlay = overlayPage(page, payload, approver ? { notionUserId: approver.id, name: approver.name } : null, previousSnap);
   const actions = await L.propose({
     pages: [overlay],
     previous: new Map(jsonDir('approved').map((s) => [s.listingId, s])),
@@ -187,9 +190,8 @@ async function main() {
     getManifest: async () => payload.manifest, // the photographs stay private: no public URL is read or written
   });
   let action = actions.find((a) => a.id === publicId);
-  const previousSnap = jsonDir('approved').find((x) => x.listingId === publicId) ?? null;
   // a rerun after the pull request already merged: main holds exactly the approved content, so there is nothing new to propose
-  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, payload).length === 0;
+  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, payload).length === 0 && statusParity(previousSnap, payload).length === 0;
   if (resumed) action = { kind: 'already_published', id: publicId, snapshot: previousSnap, issues: [] };
   const issues = action?.issues ?? [];
   const checks = [
@@ -199,14 +201,14 @@ async function main() {
     await report('engine', 'failed', { kind: action?.kind ?? 'none', issues, checks });
     throw Object.assign(new Error(`the engine would not publish this listing (${action?.kind ?? 'no result'}, ${issues.length} issue(s))`), { code: 'engine_refused', reported: true });
   }
-  const wrongKind = REAL && !resumed && ((mode === 'publish' && action.kind !== 'new') || (mode === 'update' && action.kind !== 'version'));
+  const wrongKind = REAL && !resumed && ((mode === 'publish' && action.kind !== 'new') || (mode === 'update' && action.kind !== 'version' && action.kind !== 'status'));
   if (wrongKind) {
     const why = mode === 'publish' ? 'This listing is already published: use an update.' : 'This listing has not been published yet: use a first publication.';
     await report('engine', 'failed', { kind: action.kind, issues: [why], checks });
     throw Object.assign(new Error(why), { code: 'wrong_mode', reported: true });
   }
   checks.push({ name: 'engine_accepts', ok: true, note: resumed ? 'This exact content is already on the main branch.' : `Proposed ${action.kind} v${action.snapshot.version}.` });
-  const problems = parity(action.snapshot.content, payload);
+  const problems = [...parity(action.snapshot.content, payload), ...statusParity(action.snapshot, payload)];
   checks.push({ name: 'matches_approved_draft', ok: problems.length === 0, note: problems.length ? `Differs from the approved draft: ${problems.join(', ')}.` : 'The proposed public content is exactly what was approved.' });
   if (problems.length) {
     await report('engine', 'failed', { kind: action.kind, issues: problems.map((p) => `Does not match the approved draft: ${p}`), checks });

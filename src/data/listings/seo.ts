@@ -41,7 +41,8 @@ export const listingJsonLd = (l: PublicListing, siteUrl: string) => {
         addressCountry: 'AU',
       },
     },
-    ...(bounds
+    // a sold property carries no offer: structured data must not advertise a price for something that cannot be bought
+    ...(bounds && l.commercialStatus !== 'sold'
       ? {
           offers: {
             '@type': 'Offer',

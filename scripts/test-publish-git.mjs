@@ -16,7 +16,7 @@ function fakeGitHub(opts = {}) {
     s.calls.push(`${method} ${path}`);
     if (!/^Bearer tok/.test(init.headers?.Authorization ?? '')) return json(401, { message: 'bad credentials' });
     let m;
-    if (method === 'GET' && (m = path.match(/^\/contents\/(.+)$/))) { const f = s.files[u.searchParams.get('ref')]?.[decodeURIComponent(m[1])]; return f === undefined ? json(404, {}) : json(200, { sha: sha1(f) }); }
+    if (method === 'GET' && (m = path.match(/^\/contents\/(.+)$/))) { const f = s.files[u.searchParams.get('ref')]?.[decodeURIComponent(m[1])]; return f === undefined ? json(404, {}) : json(200, { sha: sha1(f), content: Buffer.from(f, 'utf8').toString('base64'), encoding: 'base64' }); }
     if (method === 'GET' && (m = path.match(/^\/git\/ref\/heads\/(.+)$/))) return s.refs[m[1]] ? json(200, { object: { sha: s.refs[m[1]] } }) : json(404, {});
     if (method === 'POST' && path === '/git/refs') { const b = body.ref.replace('refs/heads/', ''); s.refs[b] = body.sha; s.files[b] = { ...s.files.main }; return json(201, {}); }
     if (method === 'PUT' && (m = path.match(/^\/contents\/(.+)$/))) {
@@ -126,6 +126,19 @@ export default async function run({ t, section }) {
     t('an update changes the existing file on a new branch (it replaces the previous version, same single file)', s.files[r.branch][artifactPath(SLUG)] === snapshotText(snap({ version: 2, contentHash: 'ffeeddccbbaa00112233' })) && /Update/.test(s.prs[0].title));
   }
 
+  {
+    const prev = snap({ version: 2, contentHash: 'ffeeddccbbaa00112233', commercialStatus: 'available' });
+    const { s, gh } = fakeGitHub({ state: { files: { main: { 'package.json': '{}\n', [artifactPath(SLUG)]: snapshotText(prev) } } } });
+    const sold = { ...prev, commercialStatus: 'sold' };
+    const r = await openPublicationPr({ gh, snapshot: sold, slug: SLUG, jobId: 'job-s', mode: 'update' });
+    t('a status-only change keeps the version and content hash, so it gets its own branch, still one file', r.branch !== branchFor(prev.listingId, 2, prev.contentHash) && r.branch.startsWith(branchFor(prev.listingId, 2, prev.contentHash)) && s.files[r.branch][artifactPath(SLUG)] === snapshotText(sold));
+    t('the status change pull request and commit say what changed publicly and name no person', r.title === `Update ${SLUG} (status: sold)` && s.lastCommit.message.startsWith(`Update ${SLUG} (status: sold)`) && !/@|Approved by/.test(s.lastCommit.message + r.title));
+    const again = await openPublicationPr({ gh, snapshot: sold, slug: SLUG, jobId: 'job-s', mode: 'update' });
+    t('repeating the status change finds the same branch and pull request', again.branch === r.branch && again.prNumber === r.prNumber);
+    const back = await openPublicationPr({ gh, snapshot: { ...prev, commercialStatus: 'under_offer' }, slug: SLUG, jobId: 'job-t', mode: 'update' });
+    t('a different status gets a different branch (no collision with the earlier one)', back.branch !== r.branch);
+  }
+
   section('real publication: deployment and live-site proof (fake GitHub, fake site)');
   {
     const { s, gh } = fakeGitHub({ state: { deployments: [{ id: 5, environment: 'Production' }] } });
@@ -153,6 +166,12 @@ export default async function run({ t, section }) {
     t('live proof fails when the page is missing', !(await verifyLive({ ...args, fetchImpl: site({ noPage: true }) })).ok);
     t('live proof fails when an image is missing', !(await verifyLive({ ...args, fetchImpl: site({ badImage: true }) })).ok);
     t('live proof fails when the gallery order differs from the approved order', !(await verifyLive({ ...args, fetchImpl: site({ swap: true }) })).ok);
+    const siteS = (status, o = {}) => async (url) => { const u = new URL(url); const base = await site()(url); if (u.pathname !== `/opportunities/${SLUG}/`) return base; const html = `<h1>Tom &amp; Jerry&#39;s home</h1><span class="lsb lsb-${o.wrong ?? status}">x</span>${o.form ? '<form data-le-form></form> Enquire about this property' : ''}<img src="${photos[0].src}"><img src="${photos[1].src}">`; return { ...base, text: async () => html }; };
+    const soldOk = await verifyLive({ ...args, status: 'sold', fetchImpl: siteS('sold') });
+    t('live proof of a Sold listing also checks the status badge and that the page does not offer it for enquiry', soldOk.ok && soldOk.checks.some((c) => c.name === 'listing_status') && soldOk.checks.some((c) => c.name === 'sold_page'));
+    t('live proof fails when the page still shows another status', !(await verifyLive({ ...args, status: 'sold', fetchImpl: siteS('sold', { wrong: 'available' }) })).ok);
+    t('live proof fails when a Sold page still carries the enquiry form', !(await verifyLive({ ...args, status: 'sold', fetchImpl: siteS('sold', { form: true }) })).ok);
+    t('an Under offer page keeps its enquiry form and passes', (await verifyLive({ ...args, status: 'under_offer', fetchImpl: siteS('under_offer', { form: true }) })).ok);
     t('live proof fails when the catalogue does not list the page', !(await verifyLive({ ...args, fetchImpl: site({ noCatalogue: true }) })).ok);
     let n = 0; const flaky = async (...a) => (n++ < 6 ? { ok: false, status: 404, headers: new Headers(), text: async () => '', body: null } : site()(...a));
     t('while the new deployment propagates the proof retries and then succeeds', (await verifyLive({ ...args, attempts: 4, fetchImpl: flaky })).ok);
