@@ -1,0 +1,49 @@
+---
+import ListingImage from './ListingImage.astro';
+import ListingStatusBadge from './ListingStatusBadge.astro';
+import { coverPhoto } from '../data/listings/card';
+import { designText } from '../data/listings/detail';
+import { listingPath } from '../data/listings/seo';
+import { localityLine } from '../data/listings/address';
+import type { PublicListing } from '../data/listings/schema';
+
+/*
+  Other published SDA properties (same state or design category), each a real listing page. The caller passes the already-selected list
+  (relatedListings()), which never includes a Sold or withdrawn property or the page's own listing. Renders nothing when there are none.
+*/
+interface Props { items: PublicListing[] }
+const { items } = Astro.props;
+---
+{items.length > 0 && (
+  <section class="rl" aria-labelledby="rl-h">
+    <h2 class="rl-h" id="rl-h">Other SDA properties</h2>
+    <ul class="rl-grid">
+      {items.map((l) => (
+        <li class="rl-card">
+          <a class="rl-media" href={listingPath(l)} tabindex="-1" aria-hidden="true"><ListingImage photo={coverPhoto(l.photos)} sizes="(min-width: 900px) 340px, 100vw" demoTag={false} /></a>
+          <div class="rl-body">
+            <ListingStatusBadge status={l.commercialStatus} />
+            <h3 class="rl-title"><a href={listingPath(l)}>{l.title}</a></h3>
+            <p class="rl-meta">{localityLine(l.address)}{designText(l) ? ` · ${designText(l)}` : ''}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+    <p class="rl-all"><a href="/opportunities/#listings">See all public listings &rarr;</a></p>
+  </section>
+)}
+<style>
+.rl{padding:8px 0 0}
+.rl-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(22px,2.6vw,28px);line-height:1.15;margin:0 0 20px}
+.rl-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.rl-card{display:flex;flex-direction:column;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 5%,transparent);overflow:hidden}
+.rl-media{display:block;aspect-ratio:4/3;overflow:hidden}
+.rl-body{display:flex;flex-direction:column;gap:10px;padding:16px 18px 18px}
+.rl-title{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.25;margin:0;color:var(--white);overflow-wrap:anywhere}
+.rl-title a{color:inherit;text-decoration:none}
+.rl-title a:hover,.rl-title a:focus-visible{text-decoration:underline;text-underline-offset:4px}
+.rl-meta{margin:0;font-family:var(--geo);font-size:12.5px;letter-spacing:.04em;color:var(--pale)}
+.rl-all{margin:18px 0 0;font-family:var(--geo);font-size:13px;letter-spacing:.06em}
+.rl-all a{color:var(--white);text-underline-offset:4px}
+@media(max-width:860px){.rl-grid{grid-template-columns:1fr}}
+</style>

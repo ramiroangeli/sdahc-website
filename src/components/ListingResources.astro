@@ -1,0 +1,39 @@
+---
+import type { MarketContext, ResourceLink } from '../data/listings/related';
+
+/*
+  Verified SDA market context and relevant SDAHC pages for a buyer. The context sentence quotes SDAHC Research's own figures for the property's state
+  with their source and date, and says plainly that it is general market information and not a statement about this property. It never mentions the
+  property's income, yield, occupancy or demand. Links are descriptive and point at existing pages.
+*/
+interface Props { context: MarketContext | null; links: ResourceLink[] }
+const { context, links } = Astro.props;
+---
+<section class="lr" aria-labelledby="lr-h">
+  {context && (
+    <div class="lr-ctx">
+      <h2 class="lr-h" id="lr-h">SDA market context</h2>
+      <p class="lr-p">As at {context.asAt}, {context.stateName} had {context.stateDwellings} enrolled SDA dwellings, out of {context.nationalDwellings} nationally ({context.source}).</p>
+      <p class="lr-note">General market information from SDAHC Research. It is not a statement about this property.</p>
+    </div>
+  )}
+  <div class="lr-links">
+    {!context && <h2 class="lr-h" id="lr-h">Related SDAHC pages</h2>}
+    {context && <h3 class="lr-h3">Related SDAHC pages</h3>}
+    <ul class="lr-list">
+      {links.map((l) => (<li><a href={l.href}>{l.text}</a><span>{l.note}</span></li>))}
+    </ul>
+  </div>
+</section>
+<style>
+.lr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px;padding:28px 0 0;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent)}
+.lr-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(22px,2.6vw,28px);line-height:1.15;margin:0 0 14px}
+.lr-h3{font-family:var(--serif);font-weight:600;color:var(--white);font-size:20px;line-height:1.2;margin:0 0 14px}
+.lr-p{margin:0 0 12px;font-family:var(--sans);font-size:17px;line-height:1.65;color:var(--pale)}
+.lr-note{margin:0;font-family:var(--sans);font-size:13.5px;line-height:1.55;color:var(--muted)}
+.lr-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.lr-list li{display:flex;flex-direction:column;gap:2px}
+.lr-list a{font-family:var(--sans);font-size:16.5px;font-weight:600;color:var(--white);text-underline-offset:3px}
+.lr-list span{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--pale)}
+@media(max-width:860px){.lr{grid-template-columns:1fr;gap:28px}}
+</style>

@@ -15,6 +15,10 @@ interface Props {
   title?: string;
   description?: string;
   ogImage?: string;
+  /** Real dimensions and a description of a page-specific ogImage. Omitted, the brand card's 1200 x 630 and "SDA Home Choices" apply, so other pages are unchanged. */
+  ogImageWidth?: number;
+  ogImageHeight?: number;
+  ogImageAlt?: string;
   extraFontsHref?: string;
   breadcrumbs?: Crumb[];
   schema?: Record<string, unknown>[];
@@ -24,6 +28,9 @@ const {
   title = 'SDA Home Choices',
   description = 'Independent commercial advisory for the sale, acquisition and strategic review of Specialist Disability Accommodation in Australia.',
   ogImage = '/images/og-brand.jpg',
+  ogImageWidth = 1200,
+  ogImageHeight = 630,
+  ogImageAlt,
   extraFontsHref,
   breadcrumbs,
   schema = [],
@@ -72,13 +79,14 @@ const graph = {
   <meta property="og:url" content={canonical} />
   <meta property="og:locale" content="en_AU" />
   {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
-  {ogImageUrl && <meta property="og:image:width" content="1200" />}
-  {ogImageUrl && <meta property="og:image:height" content="630" />}
-  {ogImageUrl && <meta property="og:image:alt" content="SDA Home Choices" />}
+  {ogImageUrl && <meta property="og:image:width" content={String(ogImageWidth)} />}
+  {ogImageUrl && <meta property="og:image:height" content={String(ogImageHeight)} />}
+  {ogImageUrl && <meta property="og:image:alt" content={ogImageAlt ?? 'SDA Home Choices'} />}
   <meta name="twitter:card" content={ogImageUrl ? 'summary_large_image' : 'summary'} />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
   {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+  {ogImageUrl && ogImageAlt && <meta name="twitter:image:alt" content={ogImageAlt} />}
   <script type="application/ld+json" set:html={JSON.stringify(graph)} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

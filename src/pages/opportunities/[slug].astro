@@ -6,10 +6,13 @@ import ListingEnquiryForm from '../../components/ListingEnquiryForm.astro';
 import ListingFacts from '../../components/ListingFacts.astro';
 import ListingInvestment from '../../components/ListingInvestment.astro';
 import AgencyPanel from '../../components/AgencyPanel.astro';
+import RelatedListings from '../../components/RelatedListings.astro';
+import ListingResources from '../../components/ListingResources.astro';
 import { getPublicListings } from '../../data/listings';
 import { agencyFor } from '../../data/listings/agencies';
 import { detailFacts, detailInvestment, detailLocation, detailPricing, designText } from '../../data/listings/detail';
-import { listingJsonLd, listingOgImage } from '../../data/listings/seo';
+import { listingNode, listingOgImageInfo, listingSeoDescription, listingPath, uniqueSeoTitles } from '../../data/listings/seo';
+import { relatedListings, marketContext, resourceLinks } from '../../data/listings/related';
 import { TYPE_LABEL } from '../../data/listings/schema';
 
 // Only published listings get a page. A draft, withdrawn or fixture-in-production listing is simply
@@ -19,7 +22,6 @@ export function getStaticPaths() {
 }
 
 const { listing } = Astro.props;
-const { address } = listing;
 // a sold property is not offered: no price, no purchase enquiry, no access steps, no commercial figures (a general enquiry route instead)
 const sold = listing.commercialStatus === 'sold';
 const location = detailLocation(listing);
@@ -32,15 +34,26 @@ const investment = detailInvestment(listing);
 const pricing = detailPricing(listing);
 const agency = agencyFor(listing.marketing?.agency);
 const hasSdaDetail = Object.values(listing.sda).some((v) => v !== undefined) || facts.length > 0;
-const jsonLd = listingJsonLd(listing, Astro.site!.href);
-const ogImage = listingOgImage(listing);
-const title = `${address.street}, ${address.suburb} ${address.state} | SDA property | SDA Home Choices`;
+// search and social metadata: generated from approved structured fields only (no staff SEO entry, nothing from the free-text description)
+const everyListing = getPublicListings();
+const title = uniqueSeoTitles(everyListing).get(listing.id)!;
+const description = listingSeoDescription(listing);
+const og = listingOgImageInfo(listing);
+const related = relatedListings(listing, everyListing);
+const context = marketContext(listing);
+const resources = resourceLinks(listing);
+const breadcrumbs = [{ name: 'Opportunities', path: '/opportunities/' }, { name: listing.title, path: listingPath(listing) }];
 ---
-<BaseLayout title={title} description={listing.summary} ogImage={ogImage ?? undefined}>
-  <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+<BaseLayout title={title} description={description} ogImage={og?.url} ogImageWidth={og?.width} ogImageHeight={og?.height} ogImageAlt={og?.alt} breadcrumbs={breadcrumbs} schema={[listingNode(listing, Astro.site!.href)]}>
 
   <section class="ld-top"><div class="wrap">
-    <p class="ld-back"><a href="/opportunities/#listings">&larr; All public listings</a></p>
+    <nav class="ld-crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href="/opportunities/">Opportunities</a></li>
+        <li aria-current="page"><span>{listing.title}</span></li>
+      </ol>
+    </nav>
     {listing.isPreview && <p class="ld-fixture" role="note">Local draft preview. Not published, not approved. Enquiries are not sent.</p>}
     {listing.isDemo && <p class="ld-fixture" role="note">Demo listing. Not a live property and contains no verified facts. Images are placeholders.</p>}
 
@@ -72,6 +85,7 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
         {listing.description.map((p) => <p>{p}</p>)}
         {!hasSdaDetail && <p>Design category, dwelling configuration, enrolment and tenancy detail are released to registered parties under NDA.</p>}
       </section>
+      <ListingResources context={context} links={resources} />
     </div>
 
     <div class="ld-aside">
@@ -89,6 +103,10 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
       )}
     </div>
   </div></section>
+
+  {related.length > 0 && (
+    <section class="section ld-related"><div class="wrap"><RelatedListings items={related} /></div></section>
+  )}
 
   {sold ? (
     <section class="section ld-enquire" id="enquire"><div class="wrap"><div class="ld-sold">
@@ -112,9 +130,14 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
 <style>
 /* the top of the page: same navy surface as the page headers, with the gallery directly under the title */
 .ld-top{padding:calc(118px + var(--nav-top)) 0 44px;position:relative;background:radial-gradient(1000px 520px at 78% 10%,rgba(4,118,217,.10),transparent 60%),var(--navy)}
-.ld-back{margin:0 0 18px;font-family:var(--geo);font-size:13px;letter-spacing:.06em}
-.ld-back a{color:var(--pale);text-underline-offset:3px}
-.ld-back a:hover,.ld-back a:focus-visible{color:var(--white)}
+.ld-crumbs{margin:0 0 18px;font-family:var(--geo);font-size:13px;letter-spacing:.06em}
+.ld-crumbs ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 0}
+.ld-crumbs li{display:inline-flex;align-items:center;min-width:0}
+.ld-crumbs li+li::before{content:"/";margin:0 10px;color:var(--muted)}
+.ld-crumbs a{color:var(--pale);text-underline-offset:3px}
+.ld-crumbs a:hover,.ld-crumbs a:focus-visible{color:var(--white)}
+.ld-crumbs [aria-current]{color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60ch}
+.ld-related{background:var(--navy);padding-top:8px}
 .ld-fixture{display:inline-block;margin:0 0 20px;font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:8px 12px}
 .ld-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px 32px;margin:0 0 26px}
 .ld-head-main{min-width:0;flex:1 1 560px}

@@ -204,11 +204,11 @@ t('EOI listing exposes no amount anywhere', !/\$|695/.test(JSON.stringify(eoiLis
 const ld = L.listingJsonLd(eoiListing, 'https://sdahomechoices.com.au/');
 const ldJson = JSON.stringify(ld);
 t('JSON-LD uses the street name, suburb, state and postcode', ld.about.address.streetAddress === 'Rutherford Grove' && ld.about.address.postalCode === '3217');
-t('JSON-LD has no coordinates and no house number', !/geo|latitude|longitude/i.test(ldJson) && !/\b\d+[a-z]?\s+Rutherford/i.test(ldJson) && !ldJson.includes('1/10'));
+t('JSON-LD has no coordinates and no house number', !/"geo"|latitude|longitude/i.test(ldJson) && !/\b\d+[a-z]?\s+Rutherford/i.test(ldJson) && !ldJson.includes('1/10'));
 t('JSON-LD has no offer without a public price', !('offers' in ld));
 const ldAsk = L.listingJsonLd(askListing, 'https://sdahomechoices.com.au/');
 t('JSON-LD offer carries only the approved AUD price', ldAsk.offers.price === 695000 && ldAsk.offers.priceCurrency === 'AUD');
-t('JSON-LD of a SOLD listing carries no offer, even with an approved price', !('offers' in L.listingJsonLd({ ...askListing, commercialStatus: 'sold' }, 'https://sdahomechoices.com.au/')) && 'offers' in L.listingJsonLd({ ...askListing, commercialStatus: 'under_offer' }, 'https://sdahomechoices.com.au/'));
+t('JSON-LD of a SOLD or UNDER OFFER listing carries no offer, even with an approved price (it must not imply unconditional availability)', !('offers' in L.listingJsonLd({ ...askListing, commercialStatus: 'sold' }, 'https://sdahomechoices.com.au/')) && !('offers' in L.listingJsonLd({ ...askListing, commercialStatus: 'under_offer' }, 'https://sdahomechoices.com.au/')));
 t('JSON-LD URL is the numberless slug', ld.url === 'https://sdahomechoices.com.au/opportunities/rutherford-grove-armstrong-creek-vic/');
 t('Open Graph image is the widest real photo', L.listingOgImage(eoiListing) === `${MEDIA}/a1b2c3d4e5f6-960.webp`);
 t('a demo listing never provides an Open Graph image', L.listingOgImage(fx[0]) === undefined);
@@ -1027,6 +1027,7 @@ await (await import('./test-optional-fields.mjs')).default({ t, section });
 await (await import('./test-catalogue.mjs')).default({ t, section });
 await (await import('./test-offmarket.mjs')).default({ t, section });
 await (await import('./test-listing-page.mjs')).default({ t, section });
+await (await import('./test-listing-seo.mjs')).default({ t, section });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
