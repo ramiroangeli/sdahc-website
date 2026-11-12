@@ -153,6 +153,9 @@ async function verifyMedia({ mediaBase, publicId: id, manifest }) {
 async function withdraw(payload) {
   if (payload.action !== 'withdraw' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/.test(payload.at ?? '')) throw Object.assign(new Error('the withdrawal request is not valid'), { code: 'payload_mismatch' });
   await report('payload', 'ok');
+  const reviewedPhotos = payload.version === 2 ? L.manifestToPhotos(payload.manifest, L.manifestUrlFor(publicId, mediaBase), mediaBase) : null;
+  if (reviewedPhotos?.issues.length) throw Object.assign(new Error('the reviewed photographs are invalid'), { code: 'manifest_invalid' });
+
   const dataDir = join(repoRoot, 'src/data/listings');
   const jsonDir = (d) => (existsSync(join(dataDir, d)) ? readdirSync(join(dataDir, d)).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(join(dataDir, d, f), 'utf8'))) : []);
   const snap = jsonDir('approved').find((x) => x.listingId === publicId);
@@ -233,13 +236,14 @@ async function main() {
   await report('started', 'running');
   log('fetching the approved content from the app');
   const payload = await call('GET', `/api/listings/publish-payload?job=${jobId}`);
-  if (payload.publicId !== publicId || payload.mode !== mode || payload.version !== 1) throw Object.assign(new Error('the payload does not match the job'), { code: 'payload_mismatch' });
+  if (payload.publicId !== publicId || payload.mode !== mode || ![1, 2].includes(payload.version)) throw Object.assign(new Error('the payload does not match the job'), { code: 'payload_mismatch' });
   if (mode === 'withdraw') return withdraw(payload);
   await report('payload', 'ok', { photos: payload.manifest.photos.length });
 
   const mediaBase = process.env.LISTINGS_MEDIA_BASE_URL;
   if (!mediaBase) throw Object.assign(new Error('LISTINGS_MEDIA_BASE_URL is not set'), { code: 'not_configured' });
   const L = await loadTs();
+  if (payload.version === 2 && (!payload.reviewedSda || typeof payload.reviewedSda !== 'object' || Array.isArray(payload.reviewedSda))) throw Object.assign(new Error('reviewed SDA details are required'), { code: 'payload_invalid' });
   const cfg = L.readNotionConfig(process.env);
   if (!cfg) throw Object.assign(new Error('Notion read access is not configured'), { code: 'not_configured' });
 
@@ -286,7 +290,7 @@ async function main() {
   });
   let action = actions.find((a) => a.id === publicId);
   // a rerun after the pull request already merged: main holds exactly the approved content, so there is nothing new to propose
-  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, payload).length === 0 && statusParity(previousSnap, payload).length === 0;
+  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, payload, reviewedPhotos?.photos).length === 0 && statusParity(previousSnap, payload).length === 0;
   if (resumed) action = { kind: 'already_published', id: publicId, snapshot: previousSnap, issues: [] };
   const issues = action?.issues ?? [];
   const checks = [
@@ -303,7 +307,7 @@ async function main() {
     throw Object.assign(new Error(why), { code: 'wrong_mode', reported: true });
   }
   checks.push({ name: 'engine_accepts', ok: true, note: resumed ? 'This exact content is already on the main branch.' : `Proposed ${action.kind} v${action.snapshot.version}.` });
-  const problems = [...parity(action.snapshot.content, payload), ...statusParity(action.snapshot, payload)];
+  const problems = [...parity(action.snapshot.content, payload, reviewedPhotos?.photos), ...statusParity(action.snapshot, payload)];
   checks.push({ name: 'matches_approved_draft', ok: problems.length === 0, note: problems.length ? `Differs from the approved draft: ${problems.join(', ')}.` : 'The proposed public content is exactly what was approved.' });
   if (problems.length) {
     await report('engine', 'failed', { kind: action.kind, issues: problems.map((p) => `Does not match the approved draft: ${p}`), checks });

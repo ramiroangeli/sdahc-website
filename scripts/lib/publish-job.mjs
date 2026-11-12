@@ -64,7 +64,7 @@ export function overlayPage(page, payload, approver, previous = null) {
 const sortedKeys = (v) => (Array.isArray(v) ? v.map(sortedKeys) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortedKeys(v[k])])) : v);
 
 /** Does the snapshot the engine produced say exactly what the Publisher approved? Returns problems (names only, no content). */
-export function parity(snapshotContent, payload) {
+export function parity(snapshotContent, payload, expectedPhotos) {
   const problems = [];
   const c = payload.content;
   if (c.title && snapshotContent.title !== c.title) problems.push('title');
@@ -81,6 +81,12 @@ export function parity(snapshotContent, payload) {
   for (const k of ['bedrooms', 'residentPlaces', 'ooa']) { const want = optional.sda?.[k]; if (want !== undefined && snapshotContent.sda?.[k] !== want) problems.push(`sda ${k}`); }
   const ids = (payload.manifest?.photos ?? []).map((p) => p.id);
   if (JSON.stringify(snapshotContent.photos.map((p) => p.id)) !== JSON.stringify(ids)) problems.push('photo order');
+  // Version 2 freezes every public SDA fact and the complete generated image metadata reviewed by the Publisher.
+  // Version 1 remains supported during the coordinated rollout.
+  if (payload.version === 2) {
+    if (!payload.reviewedSda || JSON.stringify(sortedKeys(snapshotContent.sda ?? null)) !== JSON.stringify(sortedKeys(payload.reviewedSda))) problems.push('reviewed SDA details');
+    if (!expectedPhotos || JSON.stringify(sortedKeys(snapshotContent.photos)) !== JSON.stringify(sortedKeys(expectedPhotos))) problems.push('reviewed photographs');
+  }
   return problems;
 }
 
