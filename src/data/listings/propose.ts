@@ -1,6 +1,6 @@
 import { fetchManifest as defaultFetchManifest, manifestToPhotos, manifestUrlFor, pageToRecord, type MediaManifest, type NotionPage } from './notion';
 import { isLiveStatus, nextSnapshot, validateForPublication } from './versioning';
-import type { ApprovedSnapshot, ComplianceConfig, Photo } from './schema';
+import type { ApprovedSnapshot, ComplianceConfig, OptionalGroups, Photo, PublicContent } from './schema';
 
 /*
   The proposal step: Notion rows in, proposed snapshots out. Pure apart from the manifest fetch, which is
@@ -31,8 +31,26 @@ export interface ProposeInput {
   compliance?: ComplianceConfig;
   mediaBase: string;
   getManifest?: (url: string) => Promise<MediaManifest>;
+  /**
+   * Optional public groups per listing id (physical facts, OOA and similar, the approved commercial block, the marketing agency), supplied by the signed
+   * publication request. They are merged into the draft BEFORE validation, so every rule (strict schema, approval hash, Victorian restriction, text scan)
+   * applies to them exactly as to the rest of the content. A listing with none is unchanged, byte for byte.
+   */
+  extras?: ReadonlyMap<string, OptionalGroups>;
   now?: Date;
 }
+
+/** The draft with the optional groups added. Absent groups add nothing, so existing content and its hash never change. Pure. */
+export const withOptionalGroups = (draft: PublicContent | null, extras?: OptionalGroups): PublicContent | null => {
+  if (!draft || !extras) return draft;
+  return {
+    ...draft,
+    ...(extras.property ? { property: extras.property } : {}),
+    ...(extras.investment ? { investment: extras.investment } : {}),
+    ...(extras.marketing ? { marketing: extras.marketing } : {}),
+    ...(extras.sda ? { sda: { ...draft.sda, ...extras.sda } } : {}),
+  };
+};
 
 const COMMERCIAL = { published: 'available', under_offer: 'under_offer', sold: 'sold' } as const;
 
@@ -63,6 +81,7 @@ export const propose = async (i: ProposeInput): Promise<ProposeAction[]> => {
     const prev = i.previous.get(rec0.id);
     const taken = new Set([...owner.keys()].filter((sl) => sl !== prev?.content.slug));
     const { record } = pageToRecord(page, { photos, slug: prev?.content.slug, takenSlugs: taken, approvedAt: now.toISOString() });
+    record.draft = withOptionalGroups(record.draft, i.extras?.get(record.id));
     const check = validateForPublication(record, {
       internalAddress: record.internal.address, internalPriceAud: record.internal.priceAud, internalYieldPct: record.internal.yieldPct,
       mediaBaseUrl: i.mediaBase, allowDemo: false, authorisedApproverIds: i.approvers, compliance: i.compliance,

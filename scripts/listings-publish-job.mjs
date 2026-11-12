@@ -266,12 +266,21 @@ async function main() {
   log('running the existing publication engine on the approved content');
   const previousSnap = jsonDir('approved').find((x) => x.listingId === publicId) ?? null;
   const overlay = overlayPage(page, payload, approver ? { notionUserId: approver.id, name: approver.name } : null, previousSnap);
+  // the optional public groups travel in the signed payload and are validated here with the same strict schema the site uses; an unknown or malformed
+  // group fails the job before anything is proposed
+  let extras = new Map();
+  if (payload.content?.optional !== undefined && payload.content.optional !== null) {
+    const parsed = L.optionalGroupsSchema.safeParse(payload.content.optional);
+    if (!parsed.success) throw Object.assign(new Error('the optional public groups in the request are not valid'), { code: 'payload_invalid' });
+    extras = new Map([[publicId, parsed.data]]);
+  }
   const actions = await L.propose({
     pages: [overlay],
     previous: new Map(jsonDir('approved').map((s) => [s.listingId, s])),
     withdrawn: new Set(jsonDir('withdrawn').map((w) => w.listingId)),
     approvers: authorised,
     compliance,
+    extras,
     mediaBase,
     getManifest: async () => payload.manifest, // the photographs stay private: no public URL is read or written
   });
