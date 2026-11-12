@@ -185,6 +185,19 @@ export const investmentSchema = z.object({
 export const marketingSchema = z.object({
   agency: z.string().regex(/^[a-z][a-z0-9-]{1,39}$/),
 }).strict();
+
+/**
+ * The optional public groups a publication request may carry beside the Notion-derived content: physical facts, three SDA facts the CRM does not hold,
+ * the approved commercial block and the marketing agency. Strict, so nothing else can ride along. The commercial block still needs its own approval
+ * hash and obeys the Victorian restriction (both enforced by the safety checks that every snapshot passes).
+ */
+export const optionalGroupsSchema = z.object({
+  property: propertySchema.optional(),
+  sda: z.object({ bedrooms: z.number().int().positive().optional(), residentPlaces: z.number().int().positive().optional(), ooa: z.string().min(2).max(120).optional() }).strict().optional(),
+  investment: investmentSchema.optional(),
+  marketing: marketingSchema.optional(),
+}).strict();
+export type OptionalGroups = z.infer<typeof optionalGroupsSchema>;
 /** Everything approved for public display, and exactly what the content hash covers. */
 export const publicContentSchema = z.object({
   slug: z.string().regex(/^[a-z]+(-[a-z]+)*$/, 'slug may contain letters and hyphens only').max(80)

@@ -59,6 +59,8 @@ export function overlayPage(page, payload, approver, previous = null) {
   return { ...page, properties: props };
 }
 
+const sortedKeys = (v) => (Array.isArray(v) ? v.map(sortedKeys) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortedKeys(v[k])])) : v);
+
 /** Does the snapshot the engine produced say exactly what the Publisher approved? Returns problems (names only, no content). */
 export function parity(snapshotContent, payload) {
   const problems = [];
@@ -70,6 +72,11 @@ export function parity(snapshotContent, payload) {
   if (snapshotContent.pricing.mode !== c.pricingMode) problems.push('pricing mode');
   const wantPrice = c.displayPrice == null ? undefined : `$${Math.round(c.displayPrice).toLocaleString('en-AU')}`;
   if ((snapshotContent.pricing.display ?? undefined) !== wantPrice) problems.push('display price');
+  // the optional public groups: the snapshot must carry exactly the groups the signed request carried, and no others
+  const optional = c.optional ?? {};
+  const got = { property: snapshotContent.property, investment: snapshotContent.investment, marketing: snapshotContent.marketing };
+  for (const g of ['property', 'investment', 'marketing']) if (JSON.stringify(sortedKeys(got[g] ?? null)) !== JSON.stringify(sortedKeys(optional[g] ?? null))) problems.push(`optional group ${g}`);
+  for (const k of ['bedrooms', 'residentPlaces', 'ooa']) { const want = optional.sda?.[k]; if (want !== undefined && snapshotContent.sda?.[k] !== want) problems.push(`sda ${k}`); }
   const ids = (payload.manifest?.photos ?? []).map((p) => p.id);
   if (JSON.stringify(snapshotContent.photos.map((p) => p.id)) !== JSON.stringify(ids)) problems.push('photo order');
   return problems;

@@ -1022,6 +1022,48 @@ section('standing Victorian position for tenanted SDA investment sales (Contact 
   t('the policy is described in the compliance notes and names the unresolved questions', /Posición permanente/.test(rd('docs/victorian-pricing-compliance.md')) && /no prueba ninguna exención/.test(rd('docs/victorian-pricing-compliance.md')));
 }
 
+
+/* ---------------------------------------------------------------- optional public groups in a publication request */
+section('publication engine: optional public groups from the signed request');
+{
+  const NT = { [N.state]: P_.sel('NT'), [N.webPublicAddress]: P_.rt('Whipray Circuit, Berrimah NT 0832') };
+  const ntPage = () => pg(NT, '2e2909c1-0000-0000-0000-00000000b001');
+  const approve = (inv) => ({ ...inv, approval: { valuesHash: L.investmentValuesHash({ ...inv, approval: { valuesHash: '0'.repeat(64) } }) } });
+  const FIG = { leaseStatus: 'fully_leased', occupancyStatus: 'partially_occupied', annualIncomeAud: 132704, incomeType: 'net', yieldPct: 11.1, yieldType: 'net', basis: 'projected' };
+  const withX = (page, x) => run([page], { extras: new Map([[PID(page.id), x]]) });
+  const none = await run([ntPage()]);
+  const bare = await withX(ntPage(), undefined);
+  t('no optional groups: the snapshot and its content hash are exactly what they were before this change', none[0].kind === 'new' && bare[0].kind === 'new' && none[0].snapshot.contentHash === bare[0].snapshot.contentHash && !('investment' in none[0].snapshot.content) && !('property' in none[0].snapshot.content) && !('marketing' in none[0].snapshot.content));
+  t('an empty optional object changes nothing either', (await withX(ntPage(), {}))[0].snapshot.contentHash === none[0].snapshot.contentHash);
+  const ok = await withX(ntPage(), { property: { bathrooms: 2, carSpaces: 1 }, sda: { bedrooms: 3, ooa: 'Onsite overnight assistance (OOA) available' }, investment: approve(FIG), marketing: { agency: 'sdahc' } });
+  const c = ok[0].snapshot?.content;
+  t('a non-Victorian listing with an approved block publishes the groups into the snapshot', ok[0].kind === 'new' && c.property.bathrooms === 2 && c.sda.bedrooms === 3 && c.sda.ooa.includes('OOA') && c.investment.yieldPct === 11.1 && c.marketing.agency === 'sdahc');
+  t('the Notion-derived SDA facts are kept beside the added ones', !!c.sda.designCategories || !!c.sda.buildingType || Object.keys(c.sda).length >= 2);
+  t('the snapshot hash covers the groups, so changing them is a new version', ok[0].snapshot.contentHash !== none[0].snapshot.contentHash);
+  const tampered = await withX(ntPage(), { investment: { ...approve(FIG), yieldPct: 14.0 } });
+  t('values changed after approval (the hash no longer matches) yield NO snapshot', tampered[0].kind === 'failed' && !tampered[0].snapshot && tampered[0].issues.some((m) => /not approved for public display, or were changed/.test(m)));
+  t('a block without any approval is refused by the strict schema', (() => { const r = L.optionalGroupsSchema.safeParse({ investment: { leaseStatus: 'fully_leased' } }); return !r.success; })());
+  const vic = pg({}, '2e2909c1-0000-0000-0000-00000000b002');
+  const vicFig = await withX(vic, { investment: approve(FIG) });
+  t('Victoria: income and yield yield NO snapshot, whatever the approval says', vicFig[0].kind === 'failed' && !vicFig[0].snapshot && vicFig[0].issues.some((m) => /Victorian listings/.test(m)));
+  const vicLease = await withX(pg({}, '2e2909c1-0000-0000-0000-00000000b003'), { investment: approve({ leaseStatus: 'fully_leased', occupancyStatus: 'vacant' }) });
+  t('Victoria: lease and occupancy alone are still allowed', vicLease[0].kind === 'new' && vicLease[0].snapshot.content.investment.leaseStatus === 'fully_leased');
+  t('an unknown group or key is rejected by the strict schema (nothing can ride along)', !L.optionalGroupsSchema.safeParse({ secret: 1 }).success && !L.optionalGroupsSchema.safeParse({ sda: { designCategories: ['HPS'] } }).success && !L.optionalGroupsSchema.safeParse({ investment: { ...approve(FIG), approvedBy: 'x@y.com' } }).success);
+  t('an unregistered agency yields NO snapshot', (await withX(ntPage(), { marketing: { agency: 'nobody-agency' } }))[0].kind === 'failed');
+  t('free text in the block is scanned: a dollar amount in the tenure yields NO snapshot', (await withX(ntPage(), { investment: approve({ leaseStatus: 'fully_leased', tenure: 'Lease at $1,200 per week' }) }))[0].kind === 'failed');
+  // an update that removes the groups produces a new version without them (the Publisher withdrew the disclosure)
+  const prev = new Map([[PID(ntPage().id), ok[0].snapshot]]);
+  const removed = await run([ntPage()], { previous: prev });
+  t('an update with the groups removed proposes a new version without them', removed[0].kind === 'version' && !('investment' in removed[0].snapshot.content) && !('property' in removed[0].snapshot.content));
+  const same = await run([ntPage()], { previous: prev, extras: new Map([[PID(ntPage().id), { property: { bathrooms: 2, carSpaces: 1 }, sda: { bedrooms: 3, ooa: 'Onsite overnight assistance (OOA) available' }, investment: approve(FIG), marketing: { agency: 'sdahc' } }]]) });
+  t('re-running with the same groups proposes nothing (idempotent)', same[0].kind === 'unchanged');
+  // parity: the snapshot must say exactly what the request carried
+  const payload = { content: { title: '', description: 'x', publicAddress: 'A Street, Town VIC 3000', pricingMode: 'contact_agent', displayPrice: null, optional: { investment: approve(FIG) } }, manifest: { photos: [] } };
+  const snap = { title: 'x', description: ['x'], address: { street: 'A Street', suburb: 'Town', state: 'VIC', postcode: '3000' }, pricing: { mode: 'contact_agent' }, photos: [], investment: approve(FIG) };
+  t('parity: matching groups pass; a missing, extra or altered group is named', parity(snap, payload).length === 0 && parity({ ...snap, investment: undefined }, payload).includes('optional group investment') && parity({ ...snap, property: { bathrooms: 1 } }, payload).includes('optional group property') && parity({ ...snap, investment: { ...snap.investment, yieldPct: 9 } }, payload).includes('optional group investment'));
+  t('the publish job validates the groups with the strict schema and passes them to the engine', /optionalGroupsSchema\.safeParse\(payload\.content\.optional\)/.test(rd('scripts/listings-publish-job.mjs')) && /extras,\n/.test(rd('scripts/listings-publish-job.mjs')) && /payload_invalid/.test(rd('scripts/listings-publish-job.mjs')));
+}
+
 await (await import('./test-publish-git.mjs')).default({ t, section });
 await (await import('./test-optional-fields.mjs')).default({ t, section });
 await (await import('./test-catalogue.mjs')).default({ t, section });
