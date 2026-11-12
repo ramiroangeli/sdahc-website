@@ -13,8 +13,8 @@ import { cardView } from '../data/listings/card';
   The marketing agency logo is always visible: at the foot of the commercial column when there is one, otherwise at the right of the action row.
   The list item keeps the data-* attributes the catalogue filter script reads.
 */
-interface Props { listing: PublicListing; index?: number }
-const { listing, index = 0 } = Astro.props;
+interface Props { listing: PublicListing; index?: number; first?: boolean; beyondFirstPage?: boolean }
+const { listing, index = 0, first = false, beyondFirstPage = false } = Astro.props;
 const designs = listing.sda.designCategories ?? [];
 const a = listing.address;
 const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase();
@@ -26,7 +26,8 @@ const logo = logos[`../assets/${agency.logoOnDark}`]?.default;
 const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x is { label: string; value: string } => !!x) : [];
 ---
 <li
-  class="lc"
+  class={`lc${first ? ' lc--first' : ''}`}
+  hidden={beyondFirstPage}
   data-state={a.state}
   data-type={listing.type}
   data-status={listing.commercialStatus}
@@ -46,14 +47,20 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
       </a>
 
       <div class="lc-body">
+        <div class="lc-id">
         <div class="lc-badges">
           <ListingStatusBadge status={listing.commercialStatus} />
           <span class="lc-type">{TYPE_LABEL[listing.type]}</span>
         </div>
         <h3 class="lc-title"><a class="lc-link" href={href} title={listing.title}>{listing.title}</a></h3>
         {location && <p class="lc-loc">{location}</p>}
-        {facts.design && <p class="lc-cat">{facts.design}</p>}
-        {facts.parts.length > 0 && <p class="lc-facts">{facts.parts.join(' \u00b7 ')}</p>}
+        </div>
+        {(facts.design || facts.parts.length > 0) && (
+          <div class="lc-spec">
+            {facts.design && <p class="lc-cat">{facts.design}</p>}
+            {facts.parts.length > 0 && <p class="lc-facts">{facts.parts.join(' \u00b7 ')}</p>}
+          </div>
+        )}
       </div>
 
       {commercial && (
@@ -87,12 +94,12 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
 </li>
 <style>
 .lc[hidden]{display:none}
-.lc{margin:0;padding:0}
-.lc-card{display:flex;flex-direction:column;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 5%,transparent);overflow:hidden;transition:border-color .22s ease,background .22s ease}
+.lc{margin:0;padding:0;container-type:inline-size}
+.lc-card{height:100%;display:flex;flex-direction:column;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 5%,transparent);overflow:hidden;transition:border-color .22s ease,background .22s ease}
 .lc-card:hover{border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:color-mix(in srgb,var(--white) 8%,transparent)}
 /* One card size. The photograph column is always --ph wide (4:3), with or without a commercial column, so every card has the same photo and a similar height.
    The row is at least as tall as the photograph and grows (never clips) if text is enlarged. */
-.lc-main{--ph:310px;--cc:200px;display:grid;grid-template-columns:var(--ph) minmax(0,1fr);min-height:calc(var(--ph) * 3 / 4)}
+.lc-main{flex:1 0 auto;--ph:310px;--cc:200px;display:grid;grid-template-columns:var(--ph) minmax(0,1fr);min-height:calc(var(--ph) * 3 / 4)}
 .lc-main--comm{grid-template-columns:var(--ph) minmax(0,1fr) var(--cc)}
 .lc-media{position:relative;display:block;width:100%;aspect-ratio:4/3;overflow:hidden;align-self:start}
 .lc-media :global(.li img){object-position:center 40%}
@@ -127,6 +134,19 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
 .lc-btn{padding:10px 20px;font-size:14.5px;white-space:nowrap}
 .lc-logo--foot{margin-left:auto}
 .lc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* a card that spans the full width (every card after the first): the photograph stays the same size; the extra width goes to a two-part information
+   column (identity, then design category and facts) and a wider commercial column whose indicators sit side by side */
+@container (min-width: 960px){
+  .lc-main--comm{grid-template-columns:var(--ph) minmax(0,1fr) 330px}
+  .lc-body{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0 32px;align-content:start;padding:20px 28px}
+  .lc-spec{padding-top:4px}
+  .lc-cat{margin-top:0}
+  .lc-facts{margin-top:12px}
+  .lc-comm{padding:16px 24px}
+  .lc-inds{flex-direction:row;flex-wrap:wrap}
+  .lc-ind{flex:1 1 140px}
+  .lc-actions{padding:12px 28px}
+}
 /* tablet: the same three columns, a little narrower (photo still 4:3 and the same width on every card) */
 @media(max-width:899px){
   .lc-main,.lc-main--comm{--ph:230px;grid-template-columns:var(--ph) minmax(0,1fr)}
