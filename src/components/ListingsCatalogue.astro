@@ -1,15 +1,18 @@
 ---
 import ListingCard from './ListingCard.astro';
+import ConfidentialAccessPanel from './ConfidentialAccessPanel.astro';
 import { getPublicListings } from '../data/listings';
 import { DESIGN_LABEL, STATUS_LABEL, STATES, TYPE_LABEL } from '../data/listings/schema';
 
 /*
-  "Available SDA Properties": searchable, filterable, sortable catalogue of published listings.
+  The property catalogue: searchable, filterable, sortable list of published listings, with the Confidential Access panel beside it on desktop and below it on mobile.
   Always renders. With no published listing it shows a professional empty state that keeps the
   off-market path in front of the visitor. Filtering is progressive enhancement: without JavaScript
   every card simply stays visible.
 */
 const listings = getPublicListings();
+// how many matching properties show at first; "Load more properties" adds this many each time
+const PAGE = 10;
 const uniq = <T,>(v: T[]) => [...new Set(v)];
 const states = STATES.filter((s) => listings.some((l) => l.address.state === s));
 const types = uniq(listings.map((l) => l.type));
@@ -21,11 +24,8 @@ const showType = types.length > 1;
 const showStatus = statuses.length > 1;
 const showDesign = designs.length > 0;
 ---
-<section class="section lcat" id="listings" aria-labelledby="lcat-h">
+<section class="section lcat" id="listings" aria-label="SDA properties">
   <div class="wrap">
-    <h2 class="lcat-heading" id="lcat-h">Available SDA Properties</h2>
-    <p class="lcat-intro">SDA properties we can show publicly. Detail, documents and pricing beyond what is shown are released to registered parties under NDA.</p>
-
     {listings.length > 0 ? (
       <>
         <form class="lcat-filters" aria-label="Search and filter properties" data-lcat-filters>
@@ -33,6 +33,9 @@ const showDesign = designs.length > 0;
             <label for="f-q">Search suburb or street</label>
             <input type="search" id="f-q" name="q" placeholder="e.g. Shepparton" autocomplete="off" />
           </div>
+          <details class="lcat-more" open data-lcat-more>
+            <summary class="lcat-more-sum"><span>Filters</span><span class="lcat-more-n" data-lcat-n hidden></span></summary>
+            <div class="lcat-more-body">
           {showState && (
             <div class="lcat-field">
               <label for="f-state">State</label>
@@ -77,40 +80,60 @@ const showDesign = designs.length > 0;
               <option value="status">Availability</option>
             </select>
           </div>
+            </div>
+          </details>
+          <p class="lcat-active" data-lcat-active hidden></p>
           <button type="reset" class="lcat-reset">Clear</button>
         </form>
 
-        <p class="lcat-count" role="status" aria-live="polite" data-lcat-count>Showing {listings.length} of {listings.length} properties</p>
+        <p class="lcat-count" role="status" aria-live="polite" data-lcat-count>Showing {Math.min(PAGE, listings.length)} of {listings.length} properties</p>
 
+        <!-- One grid: the first visible card and the Confidential Access panel share the first row, every later card spans the full width.
+             Every listing link is in the HTML (crawlable); cards beyond the first ten are hidden until "Load more properties". -->
         <ul class="lcat-grid" data-lcat-grid>
-          {listings.map((l, i) => <ListingCard listing={l} index={i} />)}
+          {listings.map((l, i) => <ListingCard listing={l} index={i} first={i === 0} beyondFirstPage={i >= PAGE} />)}
+          <li class="lcat-empty" data-lcat-empty hidden>
+            <p>No properties match your search.</p>
+            <p>Try clearing a filter, or <a href="/opportunities/off-market/">access off-market opportunities</a>, most of which are never listed publicly.</p>
+          </li>
+          <li class="lcat-loadmore" data-lcat-loadmore hidden={listings.length <= PAGE}>
+            <button type="button" class="btn b2 lcat-loadbtn" data-lcat-load>Load more properties</button>
+          </li>
+          <li class="lcat-panel" role="none"><ConfidentialAccessPanel /></li>
         </ul>
-
-        <div class="lcat-empty" data-lcat-empty hidden>
-          <p>No properties match your search.</p>
-          <p>Try clearing a filter, or <a href="#access">access off-market opportunities</a>, most of which are never listed publicly.</p>
-        </div>
+        <noscript><style>.lc[hidden]{display:block!important}.lcat-loadmore{display:none!important}</style></noscript>
       </>
     ) : (
-      <div class="lcat-empty lcat-empty-solo">
-        <p class="lcat-empty-h">No properties are listed publicly right now.</p>
-        <p>New SDA properties are added as they are approved for public release. Most of what we hold is off-market and shared directly with qualified buyers.</p>
-        <p><a class="btn b1" href="#access">Access Off-Market Opportunities</a></p>
-      </div>
+      <ul class="lcat-grid">
+        <li class="lcat-empty lcat-empty-solo">
+          <p class="lcat-empty-h">No properties are listed publicly right now.</p>
+          <p>New SDA properties are added as they are approved for public release. Most of what we hold is off-market and shared directly with qualified buyers.</p>
+          <p><a class="btn b1" href="/opportunities/off-market/">Access Off-Market Opportunities</a></p>
+        </li>
+        <li class="lcat-panel" role="none"><ConfidentialAccessPanel /></li>
+      </ul>
     )}
   </div>
 </section>
 
 <script>
+  const PAGE = 10;
   const grid = document.querySelector<HTMLElement>('[data-lcat-grid]');
   const form = document.querySelector<HTMLFormElement>('[data-lcat-filters]');
   const count = document.querySelector<HTMLElement>('[data-lcat-count]');
   const empty = document.querySelector<HTMLElement>('[data-lcat-empty]');
+  const loadItem = document.querySelector<HTMLElement>('[data-lcat-loadmore]');
+  const loadBtn = document.querySelector<HTMLButtonElement>('[data-lcat-load]');
 
-  if (grid && form && count && empty) {
+  if (grid && form && count && empty && loadItem && loadBtn) {
+    const more = form.querySelector<HTMLDetailsElement>('[data-lcat-more]');
+    const badge = form.querySelector<HTMLElement>('[data-lcat-n]');
+    const active = document.querySelector<HTMLElement>('[data-lcat-active]');
     const cards = [...grid.querySelectorAll<HTMLElement>('.lc')];
     const keys = ['q', 'state', 'design', 'type', 'status', 'sort'] as const;
     const rank: Record<string, number> = { available: 0, under_offer: 1, sold: 2 };
+    let limit = PAGE;
+    let shownBefore = 0;
 
     const read = () => {
       const fd = new FormData(form);
@@ -120,31 +143,50 @@ const showDesign = designs.length > 0;
     const apply = () => {
       const f = read();
       const q = f.q.toLowerCase();
-      let shown = 0;
-      for (const card of cards) {
-        const ok =
-          (!q || (card.dataset.search ?? '').includes(q)) &&
-          (!f.state || card.dataset.state === f.state) &&
-          (!f.type || card.dataset.type === f.type) &&
-          (!f.status || card.dataset.status === f.status) &&
-          (!f.design || (card.dataset.design ?? '').split(' ').includes(f.design));
-        card.hidden = !ok;
-        if (ok) shown += 1;
-      }
       const by = f.sort || 'newest';
-      const ordered = [...cards].sort((a, b) => {
+      // filter and sort across the whole inventory first, then show only the first `limit` matches
+      const matched = cards.filter((card) =>
+        (!q || (card.dataset.search ?? '').includes(q)) &&
+        (!f.state || card.dataset.state === f.state) &&
+        (!f.type || card.dataset.type === f.type) &&
+        (!f.status || card.dataset.status === f.status) &&
+        (!f.design || (card.dataset.design ?? '').split(' ').includes(f.design)));
+      const sorter = (a: HTMLElement, b: HTMLElement) => {
         if (by === 'suburb') return (a.dataset.suburb ?? '').localeCompare(b.dataset.suburb ?? '');
         if (by === 'status') return (rank[a.dataset.status ?? ''] ?? 9) - (rank[b.dataset.status ?? ''] ?? 9) || Number(a.dataset.index) - Number(b.dataset.index);
         return Number(a.dataset.index) - Number(b.dataset.index);
+      };
+      matched.sort(sorter);
+      const shown = matched.slice(0, limit);
+      const shownSet = new Set(shown);
+      const order = [...matched, ...cards.filter((c) => !shownSet.has(c) && !matched.includes(c)).sort(sorter)];
+      // keep the cards in order, ahead of the empty message, the Load more row and the Confidential Access panel
+      order.forEach((c) => grid.insertBefore(c, empty));
+      for (const card of cards) {
+        card.hidden = !shownSet.has(card);
+        card.classList.toggle('lc--first', card === shown[0]);
+      }
+      const filtered = matched.length !== cards.length;
+      count.textContent = `Showing ${shown.length} of ${matched.length} ${filtered ? 'matching ' : ''}properties`;
+      empty.hidden = matched.length > 0;
+      loadItem.hidden = shown.length >= matched.length;
+      // the secondary filters sit behind a disclosure on small screens: say what is selected, even when it is closed
+      const chosen = (['state', 'design', 'type', 'status'] as const).filter((k) => f[k]).map((k) => {
+        const el = form.elements.namedItem(k);
+        return el instanceof HTMLSelectElement ? el.selectedOptions[0]?.textContent?.trim() ?? f[k] : f[k];
       });
-      ordered.forEach((c) => grid.append(c));
-      count.textContent = `Showing ${shown} of ${cards.length} properties`;
-      empty.hidden = shown > 0;
-      grid.hidden = shown === 0;
+      if (by !== 'newest') chosen.push(`Sorted: ${(form.elements.namedItem('sort') as HTMLSelectElement).selectedOptions[0]?.textContent?.trim() ?? by}`);
+      if (badge) { badge.hidden = chosen.length === 0; badge.textContent = String(chosen.length); }
+      if (active) { active.hidden = chosen.length === 0; active.textContent = chosen.length ? `Selected: ${chosen.join(', ')}` : ''; }
       // keep the view shareable without adding history entries
       const params = new URLSearchParams(Object.entries(f).filter(([k, v]) => v && !(k === 'sort' && v === 'newest')));
       history.replaceState(null, '', params.size ? `?${params}${location.hash}` : `${location.pathname}${location.hash}`);
+      shownBefore = shown.length;
+      return matched;
     };
+
+    // a changed filter or sort starts again from the first ten
+    const restart = () => { limit = PAGE; apply(); };
 
     // restore a shared view from the URL; ignore select values that are not real options
     const params = new URLSearchParams(location.search);
@@ -156,19 +198,32 @@ const showDesign = designs.length > 0;
       else if (el instanceof HTMLInputElement) el.value = v.slice(0, 60);
     }
 
-    form.addEventListener('input', apply);
-    form.addEventListener('change', apply);
+    // open on desktop (every control visible, as before); on a phone start closed unless a filter is already selected
+    if (more) {
+      const small = window.matchMedia('(max-width: 700px)');
+      const place = () => { more.open = !small.matches || !!(params.get('state') || params.get('design') || params.get('type') || params.get('status')); };
+      place();
+      small.addEventListener('change', () => { if (!small.matches) more.open = true; });
+    }
+
+    form.addEventListener('input', restart);
+    form.addEventListener('change', restart);
     form.addEventListener('submit', (e) => e.preventDefault());
     // reset clears the controls after the event, so re-apply on the next tick
-    form.addEventListener('reset', () => window.setTimeout(apply, 0));
+    form.addEventListener('reset', () => window.setTimeout(restart, 0));
+    loadBtn.addEventListener('click', () => {
+      const before = shownBefore;
+      limit += PAGE;
+      const matched = apply();
+      // move focus to the first newly shown property so keyboard and screen reader users continue from there
+      matched[before]?.querySelector<HTMLAnchorElement>('a.lc-link')?.focus();
+    });
     apply();
   }
 </script>
 
 <style>
-.lcat{background:transparent}
-.lcat-heading{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(26px,3.4vw,38px);line-height:1.15;margin:0 0 14px;text-align:center}
-.lcat-intro{font-family:var(--sans);color:var(--pale);font-size:16px;line-height:1.65;max-width:62ch;margin:0 auto 34px;text-align:center}
+.lcat{background:transparent;padding-top:8px}
 
 .lcat-filters{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:16px;margin:0 0 20px}
 .lcat-field{min-width:160px}
@@ -181,14 +236,47 @@ const showDesign = designs.length > 0;
 .lcat-field select:focus-visible,.lcat-field input:focus-visible,.lcat-reset:focus-visible{outline:2px solid var(--white);outline-offset:2px;border-color:var(--blue)}
 .lcat-reset{font-family:var(--sans);font-size:15px;font-weight:600;color:var(--white);background:transparent;border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:12px 18px;cursor:pointer;transition:.18s}
 .lcat-reset:hover{border-color:var(--white)}
+/* secondary filters: always visible on desktop; behind a "Filters" disclosure on a phone, with a count and the selections shown even when closed */
+.lcat-more{flex:1 1 auto;min-width:0}
+.lcat-more-sum{display:none;list-style:none;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--white);background-color:color-mix(in srgb,var(--white) 6%,transparent);border:1px solid color-mix(in srgb,var(--pale) 35%,transparent);border-radius:4px;padding:12px 14px}
+.lcat-more-sum::-webkit-details-marker{display:none}
+.lcat-more-sum::after{content:"";width:8px;height:8px;border-right:2px solid var(--pale);border-bottom:2px solid var(--pale);transform:rotate(45deg);margin:-3px 2px 0 auto;transition:transform .15s ease}
+.lcat-more[open] .lcat-more-sum::after{transform:rotate(-135deg);margin-top:3px}
+.lcat-more-sum:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.lcat-more-n{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;margin-left:8px}
+.lcat-more-n[hidden]{display:none}
+.lcat-more-body{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:16px}
+.lcat-active{display:none;margin:0;font-family:var(--sans);font-size:13px;line-height:1.4;color:var(--pale)}
+@media(max-width:700px){.lcat-active:not([hidden]){display:block}}
 
 .lcat-count{font-family:var(--geo);font-size:13px;letter-spacing:.06em;color:var(--pale);text-align:center;margin:0 0 24px}
-.lcat-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
-.lcat-grid[hidden]{display:none}
-@media(max-width:980px){.lcat-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:620px){.lcat-grid{grid-template-columns:1fr}.lcat-field,.lcat-field-search{flex:1 1 100%;max-width:none}.lcat-filters{align-items:stretch}}
+/* One grid. Desktop: the first visible card (class lc--first, set by the script from the active sort and filters) shares the first row with the
+   Confidential Access panel; every later card spans the whole width. The panel is not sticky. Tablet and mobile: one column, the panel after the results. */
+.lcat-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px 28px;align-items:start}
+.lcat-grid>:global(.lc){grid-column:1 / -1}
+.lcat-grid>:global(.lc.lc--first){grid-column:1;align-self:stretch}
+.lcat-panel{grid-column:2;grid-row:1;align-self:start}
+.lcat-empty{grid-column:1;grid-row:1}
+.lcat-loadmore{grid-column:1 / -1;display:flex;justify-content:center;padding:6px 0 8px}
+.lcat-loadmore[hidden]{display:none}
+.lcat-loadbtn{padding:13px 28px}
+.lcat-loadbtn:focus-visible{outline:2px solid var(--white);outline-offset:3px}
+@media(max-width:1100px){
+  .lcat-grid{grid-template-columns:minmax(0,1fr)}
+  .lcat-grid>:global(.lc.lc--first){grid-column:1;align-self:start}
+  .lcat-panel,.lcat-empty{grid-column:1;grid-row:auto}
+}
+@media(max-width:700px){
+  .lcat-field,.lcat-field-search{flex:1 1 100%;max-width:none;min-width:0}
+  .lcat-filters{flex-direction:column;align-items:stretch;gap:12px;margin-bottom:12px}
+  .lcat-more{flex:0 0 auto}
+  .lcat-more-sum{display:flex}
+  .lcat-more-body{flex-direction:column;align-items:stretch;margin-top:12px;gap:12px}
+  .lcat-reset{align-self:flex-end;padding:8px 16px;font-size:14px}
+  .lcat-count{margin-bottom:16px}
+}
 
-.lcat-empty{max-width:54ch;margin:0 auto;text-align:center;font-family:var(--sans);color:var(--pale);padding:32px 28px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);border-radius:10px}
+.lcat-empty{margin:0;text-align:center;font-family:var(--sans);color:var(--pale);padding:32px 28px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);border-radius:10px}
 .lcat-empty[hidden]{display:none}
 .lcat-empty p{margin:0 0 12px}
 .lcat-empty p:last-child{margin:0}

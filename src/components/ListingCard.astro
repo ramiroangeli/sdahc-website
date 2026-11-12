@@ -1,19 +1,33 @@
 ---
+import { Image } from 'astro:assets';
 import ListingStatusBadge from './ListingStatusBadge.astro';
 import ListingImage from './ListingImage.astro';
-import { DESIGN_LABEL, TYPE_LABEL, type PublicListing } from '../data/listings/schema';
-import { localityLine, streetLine } from '../data/listings/address';
-import { pricingLine } from '../data/listings/pricing';
+import { TYPE_LABEL, type PublicListing } from '../data/listings/schema';
+import { cardView } from '../data/listings/card';
 
-interface Props { listing: PublicListing; index?: number }
-const { listing, index = 0 } = Astro.props;
+/*
+  Horizontal catalogue card, one size for every listing. The photograph column is the same width whether or not the card has a commercial column.
+    photograph (4:3)  |  property information  |  commercial column (ONLY when approved commercial facts exist, see src/data/listings/card.ts)
+  then an action row. The heading is the approved public title (two lines at most; the full title is the link's title attribute). The public location
+  line appears only when the title does not already say where the property is. There is no description here: it lives on the listing page.
+  The marketing agency logo is always visible: at the foot of the commercial column when there is one, otherwise at the right of the action row.
+  The list item keeps the data-* attributes the catalogue filter script reads.
+*/
+interface Props { listing: PublicListing; index?: number; first?: boolean; beyondFirstPage?: boolean }
+const { listing, index = 0, first = false, beyondFirstPage = false } = Astro.props;
 const designs = listing.sda.designCategories ?? [];
 const a = listing.address;
-// lower-cased haystack for the catalogue search box; public fields only
 const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase();
+const { cover, facts, location, commercial, agency, sold } = cardView(listing);
+const href = `/opportunities/${listing.slug}/`;
+// brand files already in src/assets; the card is on a dark surface, so the white variant is used
+const logos = import.meta.glob<{ default: ImageMetadata }>('../assets/logo-*.png', { eager: true });
+const logo = logos[`../assets/${agency.logoOnDark}`]?.default;
+const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x is { label: string; value: string } => !!x) : [];
 ---
 <li
-  class="lc"
+  class={`lc${first ? ' lc--first' : ''}`}
+  hidden={beyondFirstPage}
   data-state={a.state}
   data-type={listing.type}
   data-status={listing.commercialStatus}
@@ -24,52 +38,138 @@ const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase()
   data-index={index}
 >
   <article class="lc-card">
-    <div class="lc-media">
-      <ListingImage photo={listing.photos[0]} sizes="(min-width: 980px) 360px, (min-width: 620px) 50vw, 100vw" demoTag={false} />
-      <span class="lc-state">{a.state}</span>
-      {listing.isPreview && <span class="lc-demo">Draft preview</span>}
-      {listing.isDemo && <span class="lc-demo">Demo listing</span>}
-    </div>
-    <div class="lc-body">
-      <div class="lc-badges">
-        <ListingStatusBadge status={listing.commercialStatus} />
-        <span class="lc-type">{TYPE_LABEL[listing.type]}</span>
+    <div class={`lc-main${commercial ? ' lc-main--comm' : ''}`}>
+      <a class="lc-media" href={href} tabindex="-1" aria-hidden="true">
+        <ListingImage photo={cover} sizes="(min-width: 900px) 300px, (min-width: 620px) 240px, 100vw" demoTag={false} />
+        <span class="lc-state">{a.state}</span>
+        {listing.isPreview && <span class="lc-demo">Draft preview</span>}
+        {listing.isDemo && <span class="lc-demo">Demo listing</span>}
+      </a>
+
+      <div class="lc-body">
+        <div class="lc-id">
+        <div class="lc-badges">
+          <ListingStatusBadge status={listing.commercialStatus} />
+          <span class="lc-type">{TYPE_LABEL[listing.type]}</span>
+        </div>
+        <h3 class="lc-title"><a class="lc-link" href={href} title={listing.title}>{listing.title}</a></h3>
+        {location && <p class="lc-loc">{location}</p>}
+        </div>
+        {(facts.design || facts.parts.length > 0) && (
+          <div class="lc-spec">
+            {facts.design && <p class="lc-cat">{facts.design}</p>}
+            {facts.parts.length > 0 && <p class="lc-facts">{facts.parts.join(' \u00b7 ')}</p>}
+          </div>
+        )}
       </div>
-      <h3 class="lc-title"><a class="lc-link" href={`/opportunities/${listing.slug}/`}>{streetLine(a)}</a></h3>
-      <p class="lc-loc">{localityLine(a)}</p>
-      {designs.length > 0 && (
-        <ul class="lc-chips" aria-label="SDA design category">
-          {designs.map((d) => <li title={DESIGN_LABEL[d]}>{d}</li>)}
-        </ul>
+
+      {commercial && (
+        <div class="lc-comm">
+          <div class="lc-comm-top">
+            {commercial.price && (
+              <p class="lc-price"><span class="lc-price-v">{commercial.price.value}</span><span class="lc-yield-l">{commercial.price.label}</span></p>
+            )}
+            {commercial.yield && (
+              <p class="lc-yield"><span class="lc-yield-n">{commercial.yield.text}</span><span class="lc-yield-l">{commercial.yield.label} <span class="lc-yield-b">{commercial.yield.basis.toLowerCase()}</span></span></p>
+            )}
+            {inds.length > 0 && (
+              <ul class="lc-inds" aria-label="Tenancy">
+                {inds.map((i) => (<li class="lc-ind"><span class="lc-ind-k">{i.label}</span><span class="lc-ind-v">{i.value}</span></li>))}
+              </ul>
+            )}
+          </div>
+          {logo && <Image class="lc-logo" src={logo} alt={agency.name} height={44} loading="lazy" />}
+        </div>
       )}
-      <p class="lc-sum">{listing.summary}</p>
-      <p class="lc-foot"><span>{listing.commercialStatus === 'sold' ? 'Sold' : pricingLine(listing.pricing)}</span><span class="lc-more" aria-hidden="true">View details &rarr;</span></p>
+    </div>
+
+    <div class="lc-actions">
+      {sold
+        ? <a class="btn b1 lc-btn" href="/contact-us/">Find similar properties</a>
+        : <a class="btn b1 lc-btn" href={`${href}#enquire`}>Contact Agent<span class="lc-sr"> about {listing.title}</span></a>}
+      <a class="btn b2 lc-btn" href={href}>View details<span class="lc-sr"> for {listing.title}</span></a>
+      {!commercial && logo && <Image class="lc-logo lc-logo--foot" src={logo} alt={agency.name} height={48} loading="lazy" />}
     </div>
   </article>
 </li>
 <style>
 .lc[hidden]{display:none}
-.lc{margin:0;padding:0}
-.lc-card{position:relative;display:flex;flex-direction:column;height:100%;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 5%,transparent);overflow:hidden;transition:transform .22s ease,border-color .22s ease,background .22s ease}
-.lc-card:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:color-mix(in srgb,var(--white) 8%,transparent)}
-.lc-card:focus-within{border-color:var(--white)}
-.lc-media{position:relative;aspect-ratio:4/3}
-.lc-state{position:absolute;left:12px;top:12px;font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--white);background:color-mix(in srgb,var(--navy) 72%,transparent);border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:4px 8px}
+.lc{margin:0;padding:0;container-type:inline-size}
+.lc-card{height:100%;display:flex;flex-direction:column;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 5%,transparent);overflow:hidden;transition:border-color .22s ease,background .22s ease}
+.lc-card:hover{border-color:color-mix(in srgb,var(--blue) 55%,transparent);background:color-mix(in srgb,var(--white) 8%,transparent)}
+/* One card size. The photograph column is always --ph wide (4:3), with or without a commercial column, so every card has the same photo and a similar height.
+   The row is at least as tall as the photograph and grows (never clips) if text is enlarged. */
+.lc-main{flex:1 0 auto;--ph:310px;--cc:200px;display:grid;grid-template-columns:var(--ph) minmax(0,1fr);min-height:calc(var(--ph) * 3 / 4)}
+.lc-main--comm{grid-template-columns:var(--ph) minmax(0,1fr) var(--cc)}
+.lc-media{position:relative;display:block;width:100%;aspect-ratio:4/3;overflow:hidden;align-self:start}
+.lc-media :global(.li img){object-position:center 40%}
+.lc-state{position:absolute;left:12px;top:12px;font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--white);background:color-mix(in srgb,var(--navy) 72%,transparent);border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:3px 8px}
 .lc-demo{position:absolute;left:12px;bottom:12px;font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:4px 8px}
-.lc-body{display:flex;flex-direction:column;flex:1;padding:22px 22px 24px}
-.lc-badges{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.lc-body{display:flex;flex-direction:column;min-width:0;padding:18px 22px}
+.lc-badges{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-bottom:10px}
 .lc-type{font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--pale)}
-.lc-title{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(19px,1.9vw,22px);line-height:1.2;margin:0 0 6px}
-/* the whole card is one tap target: the heading link stretches over the card */
+.lc-title{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(18px,1.7vw,22px);line-height:1.22;margin:0 0 4px;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .lc-link{color:inherit;text-decoration:none}
-.lc-link::after{content:"";position:absolute;inset:0;z-index:1}
-.lc-link:focus-visible{outline:none}
-.lc-link:focus-visible::after{outline:2px solid var(--white);outline-offset:-4px;border-radius:10px}
-.lc-loc{font-family:var(--geo);font-size:13px;letter-spacing:.04em;color:var(--pale);margin:0 0 12px}
-.lc-chips{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
-.lc-chips li{font-family:var(--geo);font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--white);border:1px solid color-mix(in srgb,var(--blue) 70%,transparent);border-radius:2px;padding:3px 8px}
-.lc-sum{font-family:var(--sans);font-size:14.5px;line-height:1.6;color:var(--white);margin:0 0 18px}
-.lc-foot{display:flex;justify-content:space-between;gap:12px;margin:auto 0 0;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent);font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--pale)}
-.lc-more{color:var(--white);white-space:nowrap}
-@media(prefers-reduced-motion:reduce){.lc-card{transition:background .22s ease,border-color .22s ease}.lc-card:hover{transform:none}}
+.lc-link:hover{text-decoration:underline;text-underline-offset:4px}
+.lc-link:focus-visible{outline:2px solid var(--white);outline-offset:3px;border-radius:2px}
+.lc-loc{font-family:var(--geo);font-size:13px;letter-spacing:.04em;color:var(--pale);margin:0 0 8px}
+.lc-cat{display:inline-block;align-self:flex-start;margin:6px 0 0;font-family:var(--geo);font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--white);border:1px solid color-mix(in srgb,var(--blue) 70%,transparent);border-radius:2px;padding:3px 8px}
+.lc-facts{margin:10px 0 0;font-family:var(--sans);font-size:15px;font-weight:600;line-height:1.4;color:var(--white)}
+/* optional commercial column: concise indicators, balanced from top to the logo at the foot */
+.lc-comm{display:flex;flex-direction:column;justify-content:space-between;gap:8px;padding:14px 18px;border-left:1px solid color-mix(in srgb,var(--pale) 18%,transparent)}
+.lc-comm-top{display:flex;flex-direction:column;gap:8px}
+.lc-price,.lc-yield{margin:0;display:flex;flex-direction:column}
+.lc-price-v{font-family:var(--cond);font-weight:700;font-size:30px;line-height:1.05;color:var(--white)}
+.lc-yield-n{font-family:var(--cond);font-weight:700;font-size:38px;line-height:1;color:var(--teal)}
+.lc-yield-l{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--white);margin-top:4px}
+.lc-yield-b{color:var(--pale);font-weight:500}
+.lc-inds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lc-ind{display:flex;flex-direction:column;gap:0;border:1px solid color-mix(in srgb,var(--pale) 30%,transparent);border-radius:4px;padding:4px 9px;background:color-mix(in srgb,var(--white) 4%,transparent)}
+.lc-ind-k{font-family:var(--geo);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale)}
+.lc-ind-v{font-family:var(--sans);font-size:13.5px;font-weight:600;line-height:1.25;color:var(--white)}
+/* the agency logo: the whole mark is always visible (contain), never cropped or stretched */
+.lc-logo{display:block;width:auto;max-width:100%;object-fit:contain;flex:0 0 auto}
+.lc-comm .lc-logo{align-self:flex-end}
+.lc-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 22px;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent)}
+.lc-btn{padding:10px 20px;font-size:14.5px;white-space:nowrap}
+.lc-logo--foot{margin-left:auto}
+.lc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* a card that spans the full width (every card after the first): the photograph stays the same size; the extra width goes to a two-part information
+   column (identity, then design category and facts) and a wider commercial column whose indicators sit side by side */
+@container (min-width: 960px){
+  .lc-main--comm{grid-template-columns:var(--ph) minmax(0,1fr) 300px}
+  /* with a commercial column the information column is narrower, so identity and facts stay in one column */
+  .lc-main--comm .lc-body{grid-template-columns:minmax(0,1fr);align-content:center}
+  .lc-main--comm .lc-spec{margin-top:10px}
+  .lc-body{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0 32px;align-content:center;align-items:center;padding:20px 28px}
+  .lc-title{font-size:clamp(20px,1.9vw,26px)}
+  .lc-spec{padding-top:0}
+  .lc-cat{margin-top:0}
+  .lc-facts{margin-top:12px;font-size:16px}
+  .lc-comm{padding:16px 24px}
+  .lc-inds{flex-direction:row;flex-wrap:wrap}
+  .lc-ind{flex:1 1 140px}
+  .lc-actions{padding:12px 28px}
+}
+/* tablet: the same three columns, a little narrower (photo still 4:3 and the same width on every card) */
+@media(max-width:899px){
+  .lc-main,.lc-main--comm{--ph:230px;grid-template-columns:var(--ph) minmax(0,1fr)}
+  /* the commercial facts become one compact strip under the photograph and information, with the logo at its right */
+  .lc-comm{grid-column:1 / -1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;border-left:0;border-top:1px solid color-mix(in srgb,var(--pale) 18%,transparent);padding:12px 18px}
+  .lc-comm-top{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 20px}
+  .lc-inds{flex-direction:row;flex-wrap:wrap}
+  .lc-body{padding:16px 18px}
+  .lc-actions{padding:12px 18px}
+}
+/* mobile: photo, information, commercial, actions. The commercial block is one row with the logo at its right, so the card stays short */
+@media(max-width:620px){
+  .lc-main,.lc-main--comm{grid-template-columns:1fr;min-height:0}
+  .lc-body{padding:16px 18px}
+  .lc-comm{flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;border-left:0;border-top:1px solid color-mix(in srgb,var(--pale) 18%,transparent);padding:14px 18px}
+  .lc-comm-top{flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:10px 16px}
+  .lc-inds{flex-direction:row;flex-wrap:wrap}
+  .lc-actions{padding:12px 18px;gap:8px}
+  .lc-btn{padding:10px 12px;font-size:14px;flex:0 1 auto}
+}
+@media(prefers-reduced-motion:reduce){.lc-card{transition:none}}
 </style>

@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import data from '../data/opportunities.json';
 import OpportunitiesHero from '../components/OpportunitiesHero.astro';
 import ListingsCatalogue from '../components/ListingsCatalogue.astro';
+import HeroCardFan from '../components/HeroCardFan.astro';
 import { getPublicListings } from '../data/listings';
 
 const { statesCovered, jurisdictions } = data;
@@ -35,10 +36,15 @@ const refImages = [
 ---
 <BaseLayout title="SDA Investment Opportunities | SDA Home Choices" description="Explore available SDA properties and discover exclusive off-market Specialist Disability Accommodation investment opportunities. Register your buyer mandate or speak to us about selling." breadcrumbs={[{ name: 'Opportunities', path: '/opportunities/' }]}>
   <div class="opp-page">
-    <OpportunitiesHero listings={listings} lockedStates={statesCovered.slice(0, 3)} />
+    <OpportunitiesHero />
 
-    <!-- Available properties. With no published listing it shows an empty state. -->
+    <!-- Search, filters and the property cards, with the Confidential Access panel beside them. With no published listing it shows an empty state. -->
     <ListingsCatalogue />
+
+    <!-- Supporting band: the animated card fan now sits below the catalogue, never between the title and the results. -->
+    <section class="section opp-fan-band" aria-label="Properties and off-market cards"><div class="wrap">
+      <div class="opp-fan-stage"><HeroCardFan listings={listings} lockedStates={statesCovered.slice(0, 3)} /></div>
+    </div></section>
 
     <section class="section opp-states-band"><div class="wrap">
       <div class="opp-states">
@@ -201,6 +207,8 @@ const refImages = [
   radial-gradient(1100px 720px at 88% 82%,color-mix(in srgb,var(--blue) 15%,transparent) 0%,transparent 64%),
   linear-gradient(180deg,color-mix(in srgb,var(--navy2) 78%,var(--navy)) 0%,var(--navy) 34%,color-mix(in srgb,var(--navy2) 32%,var(--navy)) 62%,var(--navy) 100%)}
 
+.opp-fan-band{position:relative;padding-top:48px}
+.opp-fan-stage{max-width:860px;margin:0 auto;min-width:0}
 .opp-heading{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}
 
 /* states coverage strip */
