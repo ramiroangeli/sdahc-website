@@ -19,12 +19,14 @@ import { isDemoPhoto, type Photo } from '../data/listings/schema';
   whose shape is far from the frame (portrait or very wide) is shown whole over a blurred copy of itself instead
   of being cropped hard. Other photographs fill the frame. Catalogue and hero keep the default fill.
 */
-interface Props { photo?: Photo; sizes?: string; loading?: 'eager' | 'lazy'; mask?: boolean; demoTag?: boolean; whole?: boolean }
-const { photo, sizes = '(min-width: 900px) 33vw, 100vw', loading = 'lazy', mask = true, demoTag = true, whole = false } = Astro.props;
+// alt: an override, for a thumbnail whose enclosing control already carries the description (pass ""). Default is the approved description.
+// largest: use the widest prepared variant as the base source (the lightbox).
+interface Props { photo?: Photo; sizes?: string; loading?: 'eager' | 'lazy'; mask?: boolean; demoTag?: boolean; whole?: boolean; alt?: string; largest?: boolean }
+const { photo, sizes = '(min-width: 900px) 33vw, 100vw', loading = 'lazy', mask = true, demoTag = true, whole = false, alt, largest = false } = Astro.props;
 
 const real = photo && !isDemoPhoto(photo) ? photo : undefined;
 const variants = real ? [...real.variants].sort((a, b) => a.w - b.w) : [];
-const src = variants.length ? variants[Math.min(1, variants.length - 1)].src : undefined;
+const src = variants.length ? variants[largest ? variants.length - 1 : Math.min(1, variants.length - 1)].src : undefined;
 const srcset = variants.map((v) => `${v.src} ${v.w}w`).join(', ');
 const accent = photo?.accent ?? 'blue';
 const plan = !!real && real.kind === 'floorplan';
@@ -36,7 +38,7 @@ const frame = whole && plan ? 'plan' : fit ? 'fit' : 'fill';
   {real && src ? (
     <>
     {frame === 'fit' && <img class="li-back" src={src} alt="" aria-hidden="true" width={real.width} height={real.height} loading={loading} decoding="async" />}
-    <img class="li-main" src={src} srcset={srcset} sizes={sizes} alt={real.alt} width={real.width} height={real.height} loading={loading} decoding="async" />
+    <img class="li-main" src={src} srcset={srcset} sizes={sizes} alt={alt ?? real.alt} width={real.width} height={real.height} loading={loading} decoding="async" />
     </>
   ) : photo ? (
     <>

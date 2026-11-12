@@ -11,6 +11,7 @@ export * from './seo';
 export * from './investment';
 export * from './agencies';
 export * from './card';
+export * from './detail';
 export { FIXTURE_RECORDS, FIXTURE_SNAPSHOTS } from './fixtures';
 export * from '../../lib/enquiries';
 export * from './propose';
