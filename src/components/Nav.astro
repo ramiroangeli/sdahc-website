@@ -110,16 +110,19 @@ header a:focus-visible,.menu-toggle:focus-visible{outline:2px solid var(--pale);
   if (dd && ddBtn) {
     dd.setAttribute('data-js', '');
     const links = [...dd.querySelectorAll('.dd-menu a')];
-    const setDd = (open) => { dd.classList.toggle('is-open', open); ddBtn.setAttribute('aria-expanded', String(open)); };
-    ddBtn.addEventListener('click', () => setDd(!dd.classList.contains('is-open')));
-    dd.addEventListener('mouseenter', () => setDd(true));
+    // A menu opened by hovering stays open when the button is then clicked (a click confirms it); otherwise a click toggles.
+    let byHover = false;
+    const setDd = (open) => { dd.classList.toggle('is-open', open); ddBtn.setAttribute('aria-expanded', String(open)); if (!open) byHover = false; };
+    ddBtn.addEventListener('click', () => { if (byHover) { byHover = false; setDd(true); } else setDd(!dd.classList.contains('is-open')); });
+    dd.addEventListener('mouseenter', () => { if (!dd.classList.contains('is-open')) byHover = true; setDd(true); });
     dd.addEventListener('mouseleave', () => setDd(false));
     dd.addEventListener('focusout', (e) => { if (!dd.contains(e.relatedTarget)) setDd(false); });
     ddBtn.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setDd(true); links[0].focus(); } });
     dd.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && dd.classList.contains('is-open')) { setDd(false); ddBtn.focus(); }
-      if (e.key === 'ArrowDown' && links.includes(document.activeElement)) { e.preventDefault(); links[(links.indexOf(document.activeElement) + 1) % links.length].focus(); }
-      if (e.key === 'ArrowUp' && links.includes(document.activeElement)) { e.preventDefault(); links[(links.indexOf(document.activeElement) - 1 + links.length) % links.length].focus(); }
+      // the key's own target decides (not the focused element, which the button handler above may already have moved)
+      if (e.key === 'ArrowDown' && links.includes(e.target)) { e.preventDefault(); links[(links.indexOf(e.target) + 1) % links.length].focus(); }
+      if (e.key === 'ArrowUp' && links.includes(e.target)) { e.preventDefault(); links[(links.indexOf(e.target) - 1 + links.length) % links.length].focus(); }
     });
     document.addEventListener('click', (e) => { if (!dd.contains(e.target)) setDd(false); });
   }
