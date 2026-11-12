@@ -1,5 +1,7 @@
 import type { ComplianceConfig, PublicContent } from './schema';
 import { isDemoPhoto } from './schema';
+import { hasFinancialFigures, investmentApprovalValid, VICTORIAN_FINANCIAL_RESTRICTION } from './investment';
+import { isApprovedAgency } from './agencies';
 
 /*
   Safety checks on the public content of a listing. These are a SECOND line of defence: the model
@@ -45,9 +47,11 @@ const parseInternal = (addr: string) => {
 export const checkPublicSafety = (c: PublicContent, ctx: SafetyContext): string[] => {
   const issues: string[] = [];
   const full = norm(JSON.stringify(c));
-  const { pricing, ...rest } = c;
-  // dollar amounts are checked everywhere except the approved display value
-  const withoutPrice = norm(JSON.stringify({ ...rest, pricing: { mode: pricing.mode } }));
+  const { pricing, investment, ...rest } = c;
+  // dollar amounts are checked everywhere except the approved display value and the structured, approved investment figures. The free-text
+  // investment fields (tenure, provider wording) are still scanned like any other text.
+  const investmentText = investment ? { tenure: investment.tenure, providerArrangement: investment.providerArrangement } : undefined;
+  const withoutPrice = norm(JSON.stringify({ ...rest, pricing: { mode: pricing.mode }, ...(investmentText ? { investment: investmentText } : {}) }));
 
   // 1. house or unit number next to the street name, anywhere in the serialised content
   const street = esc(norm(c.address.street));
@@ -83,9 +87,17 @@ export const checkPublicSafety = (c: PublicContent, ctx: SafetyContext): string[
   }
 
   // 4. personal data (participants, staff, owners)
-  const prose = norm(JSON.stringify({ t: c.title, d: c.description, p: c.photos.map((p) => p.alt) }));
+  const prose = norm(JSON.stringify({ t: c.title, d: c.description, p: c.photos.map((p) => p.alt), i: investmentText, o: c.sda.ooa, m: c.property?.municipality, k: c.property?.parking }));
   if (EMAIL.test(prose)) issues.push('an email address appears in public text');
   if (PHONE.test(prose)) issues.push('a phone number appears in public text');
+
+  // 4a. optional commercial block: private by default. It is valid only if it still matches the values a Publisher approved, and Victorian listings
+  // never carry income or yield (conservative restriction pending the OIEC or legal advice; not a legal determination).
+  if (investment) {
+    if (!investmentApprovalValid(investment)) issues.push('the investment details are not approved for public display, or were changed after they were approved');
+    if (c.address.state === 'VIC' && hasFinancialFigures(investment)) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
+  }
+  if (c.marketing && !isApprovedAgency(c.marketing.agency)) issues.push(`marketing agency "${c.marketing.agency}" is not an approved agency`);
 
   // 4b. Basic is existing (legacy) SDA stock. It must never be described as a new build or a certified new dwelling.
   if (c.sda.designCategories?.includes('Basic')) {

@@ -27,6 +27,12 @@ export const WEB_STATUSES = ['not_published', 'draft', 'in_review', 'approved', 
 export const LIVE_STATUSES = ['published', 'under_offer', 'sold'] as const;
 export const COMMERCIAL_STATUSES = ['available', 'under_offer', 'sold'] as const;
 export const PRICING_MODES = ['asking_price', 'price_guide', 'eoi', 'contact_agent'] as const;
+// Optional commercial facts. Lease status and occupancy status are different facts and are never treated as interchangeable:
+// a property can be leased to a provider and still be partly or wholly unoccupied by participants.
+export const LEASE_STATUSES = ['fully_leased', 'partially_leased', 'unleased'] as const;
+export const OCCUPANCY_STATUSES = ['fully_occupied', 'partially_occupied', 'vacant'] as const;
+export const INCOME_TYPES = ['gross', 'net'] as const;
+export const FIGURE_BASES = ['actual', 'projected'] as const;
 // Brand accents an image mask may use. Each maps to a design token in the components, so a
 // colour sampled from a photograph can only ever become one of our own colours.
 export const ACCENTS = ['blue', 'teal', 'amber', 'slate'] as const;
@@ -48,6 +54,8 @@ export const DESIGN_LABEL: Record<DesignCategory, string> = {
   FA: 'Fully Accessible',
   Basic: 'Basic',
 };
+export const LEASE_LABEL: Record<(typeof LEASE_STATUSES)[number], string> = { fully_leased: 'Fully leased', partially_leased: 'Partially leased', unleased: 'Unleased' };
+export const OCCUPANCY_LABEL: Record<(typeof OCCUPANCY_STATUSES)[number], string> = { fully_occupied: 'Fully occupied', partially_occupied: 'Partially occupied', vacant: 'Vacant' };
 export const PRICING_MODE_LABEL: Record<PricingMode, string> = {
   asking_price: 'Asking Price',
   price_guide: 'Price Guide',
@@ -121,8 +129,60 @@ const sdaSchema = z.object({
   buildingType: z.string().max(80).optional(),
   bedrooms: z.number().int().positive().optional(),
   residentPlaces: z.number().int().positive().optional(),
+  /** Onsite Overnight Assistance, as approved public wording (for example "Onsite Overnight Assistance (OOA) available"). */
+  ooa: z.string().min(2).max(120).optional(),
 }).strict();
 
+/** Optional physical facts. Bedrooms stay in `sda.bedrooms`. Every field is optional and nothing here is required to publish. */
+export const propertySchema = z.object({
+  bathrooms: z.number().int().min(1).max(20).optional(),
+  carSpaces: z.number().int().min(0).max(20).optional(),
+  floorAreaM2: z.number().positive().max(100000).optional(),
+  landAreaM2: z.number().positive().max(10000000).optional(),
+  parking: z.string().min(2).max(80).optional(),
+  municipality: z.string().min(2).max(60).regex(/^[^\d]+$/, 'municipality must not contain digits').optional(),
+}).strict();
+
+/**
+ * Optional commercial and tenancy facts. PRIVATE BY DEFAULT: this block exists only when a Publisher explicitly approved these exact values for
+ * public advertising. `approval.valuesHash` is the hash of every other value in the block (see investment.ts), so changing any value without a fresh
+ * approval makes the block invalid. The approver's identity is deliberately NOT here: it stays in the Listings Manager's private audit history.
+ * A figure never appears without its basis (actual or projected) and its type (gross or net).
+ */
+export const investmentSchema = z.object({
+  leaseStatus: z.enum(LEASE_STATUSES).optional(),
+  occupancyStatus: z.enum(OCCUPANCY_STATUSES).optional(),
+  tenure: z.string().min(2).max(120).optional(),
+  annualIncomeAud: z.number().int().positive().max(100000000).optional(),
+  incomeType: z.enum(INCOME_TYPES).optional(),
+  yieldPct: z.number().positive().max(30).optional(),
+  yieldType: z.enum(INCOME_TYPES).optional(),
+  basis: z.enum(FIGURE_BASES).optional(),
+  /** Provider arrangement wording. Only with a separate, explicit authorisation (approval.provider). */
+  providerArrangement: z.string().min(2).max(200).optional(),
+  approval: z.object({
+    valuesHash: z.string().regex(/^[a-f0-9]{64}$/),
+    provider: z.literal(true).optional(),
+  }).strict(),
+}).strict().superRefine((v, ctx) => {
+  const add = (message: string) => ctx.addIssue({ code: 'custom', message });
+  const figures = v.annualIncomeAud !== undefined || v.yieldPct !== undefined;
+  if (v.annualIncomeAud !== undefined && !v.incomeType) add('annual income needs its type (gross or net)');
+  if (v.yieldPct !== undefined && !v.yieldType) add('a yield needs its type (gross or net)');
+  if (v.incomeType && v.annualIncomeAud === undefined) add('an income type without an income figure');
+  if (v.yieldType && v.yieldPct === undefined) add('a yield type without a yield figure');
+  if (figures && !v.basis) add('income and yield need their basis (actual or projected)');
+  if (!figures && v.basis) add('a basis without any income or yield figure');
+  if (v.yieldPct !== undefined && Math.abs(v.yieldPct * 10 - Math.round(v.yieldPct * 10)) > 1e-9) add('a yield has at most one decimal place');
+  if (v.providerArrangement !== undefined && v.approval.provider !== true) add('provider arrangement wording needs its own explicit authorisation');
+  const { approval: _a, ...rest } = v;
+  if (Object.keys(rest).length === 0) add('an empty investment block');
+});
+
+/** Marketing agency, by key into src/data/agencies.json. Absent means SDA Home Choices. */
+export const marketingSchema = z.object({
+  agency: z.string().regex(/^[a-z][a-z0-9-]{1,39}$/),
+}).strict();
 /** Everything approved for public display, and exactly what the content hash covers. */
 export const publicContentSchema = z.object({
   slug: z.string().regex(/^[a-z]+(-[a-z]+)*$/, 'slug may contain letters and hyphens only').max(80),
@@ -133,6 +193,10 @@ export const publicContentSchema = z.object({
   pricing: pricingSchema,
   sda: sdaSchema,
   photos: z.array(photoSchema).max(24),
+  // every group below is optional and absent from existing listings; an absent group is never serialised, so existing content hashes do not change
+  property: propertySchema.optional(),
+  investment: investmentSchema.optional(),
+  marketing: marketingSchema.optional(),
 }).strict();
 
 /** The one shape pages and components consume. Strict: an unknown key fails the build. */
@@ -149,6 +213,8 @@ export const publicListingSchema = publicContentSchema.extend({
   isPreview: z.boolean().optional(),
 }).strict();
 
+export type PropertyFacts = z.infer<typeof propertySchema>;
+export type Investment = z.infer<typeof investmentSchema>;
 export type PublicAddress = z.infer<typeof publicAddressSchema>;
 export type Pricing = z.infer<typeof pricingSchema>;
 export type Photo = z.infer<typeof photoSchema>;
