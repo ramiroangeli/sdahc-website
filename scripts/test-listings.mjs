@@ -85,6 +85,8 @@ t('blocks the internal CRM price even without a dollar sign', L.checkPublicSafet
 t('blocks the internal yield figure', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Returns 6.5% per year.'; }), { ...ctx, internalYieldPct: 6.5 }).length > 0);
 t('blocks an email address', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Contact jo@example.com for details.'; }), ctx).length > 0);
 t('blocks a phone number', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Call 0412 345 678 for details.'; }), ctx).length > 0);
+t('explicitly named participants remain blocked in public text', L.checkPublicSafety(withMod((c) => { c.description[0] = 'Participant Jane Smith has a medical diagnosis.'; }), ctx).some((i) => /identifiable participant/.test(i)));
+t('ordinary participant place descriptions do not trigger the name safeguard', !L.checkPublicSafety(withMod((c) => { c.description[0] = 'Three SDA participant places and overnight assistance.'; }), ctx).some((i) => /identifiable participant/.test(i)));
 t('blocks demo photos outside fixtures', L.checkPublicSafety(baseContent(), { ...ctx, allowDemo: false }).length > 0);
 const realC = withMod((c) => { c.photos = [realPhoto()]; });
 t('accepts a hashed photo on the approved origin', L.checkPublicSafety(realC, { allowDemo: false, mediaBaseUrl: MEDIA }).length === 0);

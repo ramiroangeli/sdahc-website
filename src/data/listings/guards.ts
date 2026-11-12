@@ -106,9 +106,13 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   }
 
   // 4. personal data (participants, staff, owners)
-  const prose = norm(JSON.stringify({ t: c.title, d: c.description, p: c.photos.map((p) => p.alt), i: investmentText, o: c.sda.ooa, m: c.property?.municipality, k: c.property?.parking }));
+  const publicProse = JSON.stringify({ t: c.title, d: c.description, p: c.photos.map((p) => p.alt), i: investmentText, o: c.sda.ooa, m: c.property?.municipality, k: c.property?.parking });
+  const prose = norm(publicProse);
   if (EMAIL.test(prose)) issues.push('an email address appears in public text');
   if (PHONE.test(prose)) issues.push('a phone number appears in public text');
+  // Detect explicit names associated with participants; this assists, but never replaces, the Publisher's privacy review.
+  const namedParticipant = /\b(?:[Pp]articipant|[Rr]esident|[Tt]enant)\s+(?:(?:named|called)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?|[A-Z][a-z]+\s+[A-Z][a-z]+)\b/;
+  if (namedParticipant.test(publicProse)) issues.push('an identifiable participant appears in public text');
 
   // 4a. optional commercial block: private by default. It is valid only if it still matches the values a Publisher approved, and Victorian listings
   // never carry income or yield (conservative restriction pending the OIEC or legal advice; not a legal determination).
