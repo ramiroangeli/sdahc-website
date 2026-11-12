@@ -1,6 +1,6 @@
 import type { ComplianceConfig, PublicContent } from './schema';
 import { isDemoPhoto } from './schema';
-import { hasFinancialFigures, investmentApprovalValid, VICTORIAN_FINANCIAL_RESTRICTION } from './investment';
+import { descriptionApprovalHash, hasFinancialFigures, investmentApprovalValid, VICTORIAN_FINANCIAL_RESTRICTION } from './investment';
 import { isApprovedAgency } from './agencies';
 
 /*
@@ -62,6 +62,15 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   // investment fields (tenure, provider wording) are still scanned like any other text.
   const investmentText = investment ? { tenure: investment.tenure, providerArrangement: investment.providerArrangement } : undefined;
   const withoutPrice = norm(JSON.stringify({ ...rest, pricing: { mode: pricing.mode }, ...(investmentText ? { investment: investmentText } : {}) }));
+  // A Publisher may approve an EXACT description that carries commercial wording (income, yield, occupancy, provider arrangements). The approval is bound to
+  // the description (as written, line breaks included) and the structured commercial values, so any change makes it void. On a Victorian listing it must
+  // also carry the business authorisation flag. Only the financial scans are relaxed, and only for the description: addresses, links, email, phone and
+  // the CRM price are still checked in it.
+  const approval = content.descriptionApproval;
+  const approvalMatches = !!approval && descriptionApprovalHash(content.description, content.investment) === approval.textHash;
+  if (approval && !approvalMatches) issues.push('the description approval does not match the description or the commercial values it was approved with');
+  const descriptionApproved = approvalMatches && (c.address.state !== 'VIC' || approval!.victorian === true);
+  const financialScan = descriptionApproved ? norm(JSON.stringify({ ...rest, description: [], pricing: { mode: pricing.mode }, ...(investmentText ? { investment: investmentText } : {}) })) : withoutPrice;
 
   // 1. house or unit number next to the street name, anywhere in the serialised content
   const street = esc(norm(c.address.street));
@@ -86,13 +95,13 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   if (LINKS.test(full)) issues.push('a link or reference to a private document system appears in public content');
 
   // 3. internal financial data
-  if (MONEY.test(withoutPrice)) issues.push('a dollar amount or financial term appears outside the approved price');
+  if (MONEY.test(financialScan)) issues.push('a dollar amount or financial term appears outside the approved price');
   if (ctx.internalPriceAud) {
     const n = ctx.internalPriceAud;
     const forms = [String(n), n.toLocaleString('en-AU'), n.toLocaleString('en-US')];
     if (forms.some((f) => withoutPrice.includes(f))) issues.push('the internal CRM price appears in public content');
   }
-  if (ctx.internalYieldPct != null && new RegExp(`\\b${esc(String(ctx.internalYieldPct))}\\s?%`).test(withoutPrice)) {
+  if (ctx.internalYieldPct != null && new RegExp(`\\b${esc(String(ctx.internalYieldPct))}\\s?%`).test(financialScan)) {
     issues.push('the internal yield appears in public content');
   }
 
@@ -105,7 +114,7 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   // never carry income or yield (conservative restriction pending the OIEC or legal advice; not a legal determination).
   if (investment) {
     if (!investmentApprovalValid(investment)) issues.push('the investment details are not approved for public display, or were changed after they were approved');
-    if (c.address.state === 'VIC' && hasFinancialFigures(investment)) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
+    if (c.address.state === 'VIC' && hasFinancialFigures(investment) && investment.approval.victorian !== true) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
   }
   if (c.marketing && !isApprovedAgency(c.marketing.agency)) issues.push(`marketing agency "${c.marketing.agency}" is not an approved agency`);
 

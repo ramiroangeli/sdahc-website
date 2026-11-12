@@ -1068,6 +1068,59 @@ await (await import('./test-publish-git.mjs')).default({ t, section });
 await (await import('./test-optional-fields.mjs')).default({ t, section });
 await (await import('./test-catalogue.mjs')).default({ t, section });
 await (await import('./test-offmarket.mjs')).default({ t, section });
+
+section('publication engine: an exact commercial description approved by a Publisher');
+{
+  const NTP = { [N.state]: P_.sel('NT'), [N.webPublicAddress]: P_.rt('Whipray Circuit, Berrimah NT 0832') };
+  const RAW = 'An opportunity to secure a fully occupied, established Improved Liveability (IL) SDA investment.\n\nInvestment summary:\n- Gross income: $164,435 p.a. (FY26)\n- Net operating income: $132,704 p.a. (FY26)\n- Net yield: 11.1%\n- 100% occupied with 3 SDA participants\n\nThe property is leased to an existing registered SDA provider.';
+  const ntWith = (raw, id = '2e2909c1-0000-0000-0000-00000000b011') => pg({ ...NTP, [N.webDescription]: P_.rt(raw) }, id);
+  const vicWith = (raw, id = '2e2909c1-0000-0000-0000-00000000b003') => pg({ [N.webDescription]: P_.rt(raw) }, id);
+  const seal = (inv, victorian = false) => ({ ...inv, approval: { valuesHash: L.investmentValuesHash({ ...inv, approval: { valuesHash: '0'.repeat(64), ...(victorian ? { victorian: true } : {}) } }), ...(victorian ? { victorian: true } : {}) } });
+  const FIG = { leaseStatus: 'fully_leased', occupancyStatus: 'fully_occupied', annualIncomeAud: 164435, incomeType: 'gross', yieldPct: 11.1, yieldType: 'net', basis: 'actual' };
+  const da = (raw, inv, victorian = false) => ({ textHash: L.descriptionApprovalHash(L.descriptionBlocks(raw), inv), ...(victorian ? { victorian: true } : {}) });
+  const go = (page, x) => run([page], { extras: new Map([[PID(page.id), x]]) });
+  const inv = seal(FIG);
+
+  t('without an approval the figures in the description still yield NO snapshot', (await go(ntWith(RAW), undefined))[0].kind === 'failed');
+  const ok = await go(ntWith(RAW), { investment: inv, descriptionApproval: da(RAW, inv) });
+  t('an approved exact description (with its approved commercial values) publishes, figures and all', ok[0].kind === 'new' && ok[0].snapshot.content.description.some((b) => /\$164,435/.test(b)) && ok[0].snapshot.content.descriptionApproval.textHash.length === 64, JSON.stringify(ok[0].issues ?? ''));
+  t('the approval record carries only a hash (no identity, source or note)', Object.keys(ok[0].snapshot.content.descriptionApproval).join() === 'textHash');
+  t('any change to the text after approval voids it', (await go(ntWith(RAW + ' Extra words.'), { investment: inv, descriptionApproval: da(RAW, inv) }))[0].kind === 'failed');
+  t('a one-character change inside a list line voids it', (await go(ntWith(RAW.replace('11.1%', '11.2%')), { investment: inv, descriptionApproval: da(RAW, inv) }))[0].kind === 'failed');
+  const inv2 = seal({ ...FIG, yieldPct: 11.2 });
+  t('a change to the structured values voids it even when they are re-approved on their own', (await go(ntWith(RAW), { investment: inv2, descriptionApproval: da(RAW, inv) }))[0].kind === 'failed');
+  t('a description approval for different text cannot be reused (hash mismatch is named)', (await go(ntWith(RAW), { investment: inv, descriptionApproval: da('Some other text entirely.', inv) }))[0].issues.some((m) => /description approval does not match/.test(m)));
+  t('an approved description does NOT relax the other checks: phone, email, house number and links are still refused', await (async () => {
+    for (const bad of ['\n\nCall 0412 345 678.', '\n\nWrite to a@b.com.au.', '\n\nLocated at 12 Whipray Circuit.', '\n\nSee https://x.sharepoint.com/doc.']) {
+      const raw = RAW + bad; const r = await go(ntWith(raw), { investment: inv, descriptionApproval: da(raw, inv) });
+      if (r[0].kind !== 'failed') return false;
+    }
+    return true;
+  })());
+  t('the approval does not relax the title: a dollar amount in the title is still refused', (await go(pg({ ...NTP, [N.webDescription]: P_.rt(RAW), [N.webTitle]: P_.rt('Gross income $164,435 SDA home') }, '2e2909c1-0000-0000-0000-00000000b012'), { investment: inv, descriptionApproval: da(RAW, inv) }))[0].kind === 'failed');
+  t('an approval on a plain description (no figures) is harmless', (await go(ntWith('A plain description of the property.'), { descriptionApproval: da('A plain description of the property.') }))[0].kind === 'new');
+
+  section('publication engine: the Victorian business authorisation');
+  const vInv = seal(FIG, true);
+  t('Victoria: the same approved description WITHOUT the business authorisation is refused', (await go(vicWith(RAW), { investment: seal({ leaseStatus: 'fully_leased' }), descriptionApproval: da(RAW, seal({ leaseStatus: 'fully_leased' })) }))[0].kind === 'failed');
+  t('Victoria: income and yield without the authorisation are refused (unchanged)', (await go(vicWith('A plain description of the property.'), { investment: seal(FIG) }))[0].issues.some((m) => /Victorian listings/.test(m)));
+  const vOk = await go(vicWith(RAW), { investment: vInv, descriptionApproval: da(RAW, vInv, true) });
+  t('Victoria: income, yield and the exact description publish only with the recorded business authorisation', vOk[0].kind === 'new' && vOk[0].snapshot.content.investment.approval.victorian === true && vOk[0].snapshot.content.descriptionApproval.victorian === true, JSON.stringify(vOk[0].issues ?? ''));
+  const addedFlag = { ...seal(FIG), approval: { ...seal(FIG).approval, victorian: true } };
+  t('Victoria: the authorisation flag cannot be added after approval (it is inside the hash)', (await go(vicWith('A plain description of the property.'), { investment: addedFlag }))[0].kind === 'failed');
+  t('Victoria: a flag on a block whose values changed is refused', (await go(vicWith('A plain description of the property.'), { investment: { ...vInv, yieldPct: 12.0 } }))[0].kind === 'failed');
+  t('Victoria: the description flag alone does not publish income or yield in the structured block', (await go(vicWith(RAW), { investment: seal(FIG), descriptionApproval: da(RAW, seal(FIG), true) }))[0].kind === 'failed');
+  t('Victoria: a plain Victorian listing with no figures is unchanged', (await run([vicWith('A plain description of the property.')]))[0].kind === 'new');
+
+  section('publication engine: what a visitor sees');
+  const view = (state, investment, status = 'available') => L.publicInvestment({ address: { state }, commercialStatus: status, investment });
+  t('Victoria without the authorisation shows no income or yield (unchanged), only lease and occupancy', (() => { const v = view('VIC', seal(FIG)); return v && !v.income && !v.yield && !!v.lease; })());
+  t('Victoria with the authorisation shows income and yield with their basis', (() => { const v = view('VIC', vInv); return v && v.income.amountAud === 164435 && v.income.basis === 'Actual' && v.yield.text === '11.1%' && v.yield.label === 'Net yield'; })());
+  t('a Sold listing still shows nothing commercial, authorisation or not', !view('VIC', vInv, 'sold') && !view('NT', inv, 'sold'));
+  t('the optional groups schema accepts the description approval and nothing extra', L.optionalGroupsSchema.safeParse({ descriptionApproval: { textHash: 'a'.repeat(64) } }).success && !L.optionalGroupsSchema.safeParse({ descriptionApproval: { textHash: 'a'.repeat(64), approvedBy: 'x' } }).success && !L.optionalGroupsSchema.safeParse({ descriptionApproval: { textHash: 'short' } }).success);
+  t('listings without any approval keep exactly the content hash they had', (await run([ntWith('A plain description of the property.')]))[0].snapshot.contentHash === (await run([ntWith('A plain description of the property.')]))[0].snapshot.contentHash);
+}
+
 await (await import('./test-listing-page.mjs')).default({ t, section });
 await (await import('./test-listing-seo.mjs')).default({ t, section });
 await (await import('./test-description.mjs')).default({ t, section });

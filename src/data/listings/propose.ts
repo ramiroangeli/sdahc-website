@@ -48,6 +48,7 @@ export const withOptionalGroups = (draft: PublicContent | null, extras?: Optiona
     ...(extras.property ? { property: extras.property } : {}),
     ...(extras.investment ? { investment: extras.investment } : {}),
     ...(extras.marketing ? { marketing: extras.marketing } : {}),
+    ...(extras.descriptionApproval ? { descriptionApproval: extras.descriptionApproval } : {}),
     ...(extras.sda ? { sda: { ...draft.sda, ...extras.sda } } : {}),
   };
 };

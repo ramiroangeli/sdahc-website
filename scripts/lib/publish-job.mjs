@@ -76,8 +76,8 @@ export function parity(snapshotContent, payload) {
   if ((snapshotContent.pricing.display ?? undefined) !== wantPrice) problems.push('display price');
   // the optional public groups: the snapshot must carry exactly the groups the signed request carried, and no others
   const optional = c.optional ?? {};
-  const got = { property: snapshotContent.property, investment: snapshotContent.investment, marketing: snapshotContent.marketing };
-  for (const g of ['property', 'investment', 'marketing']) if (JSON.stringify(sortedKeys(got[g] ?? null)) !== JSON.stringify(sortedKeys(optional[g] ?? null))) problems.push(`optional group ${g}`);
+  const got = { property: snapshotContent.property, investment: snapshotContent.investment, marketing: snapshotContent.marketing, descriptionApproval: snapshotContent.descriptionApproval };
+  for (const g of ['property', 'investment', 'marketing', 'descriptionApproval']) if (JSON.stringify(sortedKeys(got[g] ?? null)) !== JSON.stringify(sortedKeys(optional[g] ?? null))) problems.push(`optional group ${g}`);
   for (const k of ['bedrooms', 'residentPlaces', 'ooa']) { const want = optional.sda?.[k]; if (want !== undefined && snapshotContent.sda?.[k] !== want) problems.push(`sda ${k}`); }
   const ids = (payload.manifest?.photos ?? []).map((p) => p.id);
   if (JSON.stringify(snapshotContent.photos.map((p) => p.id)) !== JSON.stringify(ids)) problems.push('photo order');

@@ -12,5 +12,13 @@ On the listing page the first paragraph shows, and "Read full description" opens
 
 Limits are technical only: up to 120 blocks, 6,000 characters in a block and 30,000 in total.
 
-## What publication still checks
-Saving and previewing accept any text. Publication still refuses text that contains a dollar amount or income or yield wording, a house or unit number, an email address, a phone number or a link to a private document system. Lease, occupancy, income and yield belong in Investment details, where a Publisher approves them (never income or yield on Victorian listings).
+## What publication checks
+Saving and previewing accept any text. Publication refuses text that contains a house or unit number, an email address, a phone number or a link to a private document system, and (unless approved, below) a dollar amount or income or yield wording.
+
+### Approved commercial descriptions
+SDAHC may publish commercial marketing it has already approved elsewhere (for example an existing public listing). A Publisher approves the exact description in the Listings Manager, with a private record of the source. The request then carries `descriptionApproval.textHash`, a hash of every block of the description and the structured commercial values. The engine recomputes it: any change to the text or those values voids the approval and the listing is refused until it is approved again. Only the financial wording scan is relaxed, only for the description. Addresses, emails, phones, private links and the CRM price are still refused. The title is never relaxed.
+
+The approval holds only a hash. The approver, the source and the note stay private in the Listings Manager.
+
+### Victorian listings
+Income and yield (structured or in the description) are published only when the approval also carries the Victorian business authorisation (`victorian: true`, inside the hash). It records that SDAHC authorised the content (for example an existing public advertisement). It is not a legal classification and does not settle the Victorian advertising obligations. Without it the original restriction applies unchanged. Victorian pricing compliance is a separate check and is untouched.

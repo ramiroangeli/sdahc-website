@@ -165,6 +165,8 @@ export const investmentSchema = z.object({
   approval: z.object({
     valuesHash: z.string().regex(/^[a-f0-9]{64}$/),
     provider: z.literal(true).optional(),
+    /** A Publisher's business authorisation to show income and yield on a Victorian listing (bound into the hash). Not a legal classification. */
+    victorian: z.literal(true).optional(),
   }).strict(),
 }).strict().superRefine((v, ctx) => {
   const add = (message: string) => ctx.addIssue({ code: 'custom', message });
@@ -181,6 +183,12 @@ export const investmentSchema = z.object({
   if (Object.keys(rest).length === 0) add('an empty investment block');
 });
 
+/** The approval of an exact description that carries commercial wording. See investment.ts (descriptionApprovalHash). */
+export const descriptionApprovalSchema = z.object({
+  textHash: z.string().regex(/^[a-f0-9]{64}$/),
+  victorian: z.literal(true).optional(),
+}).strict();
+
 /** Marketing agency, by key into src/data/agencies.json. Absent means SDA Home Choices. */
 export const marketingSchema = z.object({
   agency: z.string().regex(/^[a-z][a-z0-9-]{1,39}$/),
@@ -196,6 +204,7 @@ export const optionalGroupsSchema = z.object({
   sda: z.object({ bedrooms: z.number().int().positive().optional(), residentPlaces: z.number().int().positive().optional(), ooa: z.string().min(2).max(120).optional() }).strict().optional(),
   investment: investmentSchema.optional(),
   marketing: marketingSchema.optional(),
+  descriptionApproval: descriptionApprovalSchema.optional(),
 }).strict();
 export type OptionalGroups = z.infer<typeof optionalGroupsSchema>;
 /** Everything approved for public display, and exactly what the content hash covers. */
@@ -215,6 +224,7 @@ export const publicContentSchema = z.object({
   property: propertySchema.optional(),
   investment: investmentSchema.optional(),
   marketing: marketingSchema.optional(),
+  descriptionApproval: descriptionApprovalSchema.optional(),
 }).strict();
 
 /** The one shape pages and components consume. Strict: an unknown key fails the build. */
