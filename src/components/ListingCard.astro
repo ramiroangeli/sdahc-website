@@ -137,11 +137,15 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
 /* a card that spans the full width (every card after the first): the photograph stays the same size; the extra width goes to a two-part information
    column (identity, then design category and facts) and a wider commercial column whose indicators sit side by side */
 @container (min-width: 960px){
-  .lc-main--comm{grid-template-columns:var(--ph) minmax(0,1fr) 330px}
-  .lc-body{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0 32px;align-content:start;padding:20px 28px}
-  .lc-spec{padding-top:4px}
+  .lc-main--comm{grid-template-columns:var(--ph) minmax(0,1fr) 300px}
+  /* with a commercial column the information column is narrower, so identity and facts stay in one column */
+  .lc-main--comm .lc-body{grid-template-columns:minmax(0,1fr);align-content:center}
+  .lc-main--comm .lc-spec{margin-top:10px}
+  .lc-body{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:0 32px;align-content:center;align-items:center;padding:20px 28px}
+  .lc-title{font-size:clamp(20px,1.9vw,26px)}
+  .lc-spec{padding-top:0}
   .lc-cat{margin-top:0}
-  .lc-facts{margin-top:12px}
+  .lc-facts{margin-top:12px;font-size:16px}
   .lc-comm{padding:16px 24px}
   .lc-inds{flex-direction:row;flex-wrap:wrap}
   .lc-ind{flex:1 1 140px}
