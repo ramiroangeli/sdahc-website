@@ -8,6 +8,8 @@ export * from './versioning';
 export * from './publish';
 export * from './notion';
 export * from './seo';
+export * from './investment';
+export * from './agencies';
 export { FIXTURE_RECORDS, FIXTURE_SNAPSHOTS } from './fixtures';
 export * from '../../lib/enquiries';
 export * from './propose';

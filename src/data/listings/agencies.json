@@ -1,0 +1,11 @@
+{
+  "default": "sdahc",
+  "agencies": [
+    {
+      "key": "sdahc",
+      "name": "SDA Home Choices",
+      "logo": "logo-navy.png",
+      "logoOnDark": "logo-white.png"
+    }
+  ]
+}
