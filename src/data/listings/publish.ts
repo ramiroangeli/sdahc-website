@@ -6,6 +6,7 @@ import {
   type PublicListing,
 } from './schema';
 import { contentHash, resolveListing } from './versioning';
+import { firstParagraph } from './description';
 
 /*
   Pure assembly of the public list: records + approved snapshots in, PublicListing[] out. No file or
@@ -54,7 +55,7 @@ export const buildPublicListings = ({ records, snapshots, now, ctx, withdrawn }:
     out.push(publicListingSchema.parse({
       ...snapshot.content,
       id: r.id,
-      summary: summarise(snapshot.content.description[0]),
+      summary: summarise(firstParagraph(snapshot.content.description)),
       commercialStatus: res.commercialStatus,
       featured: r.featured,
       version: snapshot.version,

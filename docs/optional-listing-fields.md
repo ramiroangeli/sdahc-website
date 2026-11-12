@@ -23,7 +23,7 @@ Lease status and occupancy status are different facts and are never inferred fro
 
 ## Victorian restriction
 
-Until the OIEC or a legal adviser confirms the sale classification and advertising obligations, income and yield are refused on Victorian listings (safety check and build), never rendered (`publicInvestment`), and never used for metadata or structured data. Lease and occupancy status stay allowed when approved. This is a conservative restriction, not a legal determination. See `docs/victorian-pricing-compliance.md`.
+A Publisher may explicitly record a business authorisation for the exact Victorian income and yield values, with a private source, before they can be included. The Victorian flag is bound into the investment approval hash. A separate acknowledgement is required for a commercial description. This business authorisation is not a legal determination and does not resolve advertising obligations or override price compliance. See `docs/victorian-pricing-compliance.md`.
 
 ## Sold, Under offer, withdrawn
 

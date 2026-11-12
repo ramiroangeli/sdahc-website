@@ -165,6 +165,8 @@ export const investmentSchema = z.object({
   approval: z.object({
     valuesHash: z.string().regex(/^[a-f0-9]{64}$/),
     provider: z.literal(true).optional(),
+    /** A Publisher's business authorisation to show income and yield on a Victorian listing (bound into the hash). Not a legal classification. */
+    victorian: z.literal(true).optional(),
   }).strict(),
 }).strict().superRefine((v, ctx) => {
   const add = (message: string) => ctx.addIssue({ code: 'custom', message });
@@ -181,6 +183,12 @@ export const investmentSchema = z.object({
   if (Object.keys(rest).length === 0) add('an empty investment block');
 });
 
+/** The approval of an exact description that carries commercial wording. See investment.ts (descriptionApprovalHash). */
+export const descriptionApprovalSchema = z.object({
+  textHash: z.string().regex(/^[a-f0-9]{64}$/),
+  victorian: z.literal(true).optional(),
+}).strict();
+
 /** Marketing agency, by key into src/data/agencies.json. Absent means SDA Home Choices. */
 export const marketingSchema = z.object({
   agency: z.string().regex(/^[a-z][a-z0-9-]{1,39}$/),
@@ -196,6 +204,7 @@ export const optionalGroupsSchema = z.object({
   sda: z.object({ bedrooms: z.number().int().positive().optional(), residentPlaces: z.number().int().positive().optional(), ooa: z.string().min(2).max(120).optional() }).strict().optional(),
   investment: investmentSchema.optional(),
   marketing: marketingSchema.optional(),
+  descriptionApproval: descriptionApprovalSchema.optional(),
 }).strict();
 export type OptionalGroups = z.infer<typeof optionalGroupsSchema>;
 /** Everything approved for public display, and exactly what the content hash covers. */
@@ -205,7 +214,8 @@ export const publicContentSchema = z.object({
     .refine((s) => !RESERVED_SLUGS.includes(s), 'this slug is reserved for a page of the website'),
   type: z.enum(LISTING_TYPES),
   title: z.string().min(5).max(90),
-  description: z.array(z.string().min(1).max(1200)).min(1).max(8),
+  // technical limits only: long commercial descriptions are normal. A block may hold a whole bullet list.
+  description: z.array(z.string().min(1).max(6000)).min(1).max(120).refine((d) => d.reduce((n, b) => n + b.length, 0) <= 30000, 'the description is longer than 30,000 characters'),
   address: publicAddressSchema,
   pricing: pricingSchema,
   sda: sdaSchema,
@@ -214,6 +224,7 @@ export const publicContentSchema = z.object({
   property: propertySchema.optional(),
   investment: investmentSchema.optional(),
   marketing: marketingSchema.optional(),
+  descriptionApproval: descriptionApprovalSchema.optional(),
 }).strict();
 
 /** The one shape pages and components consume. Strict: an unknown key fails the build. */

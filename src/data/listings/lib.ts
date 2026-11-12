@@ -16,3 +16,4 @@ export * from './related';
 export { FIXTURE_RECORDS, FIXTURE_SNAPSHOTS } from './fixtures';
 export * from '../../lib/enquiries';
 export * from './propose';
+export * from './description';

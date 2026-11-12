@@ -18,7 +18,9 @@ export const verifySignature = (secret, timestamp, body, signature, now = Date.n
 
 const PRICING_LABEL = { asking_price: 'Asking Price', price_guide: 'Price Guide', eoi: 'Expressions of Interest', contact_agent: 'Contact Agent' };
 const text = (s) => ({ type: 'rich_text', rich_text: s ? [{ plain_text: s }] : [] });
-const paragraphs = (raw) => String(raw ?? '').split(/\n\s*\n/).map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+// must stay identical to descriptionBlocks in src/data/listings/description.ts (a test compares them)
+const normaliseBlock = (block) => block.split('\n').map((l) => l.replace(/[^\S\n]+/g, ' ').trim()).filter(Boolean).join('\n');
+export const paragraphs = (raw) => String(raw ?? '').replace(/\r\n?/g, '\n').split(/\n\s*\n/).map(normaliseBlock).filter(Boolean);
 
 /**
  * The Notion row as it WOULD read after the approved fields are synchronised: the real row (internal fields intact, used by the
@@ -74,8 +76,8 @@ export function parity(snapshotContent, payload) {
   if ((snapshotContent.pricing.display ?? undefined) !== wantPrice) problems.push('display price');
   // the optional public groups: the snapshot must carry exactly the groups the signed request carried, and no others
   const optional = c.optional ?? {};
-  const got = { property: snapshotContent.property, investment: snapshotContent.investment, marketing: snapshotContent.marketing };
-  for (const g of ['property', 'investment', 'marketing']) if (JSON.stringify(sortedKeys(got[g] ?? null)) !== JSON.stringify(sortedKeys(optional[g] ?? null))) problems.push(`optional group ${g}`);
+  const got = { property: snapshotContent.property, investment: snapshotContent.investment, marketing: snapshotContent.marketing, descriptionApproval: snapshotContent.descriptionApproval };
+  for (const g of ['property', 'investment', 'marketing', 'descriptionApproval']) if (JSON.stringify(sortedKeys(got[g] ?? null)) !== JSON.stringify(sortedKeys(optional[g] ?? null))) problems.push(`optional group ${g}`);
   for (const k of ['bedrooms', 'residentPlaces', 'ooa']) { const want = optional.sda?.[k]; if (want !== undefined && snapshotContent.sda?.[k] !== want) problems.push(`sda ${k}`); }
   const ids = (payload.manifest?.photos ?? []).map((p) => p.id);
   if (JSON.stringify(snapshotContent.photos.map((p) => p.id)) !== JSON.stringify(ids)) problems.push('photo order');

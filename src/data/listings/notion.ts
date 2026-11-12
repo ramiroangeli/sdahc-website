@@ -1,3 +1,4 @@
+import { descriptionBlocks } from './description';
 import { createHash } from 'node:crypto';
 import { AddressError, makeSlug, parsePublicAddress } from './address';
 import { normalisePriceDisplay } from './pricing';
@@ -222,7 +223,7 @@ export interface MapOptions {
 }
 export interface MapResult { record: ListingRecord; issues: string[] }
 
-const paragraphs = (raw: string) => raw.split(/\n\s*\n/).map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+const paragraphs = descriptionBlocks;
 
 /** The allowlist: the only place a Notion value becomes public draft content. */
 const buildDraft = (p: Record<string, any>, issues: string[], photos: Photo[], id: string, opts: MapOptions): PublicContent | null => {
