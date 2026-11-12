@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { prepareFolder, readAccentPalette, snapToAccent, verifyFolder } from './prepare-listing-photos.mjs';
-import { MODES as MODES_FROM_LIB, approverFor, checkManifest, effectiveStatus, overlayPage, parity, sign, signedHeaders, statusParity, verifySignature, withRetry } from './lib/publish-job.mjs';
+import { MODES as MODES_FROM_LIB, approverFor, checkManifest, effectiveStatus, overlayPage, declarationHash, parity, sign, signedHeaders, statusParity, verifyDeclaration, verifySignature, withRetry } from './lib/publish-job.mjs';
 
 const L = await loadTs();
 const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
@@ -933,6 +933,23 @@ section('publication job started by the internal app (dry run only in this relea
   const reviewedContent = { ...content, sda: reviewed.reviewedSda };
   t('version 2 parity binds the reviewed SDA facts and complete photo metadata', parity(reviewedContent, reviewed, content.photos).length === 0 && parity({ ...reviewedContent, sda: { ...reviewed.reviewedSda, buildingType: 'Unit' } }, reviewed, content.photos).includes('reviewed SDA details') && parity({ ...reviewedContent, photos: [{ ...content.photos[0], alt: 'changed' }, content.photos[1]] }, reviewed, content.photos).includes('reviewed photographs'));
   t('version 2 parity fails closed when reviewed facts or photo proof are absent', parity(reviewedContent, { ...reviewed, reviewedSda: undefined }, content.photos).includes('reviewed SDA details') && parity(reviewedContent, reviewed).includes('reviewed photographs'));
+  section('publisher declaration (payload version 2)');
+  const declared = (over = {}, dv = 3) => { const base = { ...reviewed, ...over }; return { ...base, declaration: { accepted: true, termsVersion: 'internal-draft-v1', draftVersion: dv, contentHash: declarationHash(base, dv) } }; };
+  t('a real publication with a matching declaration has no problems', verifyDeclaration(declared({ mode: 'publish' }), 'publish').length === 0 && verifyDeclaration(declared({ mode: 'update' }), 'update').length === 0);
+  t('the declaration is not needed for a dry run or a withdrawal (withdrawal has its own rules)', verifyDeclaration(payload, 'dry_run').length === 0 && verifyDeclaration({ version: 1 }, 'withdraw').length === 0);
+  t('the legacy version 1 request can never publish or update (no bypass of the declaration)', verifyDeclaration(payload, 'publish').length === 1 && verifyDeclaration(payload, 'update').length === 1);
+  t('version 2 without a declaration is refused', verifyDeclaration(reviewed, 'publish').includes('the Publisher declaration is missing'));
+  t('a declaration that is not accepted (false, a string, absent) is refused', ['false', false, 'true', 1, undefined].every((x) => verifyDeclaration({ ...declared(), declaration: { ...declared().declaration, accepted: x } }, 'publish').length > 0));
+  t('content changed after the declaration (text, optional groups, photographs, SDA facts, listing, version) is refused', (() => {
+    const d = declared();
+    const alter = (f) => verifyDeclaration(f(d), 'publish').includes('the declaration does not match the content');
+    return alter((x) => ({ ...x, content: { ...x.content, description: 'Changed' } })) && alter((x) => ({ ...x, content: { ...x.content, optional: { investment: { yieldPct: 9 } } } }))
+      && alter((x) => ({ ...x, manifest: { ...x.manifest, photos: [] } })) && alter((x) => ({ ...x, reviewedSda: { designCategories: ['HPS'] } }))
+      && alter((x) => ({ ...x, publicId: 'lst_0000000000' })) && alter((x) => ({ ...x, declaration: { ...x.declaration, draftVersion: 4 } }));
+  })());
+  t('a forged hash or unrecognised terms are refused', verifyDeclaration({ ...declared(), declaration: { ...declared().declaration, contentHash: 'a'.repeat(64) } }, 'publish').length > 0 && verifyDeclaration({ ...declared(), declaration: { ...declared().declaration, termsVersion: 'other' } }, 'publish').length > 0);
+  t('the hash does not depend on key order (the database does not keep it)', declarationHash({ publicId: 'p', content: { b: 1, a: { d: 1, c: 2 } }, manifest: { x: 1 }, reviewedSda: { y: 1 } }, 1) === declarationHash({ reviewedSda: { y: 1 }, manifest: { x: 1 }, content: { a: { c: 2, d: 1 }, b: 1 }, publicId: 'p' }, 1));
+  t('the hash matches the app: a fixed vector', declarationHash({ publicId: 'lst_1234567890', content: { description: 'Synthetic property' }, manifest: { photos: [{ id: 'abc', alt: 'Room' }] }, reviewedSda: { designCategories: ['IL'], buildingType: 'House' } }, 1) === 'e93b58c4c42ba951b4be798d9a9e3d4e7ed1b94df9ca7ff90cf6fdbd1b67b475');
   t('parity names every difference (title, text, address, mode, price, photo order) and nothing else', JSON.stringify(parity({ ...content, title: 'x', description: ['y'], address: { ...content.address, suburb: 'Elsewhere' }, pricing: { mode: 'eoi' }, photos: [content.photos[1], content.photos[0]] }, payload)) === JSON.stringify(['title', 'description', 'address', 'pricing mode', 'display price', 'photo order']));
   t('parity: an empty approved title is not compared (the engine derives the default)', parity({ ...content, title: 'SDA property, Exampleton' }, { ...payload, content: { ...payload.content, title: '' } }).length === 0);
   t('effectiveStatus: the requested status, else the website status, else Available', effectiveStatus({ content: { commercialStatus: 'sold' } }, { commercialStatus: 'available' }) === 'sold' && effectiveStatus({ content: {} }, { commercialStatus: 'under_offer' }) === 'under_offer' && effectiveStatus({ content: {} }, null) === 'available' && effectiveStatus({ content: { commercialStatus: 'bogus' } }, { commercialStatus: 'sold' }) === 'sold');
@@ -1067,7 +1084,9 @@ section('publication engine: optional public groups from the signed request');
   const payload = { content: { title: '', description: 'x', publicAddress: 'A Street, Town VIC 3000', pricingMode: 'contact_agent', displayPrice: null, optional: { investment: approve(FIG) } }, manifest: { photos: [] } };
   const snap = { title: 'x', description: ['x'], address: { street: 'A Street', suburb: 'Town', state: 'VIC', postcode: '3000' }, pricing: { mode: 'contact_agent' }, photos: [], investment: approve(FIG) };
   t('parity: matching groups pass; a missing, extra or altered group is named', parity(snap, payload).length === 0 && parity({ ...snap, investment: undefined }, payload).includes('optional group investment') && parity({ ...snap, property: { bathrooms: 1 } }, payload).includes('optional group property') && parity({ ...snap, investment: { ...snap.investment, yieldPct: 9 } }, payload).includes('optional group investment'));
-  t('the publish job validates the groups with the strict schema and passes them to the engine', /optionalGroupsSchema\.safeParse\(payload\.content\.optional\)/.test(rd('scripts/listings-publish-job.mjs')) && /extras,\n/.test(rd('scripts/listings-publish-job.mjs')) && /payload_invalid/.test(rd('scripts/listings-publish-job.mjs')));
+  t('the publish job checks the declaration before anything else runs, stamps approvals from the declaration and compares parity against them', (() => { const j = rd('scripts/listings-publish-job.mjs'); return j.indexOf('verifyDeclaration(payload, mode)') > -1 && j.indexOf('verifyDeclaration(payload, mode)') < j.indexOf("report('payload', 'ok', { photos") && /declareOptionalGroups\(/.test(j) && /parity\(action\.snapshot\.content, approved,/.test(j) && !/parity\([^)]*, payload,/.test(j); })());
+  t('reviewedPhotos is defined where it is used (not inside the withdrawal)', (() => { const j = rd('scripts/listings-publish-job.mjs'); const w = j.slice(j.indexOf('async function withdraw'), j.indexOf('async function main')); return !/reviewedPhotos/.test(w) && /const reviewedPhotos =/.test(j); })());
+  t('the publish job validates the groups with the strict schema and passes them to the engine', /optionalGroupsSchema\.safeParse\(effectiveOptional\)/.test(rd('scripts/listings-publish-job.mjs')) && /extras,\n/.test(rd('scripts/listings-publish-job.mjs')) && /payload_invalid/.test(rd('scripts/listings-publish-job.mjs')));
 }
 
 await (await import('./test-publish-git.mjs')).default({ t, section });
@@ -1117,6 +1136,26 @@ section('publication engine: an exact commercial description approved by a Publi
   t('Victoria: a flag on a block whose values changed is refused', (await go(vicWith('A plain description of the property.'), { investment: { ...vInv, yieldPct: 12.0 } }))[0].kind === 'failed');
   t('Victoria: the description flag alone does not publish income or yield in the structured block', (await go(vicWith(RAW), { investment: seal(FIG), descriptionApproval: da(RAW, seal(FIG), true) }))[0].kind === 'failed');
   t('Victoria: a plain Victorian listing with no figures is unchanged', (await run([vicWith('A plain description of the property.')]))[0].kind === 'new');
+
+  section('publication engine: the Publisher declaration replaces the separate approvals');
+  const decl = (page, optional, status = 'available', state) => { const st = state ?? L.parsePublicAddress(L.readText(page.properties['Web Public Address']) || 'Example Street, Exampleton NT 0800').state; return L.declareOptionalGroups(optional, { description: L.descriptionBlocks(L.readText(page.properties['Web Description'])), state: st, status }); };
+  const RAWINV = { leaseStatus: 'fully_leased', occupancyStatus: 'fully_occupied', annualIncomeAud: 164435, incomeType: 'gross', yieldPct: 11.1, yieldType: 'net', basis: 'actual' };
+  const ntPage = ntWith(RAW); const vicPage = vicWith(RAW);
+  const ntOk = await go(ntPage, decl(ntPage, { investment: RAWINV }));
+  t('declaration: a normal financial description, income, yield and occupancy publish with no separate approval', ntOk[0].kind === 'new' && !!ntOk[0].snapshot.content.investment.approval.valuesHash && !!ntOk[0].snapshot.content.descriptionApproval, JSON.stringify(ntOk[0].issues ?? ''));
+  const vicOk = await go(vicPage, decl(vicPage, { investment: RAWINV }, 'available', 'VIC'));
+  t('declaration: a Victorian listing with financial figures publishes with no separate Victorian approval', vicOk[0].kind === 'new' && vicOk[0].snapshot.content.investment.approval.victorian === true && vicOk[0].snapshot.content.descriptionApproval.victorian === true, JSON.stringify(vicOk[0].issues ?? ''));
+  t('declaration: the rendered view shows the figures for Victoria and the Northern Territory', (() => { const v = L.publicInvestment({ address: { state: 'VIC' }, commercialStatus: 'available', investment: vicOk[0].snapshot.content.investment }); return !!v && v.income.amountAud === 164435 && v.yield.text === '11.1%'; })());
+  t('declaration: an approval or hash carried in the request is discarded and recomputed, never trusted', (() => { const forged = { investment: { ...RAWINV, approval: { valuesHash: 'f'.repeat(64), victorian: true, provider: true } }, descriptionApproval: { textHash: 'e'.repeat(64) } }; const o = decl(ntPage, forged, 'available', 'NT'); return o.investment.approval.valuesHash !== 'f'.repeat(64) && o.investment.approval.victorian === undefined && o.descriptionApproval.textHash !== 'e'.repeat(64); })());
+  t('declaration: a Sold listing carries no commercial block and no description approval', (() => { const o = decl(ntPage, { investment: RAWINV, property: { bathrooms: 2 } }, 'sold', 'NT'); return o.investment === undefined && o.descriptionApproval === undefined && o.property.bathrooms === 2; })());
+  const soldGo = await go(ntPage, decl(ntPage, { investment: RAWINV }, 'sold', 'NT'));
+  t('declaration: a Sold listing whose text still carries income or yield is refused by the engine (Sold rule preserved)', soldGo[0].kind === 'failed' && soldGo[0].issues.some((m) => /dollar amount|financial term/.test(m)));
+  t('declaration: explicit participant names are still refused', (await go(ntWith(RAW + '\n\nParticipant Jane Smith lives here.'), decl(ntPage, { investment: RAWINV })))[0].kind === 'failed');
+  t('declaration: email, phone and private document links are still refused', (await go(ntWith(RAW + '\n\nEmail jo@example.com'), decl(ntPage, { investment: RAWINV })))[0].kind === 'failed' && (await go(ntWith(RAW + '\n\nCall 0412 345 678'), decl(ntPage, { investment: RAWINV })))[0].kind === 'failed' && (await go(ntWith(RAW + '\n\nSee https://x.sharepoint.com/doc'), decl(ntPage, { investment: RAWINV })))[0].kind === 'failed');
+  t('declaration: the title may not carry a dollar amount (the declaration covers the description only)', (await go(pg({ ...NTP, [N.webDescription]: P_.rt(RAW), [N.webTitle]: P_.rt('Gross income $164,435 SDA home') }, '2e2909c1-0000-0000-0000-00000000b013'), decl(ntPage, { investment: RAWINV })))[0].kind === 'failed');
+  t('declaration: a listing with no commercial wording gets no approval records (existing hashes do not change)', (() => { const p = ntWith('A plain description of the property.'); return decl(p, undefined) === undefined; })());
+  t('the financial wording pattern equals the guard pattern', L.FINANCIAL_WORDING.source === rd('src/data/listings/guards.ts').match(/const MONEY = \/(.*)\/i;/)[1]);
+  t('the legacy request without the declaration still needs the separate approvals (engine unchanged for version 1)', (await go(ntWith(RAW), { investment: seal(RAWINV) }))[0].kind === 'failed');
 
   section('publication engine: what a visitor sees');
   const view = (state, investment, status = 'available') => L.publicInvestment({ address: { state }, commercialStatus: status, investment });
