@@ -1,0 +1,13 @@
+/* Shared by /opportunities/ and /opportunities/off-market/ */
+/* ===== one continuous page background =====
+   The whole page sits on a single background layer: a vertical navy gradient with soft blue and teal glows placed at different heights.
+   Every section is transparent, so nothing begins or ends at a section edge and there are no seams. The page ends on plain navy, which is the
+   footer's own colour. */
+.opp-page{position:relative;overflow-x:clip;background:
+  radial-gradient(1200px 760px at 84% 2.5%,color-mix(in srgb,var(--blue) 24%,transparent) 0%,transparent 62%),
+  radial-gradient(900px 620px at 4% 11%,color-mix(in srgb,var(--teal) 11%,transparent) 0%,transparent 64%),
+  radial-gradient(1100px 700px at 92% 36%,color-mix(in srgb,var(--blue) 17%,transparent) 0%,transparent 64%),
+  radial-gradient(1000px 680px at 6% 58%,color-mix(in srgb,var(--blue) 14%,transparent) 0%,transparent 64%),
+  radial-gradient(1100px 720px at 88% 82%,color-mix(in srgb,var(--blue) 15%,transparent) 0%,transparent 64%),
+  linear-gradient(180deg,color-mix(in srgb,var(--navy2) 78%,var(--navy)) 0%,var(--navy) 34%,color-mix(in srgb,var(--navy2) 32%,var(--navy)) 62%,var(--navy) 100%)}
+.opp-heading{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 16px;text-align:center}

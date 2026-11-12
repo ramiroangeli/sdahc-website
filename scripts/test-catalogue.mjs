@@ -62,10 +62,10 @@ export default async function run({ t, section }) {
 
   section('catalogue page structure');
   const page = rd('src/pages/opportunities.astro'); const cat = rd('src/components/ListingsCatalogue.astro'); const hero = rd('src/components/OpportunitiesHero.astro');
-  t('the title and subtitle are kept', /SDA Investment<\/span> <span class="oh-l2">Opportunities/.test(hero) && /Explore available SDA properties and discover exclusive off-market investment opportunities/.test(hero));
+  t('the title and subtitle are kept (the hero defaults)', /line1 = 'SDA Investment', line2 = 'Opportunities'/.test(hero) && /sub = 'Explore available SDA properties and discover exclusive off-market investment opportunities'/.test(hero) && /<OpportunitiesHero \/>/.test(page));
   t('the catalogue heading and its paragraph are removed', !/Available SDA Properties/.test(cat) && !/SDA properties we can show publicly/.test(cat));
   t('the "Listed publicly" card is gone and the hero holds no path cards or fan', !/>Listed publicly</i.test(hero + page + cat) && !/oh-k/.test(hero) && !/HeroCardFan|oh-path/.test(hero));
-  t('order on the page: hero, catalogue (filters and cards), then the fan band, then Why off-market', (() => { const i = (s) => page.indexOf(s); return i('<OpportunitiesHero') < i('<ListingsCatalogue') && i('<ListingsCatalogue') < i('<HeroCardFan') && i('<HeroCardFan') < i('Why off-market'); })());
+  t('order on the page: hero, catalogue (filters and cards), then the fan band, then the jurisdiction section', (() => { const i = (s) => page.indexOf(s); return i('<OpportunitiesHero') < i('<ListingsCatalogue') && i('<ListingsCatalogue') < i('<HeroCardFan') && i('<HeroCardFan') < i('opp-states-band'); })());
   t('one grid: the first visible card and the Confidential Access panel share the first row; later cards span the full width; the panel is not sticky', /\.lcat-grid\{[^}]*grid-template-columns:minmax\(0,1fr\) 280px/.test(cat) && /\.lcat-grid>:global\(\.lc\)\{grid-column:1 \/ -1\}/.test(cat) && /\.lc\.lc--first\)\{grid-column:1;align-self:stretch\}/.test(cat) && /\.lcat-panel\{grid-column:2;grid-row:1/.test(cat) && !/position:\s*sticky/.test(cat));
   t('the first card is chosen by the active sort and filters (class set by the script), not hardcoded', /card\.classList\.toggle\('lc--first', card === shown\[0\]\)/.test(cat) && /first=\{i === 0\}/.test(cat));
   t('on tablet and mobile the grid is one column and the panel follows the results (it is last in the page order)', /max-width:1100px\)\{[\s\S]*?\.lcat-grid\{grid-template-columns:minmax\(0,1fr\)\}/.test(cat) && cat.indexOf('data-lcat-loadmore') < cat.indexOf('class="lcat-panel"'));
@@ -81,9 +81,9 @@ export default async function run({ t, section }) {
   section('catalogue wide cards');
   t('cards that span the full width keep the same photograph size and redistribute the extra width', /@container \(min-width: 960px\)/.test(card) && /\.lc-main--comm\{grid-template-columns:var\(--ph\) minmax\(0,1fr\) 300px\}/.test(card) && !/@container[^}]*--ph:/.test(card));
   t('indicators sit side by side in a wide commercial column; narrow layouts stay stacked', /\.lc-inds\{flex-direction:row;flex-wrap:wrap\}/.test(card));
-  t('the static Why off-market content and the access steps are kept', /Why off-market/.test(page) && /How access works/.test(page) && /A curated, confidential market/.test(page));
+  t('the static Why off-market content and the access steps are kept, now on the Off-market page', (() => { const off = rd('src/pages/opportunities/off-market.astro'); return /Why off-market/.test(off) && /How access works/.test(off) && /A curated, confidential market/.test(off); })());
   t('on a phone the secondary filters sit behind a labelled Filters disclosure, the search stays visible, and the selections and Clear stay available', /<details class="lcat-more" open data-lcat-more>/.test(cat) && /<summary class="lcat-more-sum"><span>Filters<\/span>/.test(cat) && cat.indexOf('id="f-q"') < cat.indexOf('data-lcat-more') && /data-lcat-active/.test(cat) && /type="reset" class="lcat-reset">Clear/.test(cat) && /max-width: 700px/.test(cat));
   t('the filter fields and their names are unchanged (behaviour preserved)', ['name="q"', 'name="state"', 'name="design"', 'name="type"', 'name="status"', 'name="sort"'].every((n) => cat.includes(n)));
   t('the existing filters are kept and sit before the results', ['f-q', 'f-state', 'f-design', 'f-type', 'f-status', 'f-sort'].every((id) => cat.includes(`id="${id}"`)) && cat.indexOf('data-lcat-filters') < cat.indexOf('class="lcat-grid"'));
-  t('the page keeps its #listings and #access anchors', /id="listings"/.test(cat) && /id="access"/.test(page));
+  t('the catalogue keeps its #listings anchor, and the Off-market page its #access and #enquiry anchors', /id="listings"/.test(cat) && /id="access"/.test(rd('src/pages/opportunities/off-market.astro')) && /id="enquiry"/.test(rd('src/pages/opportunities/off-market.astro')));
 }

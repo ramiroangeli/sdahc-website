@@ -1025,6 +1025,7 @@ section('standing Victorian position for tenanted SDA investment sales (Contact 
 await (await import('./test-publish-git.mjs')).default({ t, section });
 await (await import('./test-optional-fields.mjs')).default({ t, section });
 await (await import('./test-catalogue.mjs')).default({ t, section });
+await (await import('./test-offmarket.mjs')).default({ t, section });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
