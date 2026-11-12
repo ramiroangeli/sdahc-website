@@ -1,10 +1,11 @@
 ---
 import ListingCard from './ListingCard.astro';
+import ConfidentialAccessPanel from './ConfidentialAccessPanel.astro';
 import { getPublicListings } from '../data/listings';
 import { DESIGN_LABEL, STATUS_LABEL, STATES, TYPE_LABEL } from '../data/listings/schema';
 
 /*
-  "Available SDA Properties": searchable, filterable, sortable catalogue of published listings.
+  The property catalogue: searchable, filterable, sortable list of published listings, with the Confidential Access panel beside it on desktop and below it on mobile.
   Always renders. With no published listing it shows a professional empty state that keeps the
   off-market path in front of the visitor. Filtering is progressive enhancement: without JavaScript
   every card simply stays visible.
@@ -21,11 +22,8 @@ const showType = types.length > 1;
 const showStatus = statuses.length > 1;
 const showDesign = designs.length > 0;
 ---
-<section class="section lcat" id="listings" aria-labelledby="lcat-h">
+<section class="section lcat" id="listings" aria-label="SDA properties">
   <div class="wrap">
-    <h2 class="lcat-heading" id="lcat-h">Available SDA Properties</h2>
-    <p class="lcat-intro">SDA properties we can show publicly. Detail, documents and pricing beyond what is shown are released to registered parties under NDA.</p>
-
     {listings.length > 0 ? (
       <>
         <form class="lcat-filters" aria-label="Search and filter properties" data-lcat-filters>
@@ -82,20 +80,30 @@ const showDesign = designs.length > 0;
 
         <p class="lcat-count" role="status" aria-live="polite" data-lcat-count>Showing {listings.length} of {listings.length} properties</p>
 
-        <ul class="lcat-grid" data-lcat-grid>
-          {listings.map((l, i) => <ListingCard listing={l} index={i} />)}
-        </ul>
+        <div class="lcat-layout">
+          <div class="lcat-results">
+            <ul class="lcat-grid" data-lcat-grid>
+              {listings.map((l, i) => <ListingCard listing={l} index={i} />)}
+            </ul>
 
-        <div class="lcat-empty" data-lcat-empty hidden>
-          <p>No properties match your search.</p>
-          <p>Try clearing a filter, or <a href="#access">access off-market opportunities</a>, most of which are never listed publicly.</p>
+            <div class="lcat-empty" data-lcat-empty hidden>
+              <p>No properties match your search.</p>
+              <p>Try clearing a filter, or <a href="#access">access off-market opportunities</a>, most of which are never listed publicly.</p>
+            </div>
+          </div>
+          <div class="lcat-side"><ConfidentialAccessPanel /></div>
         </div>
       </>
     ) : (
-      <div class="lcat-empty lcat-empty-solo">
-        <p class="lcat-empty-h">No properties are listed publicly right now.</p>
-        <p>New SDA properties are added as they are approved for public release. Most of what we hold is off-market and shared directly with qualified buyers.</p>
-        <p><a class="btn b1" href="#access">Access Off-Market Opportunities</a></p>
+      <div class="lcat-layout">
+        <div class="lcat-results">
+          <div class="lcat-empty lcat-empty-solo">
+            <p class="lcat-empty-h">No properties are listed publicly right now.</p>
+            <p>New SDA properties are added as they are approved for public release. Most of what we hold is off-market and shared directly with qualified buyers.</p>
+            <p><a class="btn b1" href="#access">Access Off-Market Opportunities</a></p>
+          </div>
+        </div>
+        <div class="lcat-side"><ConfidentialAccessPanel /></div>
       </div>
     )}
   </div>
@@ -166,9 +174,7 @@ const showDesign = designs.length > 0;
 </script>
 
 <style>
-.lcat{background:transparent}
-.lcat-heading{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(26px,3.4vw,38px);line-height:1.15;margin:0 0 14px;text-align:center}
-.lcat-intro{font-family:var(--sans);color:var(--pale);font-size:16px;line-height:1.65;max-width:62ch;margin:0 auto 34px;text-align:center}
+.lcat{background:transparent;padding-top:8px}
 
 .lcat-filters{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:16px;margin:0 0 20px}
 .lcat-field{min-width:160px}
@@ -183,10 +189,13 @@ const showDesign = designs.length > 0;
 .lcat-reset:hover{border-color:var(--white)}
 
 .lcat-count{font-family:var(--geo);font-size:13px;letter-spacing:.06em;color:var(--pale);text-align:center;margin:0 0 24px}
-.lcat-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
+/* results beside the Confidential Access panel on desktop; the panel follows the results on tablet and mobile */
+.lcat-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:32px;align-items:start}
+.lcat-side{position:sticky;top:calc(var(--nav-top) + var(--nav-height) + 20px)}
+.lcat-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:20px}
 .lcat-grid[hidden]{display:none}
-@media(max-width:980px){.lcat-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:620px){.lcat-grid{grid-template-columns:1fr}.lcat-field,.lcat-field-search{flex:1 1 100%;max-width:none}.lcat-filters{align-items:stretch}}
+@media(max-width:1100px){.lcat-layout{grid-template-columns:1fr;gap:28px}.lcat-side{position:static}}
+@media(max-width:620px){.lcat-field,.lcat-field-search{flex:1 1 100%;max-width:none}.lcat-filters{align-items:stretch}}
 
 .lcat-empty{max-width:54ch;margin:0 auto;text-align:center;font-family:var(--sans);color:var(--pale);padding:32px 28px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);border-radius:10px}
 .lcat-empty[hidden]{display:none}

@@ -940,7 +940,7 @@ section('publication job started by the internal app (dry run only in this relea
     const soldBranch = slugPage.slice(slugPage.indexOf('{sold ? ('), slugPage.indexOf(') : ('));
     t('a Sold page has no price row, no purchase enquiry, no access steps and no enquiry form, and offers a general enquiry route', /const sold = listing\.commercialStatus === 'sold'/.test(slugPage) && /\.\.\.\(sold \? \[\]/.test(slugPage) && /\{!sold && \(/.test(slugPage) && !/ListingEnquiryForm/.test(soldBranch) && /href="\/contact-us\/"/.test(soldBranch) && /This property has been sold/.test(soldBranch));
     t('the enquiry endpoint refuses an enquiry about a sold listing', /commercialStatus === 'sold'\) return json\(\{ ok: false[^)]*409\)/.test(rd('src/pages/api/listing-enquiry.ts')));
-    t('a sold card in the catalogue does not show a price', /commercialStatus === 'sold' \? 'Sold' : pricingLine/.test(rd('src/components/ListingCard.astro')));
+    t('a sold card in the catalogue does not show a price', /l\.commercialStatus !== 'sold'\) c\.price/.test(rd('src/data/listings/card.ts')));
   }
   {
     const jobSrc = rd('scripts/listings-publish-job.mjs');
@@ -1024,6 +1024,7 @@ section('standing Victorian position for tenanted SDA investment sales (Contact 
 
 await (await import('./test-publish-git.mjs')).default({ t, section });
 await (await import('./test-optional-fields.mjs')).default({ t, section });
+await (await import('./test-catalogue.mjs')).default({ t, section });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

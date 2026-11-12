@@ -1,0 +1,26 @@
+---
+/*
+  Secondary panel beside the property results on desktop, below them on mobile. It promotes the off-market path and exposes nothing:
+  it names no property, price or party. It links to the existing "How access works" and enquiry steps on this page.
+*/
+---
+<aside class="cap" aria-labelledby="cap-h">
+  <span class="cap-ico" aria-hidden="true">
+    <svg width="26" height="26" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+  </span>
+  <p class="cap-k">Confidential access</p>
+  <h2 class="cap-h" id="cap-h">Off-market opportunities</h2>
+  <p class="cap-d">Shared only with qualified buyers under NDA. No confidential detail is shown on this site.</p>
+  <a class="btn cap-cta" href="#access">Access Off-Market Opportunities<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+</aside>
+<style>
+.cap{padding:24px 22px 26px;border-radius:12px;border:1px solid color-mix(in srgb,var(--amber) 70%,transparent);border-top:3px solid var(--amber);background:linear-gradient(135deg,color-mix(in srgb,var(--amber) 22%,var(--navy)) 0%,color-mix(in srgb,var(--amber) 7%,var(--navy)) 100%);box-shadow:0 18px 40px color-mix(in srgb,var(--navy) 60%,transparent)}
+.cap-ico{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;color:var(--navy);background:var(--amber);margin-bottom:14px}
+.cap-k{font-family:var(--geo);font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin:0 0 8px;color:color-mix(in srgb,var(--amber) 62%,var(--white))}
+.cap-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(21px,2vw,25px);line-height:1.15;margin:0 0 10px}
+.cap-d{font-family:var(--sans);color:color-mix(in srgb,var(--white) 82%,var(--pale));font-size:15px;line-height:1.55;margin:0 0 18px}
+.cap-cta{display:inline-flex;align-items:center;gap:8px;font-weight:700;background:var(--amber);color:var(--navy)}
+.cap-cta:hover{background:color-mix(in srgb,var(--amber) 82%,var(--white))}
+.cap-cta:focus-visible{outline:3px solid var(--white);outline-offset:3px}
+@media(max-width:520px){.cap-cta{width:100%;justify-content:center;text-align:center}}
+</style>
