@@ -1,14 +1,18 @@
 ---
 /*
-  /opportunities/ hero: the statement title and its supporting line, nothing else. The property search and results follow directly
+  Hero for /opportunities/ and /opportunities/off-market/: the statement title and its supporting line, nothing else. The property search and results follow directly
   (ListingsCatalogue). The animated card fan and the Confidential Access panel now live lower on the page and beside the results.
   The hero draws no background of its own: the page carries one continuous background (see opportunities.astro).
 */
+// r1: the width of the whole title in em (Barlow Condensed 700, capitals); ra and rb: the width of each line when the title stacks on a phone.
+// They size the title so it fills the container; the defaults are measured for "SDA Investment Opportunities".
+interface Props { line1?: string; line2?: string; sub?: string; r1?: number; ra?: number; rb?: number }
+const { line1 = 'SDA Investment', line2 = 'Opportunities', sub = 'Explore available SDA properties and discover exclusive off-market investment opportunities', r1 = 12.34, ra = 6.32, rb = 5.8 } = Astro.props;
 ---
 <section class="oh" aria-labelledby="oh-h1">
   <div class="wrap oh-top">
-    <h1 class="oh-h1" id="oh-h1"><span class="oh-l1">SDA Investment</span> <span class="oh-l2">Opportunities</span></h1>
-    <p class="oh-sub">Explore available SDA properties and discover exclusive off-market investment opportunities</p>
+    <h1 class="oh-h1" id="oh-h1" style={`--r1:${r1};--ra:${ra};--rb:${rb}`}><span class="oh-l1">{line1}</span> <span class="oh-l2">{line2}</span></h1>
+    <p class="oh-sub">{sub}</p>
   </div>
 </section>
 

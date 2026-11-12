@@ -15,6 +15,8 @@ import { z } from 'astro/zod';
   decision and sits outside the hash, so marking a property Under offer never needs a re-approval.
 */
 
+/** Pages that live at /opportunities/<name>/ and so cannot be listing slugs. */
+export const RESERVED_SLUGS: readonly string[] = ['off-market'];
 export const STATES = ['QLD', 'VIC', 'SA', 'NSW', 'WA', 'ACT', 'TAS', 'NT'] as const;
 // Basic is a real SDA design category for existing (legacy) stock. It is NOT a new-build certification and
 // is never treated as one: a listing with Basic needs its classification validated before it can be proposed.
@@ -185,7 +187,9 @@ export const marketingSchema = z.object({
 }).strict();
 /** Everything approved for public display, and exactly what the content hash covers. */
 export const publicContentSchema = z.object({
-  slug: z.string().regex(/^[a-z]+(-[a-z]+)*$/, 'slug may contain letters and hyphens only').max(80),
+  slug: z.string().regex(/^[a-z]+(-[a-z]+)*$/, 'slug may contain letters and hyphens only').max(80)
+    // a route that exists beside the listing pages under /opportunities/ can never be a listing's address
+    .refine((s) => !RESERVED_SLUGS.includes(s), 'this slug is reserved for a page of the website'),
   type: z.enum(LISTING_TYPES),
   title: z.string().min(5).max(90),
   description: z.array(z.string().min(1).max(1200)).min(1).max(8),
