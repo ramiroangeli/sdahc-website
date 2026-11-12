@@ -25,6 +25,9 @@ export default async function run({ t, section }) {
   t('approved facts appear in a fixed order with their labels', rich.map((r) => r.label).join('|') === 'Build type|Bedrooms|Bathrooms|Car spaces|Parking|Floor area|Land area|Municipality|Participant places|Onsite overnight assistance');
   t('areas are formatted with m2 and thousands separators', rich.find((r) => r.label === 'Floor area').value === '262 m²' && rich.find((r) => r.label === 'Land area').value === '1,448 m²');
   t('the design category is not repeated in the facts (it is in the header)', !rich.some((r) => /design/i.test(r.label)));
+  t('OOA wording that already names itself is shown without repeating the label, and its value is unchanged', (() => { const r = rich.find((x) => x.label === 'Onsite overnight assistance'); return r.bare === true && r.value === 'Onsite overnight assistance (OOA) available'; })());
+  t('OOA wording that does not name itself keeps its label', (() => { const r = L.detailFacts(pl({ mod: (c) => { c.sda = { ooa: 'Available, two carers' }; } })).find((x) => x.label === 'Onsite overnight assistance'); return !r.bare && r.value === 'Available, two carers'; })());
+  t('no other fact is ever bare', rich.filter((r) => r.bare).length === 1);
   t('zero car spaces is a real value and is shown; missing values are omitted', L.detailFacts(pl({ mod: (c) => { c.property = { carSpaces: 0 }; } })).map((r) => `${r.label}:${r.value}`).join() === 'Car spaces:0');
 
   section('listing page: investment details');
@@ -45,7 +48,8 @@ export default async function run({ t, section }) {
   const gp = L.galleryPlan(ph);
   t('the main photograph is the first that is not a floorplan; thumbnails keep the approved order, floorplan last', gp.mainIndex === 0 && gp.thumbIndexes.join() === '1,2' && gp.floorplanIndex === 2);
   t('a floorplan listed first is never the main photograph', (() => { const g = L.galleryPlan([ph[2], ph[0], ph[1]]); return g.mainIndex === 1 && g.floorplanIndex === 0 && g.thumbIndexes.join() === '0,2'; })());
-  t('only a floorplan: there is no main photograph (the floorplan is shown whole); no photographs: an empty plan', L.galleryPlan([ph[2]]).mainIndex === -1 && L.galleryPlan([]).thumbIndexes.length === 0 && L.galleryPlan([]).floorplanIndex === -1);
+  t('only a floorplan: it is the main image and is NOT repeated as a thumbnail; no photographs: an empty plan', (() => { const g = L.galleryPlan([ph[2]]); return g.mainIndex === 0 && g.thumbIndexes.length === 0 && g.floorplanIndex === 0; })() && L.galleryPlan([]).mainIndex === -1 && L.galleryPlan([]).thumbIndexes.length === 0);
+  t('several floorplans and no photograph: the first is the main image, the others are thumbnails, nothing appears twice', (() => { const g = L.galleryPlan([ph[2], { ...ph[2], id: 'b'.repeat(12) }]); return g.mainIndex === 0 && g.thumbIndexes.join() === '1' && !g.thumbIndexes.includes(g.mainIndex); })());
 
   section('listing page: components and structure');
   const page = rd('src/pages/opportunities/[slug].astro');
@@ -56,6 +60,9 @@ export default async function run({ t, section }) {
   t('one H1 (the approved title), then status, type and design category badges and the location line', (page.match(/<h1 /g) || []).length === 1 && /<h1 class="ld-h1">\{listing\.title\}<\/h1>/.test(page) && /ListingStatusBadge status=\{listing\.commercialStatus\}/.test(page) && /\{location && <p class="ld-loc">/.test(page));
   t('section order: gallery, key information, investment (optional), about, agency panel beside, then the enquiry section', (() => { const i = (s) => page.indexOf(s); return i('<ListingGallery') < i('<ListingFacts') && i('<ListingFacts') < i('<ListingInvestment') && i('<ListingInvestment') < i('About this property') && i('About this property') < i('<AgencyPanel') && i('<AgencyPanel') < i('id="enquire"'); })());
   t('the existing enquiry form, its endpoint and the Sold alternative are unchanged', /ListingEnquiryForm listingId=\{listing\.id\} listingTitle=\{listing\.title\}/.test(page) && /data-endpoint="\/api\/listing-enquiry\/"/.test(rd('src/components/ListingEnquiryForm.astro')) && /This property has been sold/.test(page) && /\{sold \? \(/.test(page));
+  t('one optional fact is shown compactly under the title, two or more get the full section, none shows nothing', /allFacts\.length === 1 \? allFacts\[0\] : null/.test(page) && /allFacts\.length >= 2 \? allFacts : \[\]/.test(page) && /\{compactFact && \(compactFact\.bare/.test(page) && page.indexOf('class="ld-loc"') < page.indexOf('{compactFact &&') && page.indexOf('{compactFact &&') < page.indexOf('<ListingGallery'));
+  t('the top enquiry button and the panel button both link to #enquire, which is the existing form section (with a scroll margin under the fixed navigation)', /href="#enquire">Enquire about this property<\/a>/.test(page) && /href="#enquire">Enquire about this property<\/a>/.test(ag) && /<section class="section ld-enquire" id="enquire">/.test(page) && /\.ld-enquire\{[^}]*scroll-margin-top/.test(page) && /ListingEnquiryForm/.test(page));
+  t('a floorplan used as the main image is labelled, shown whole and not repeated', /mainIsPlan \? <span class="gx-tag">Floorplan<\/span>/.test(gal) && /whole=\{mainIsPlan\}/.test(gal) && /\.gx-main--plan\{aspect-ratio:3\/2\}/.test(gal));
   t('the enquiry button is absent on a Sold listing (header and panel)', /\{!sold && <a class="btn b1 ld-head-cta" href="#enquire">/.test(page) && /\{sold \? \(/.test(ag));
   t('facts and investment render nothing when empty (no empty headings or placeholders)', /\{rows\.length > 0 && \(/.test(facts) && /\{section && \(/.test(invc));
   t('the investment note says the figures are supplied by the agent and are not a forecast or guarantee', /not a forecast or a guarantee of return/.test(invc) && !/guaranteed|guarantee[ds]? return of/i.test(invc.replace('not a forecast or a guarantee of return', '')));

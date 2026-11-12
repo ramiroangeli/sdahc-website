@@ -12,7 +12,11 @@ const { heading, rows, id } = Astro.props;
   <section class="lf" aria-labelledby={id}>
     <h2 class="lf-h" id={id}>{heading}</h2>
     <dl class="lf-grid">
-      {rows.map((r) => (<div class="lf-row"><dt>{r.label}</dt><dd>{r.value}</dd></div>))}
+      {rows.map((r) => (
+        r.bare
+          ? (<div class="lf-row lf-row--bare"><dt class="lf-sr">{r.label}</dt><dd>{r.value}</dd></div>)
+          : (<div class="lf-row"><dt>{r.label}</dt><dd>{r.value}</dd></div>)
+      ))}
     </dl>
   </section>
 )}
@@ -21,6 +25,9 @@ const { heading, rows, id } = Astro.props;
 .lf-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(22px,2.6vw,28px);line-height:1.15;margin:0 0 18px}
 .lf-grid{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:0 28px}
 @media(max-width:640px){.lf-grid{grid-template-columns:1fr 1fr;gap:0 18px}.lf-row dd{font-size:16px}}
+/* a value that already names itself (approved OOA wording) spans the row and carries no repeated label; the label stays for screen readers */
+.lf-row--bare{grid-column:1 / -1}
+.lf-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .lf-row{padding:14px 0;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent)}
 .lf-row dt{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin:0 0 4px}
 .lf-row dd{margin:0;font-family:var(--sans);font-size:17px;font-weight:600;line-height:1.4;color:var(--white)}

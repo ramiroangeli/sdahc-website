@@ -24,7 +24,10 @@ const { address } = listing;
 const sold = listing.commercialStatus === 'sold';
 const location = detailLocation(listing);
 const design = designText(listing);
-const facts = detailFacts(listing);
+const allFacts = detailFacts(listing);
+// one optional fact is shown compactly under the title; two or more get the full Key property information section; none shows nothing
+const compactFact = allFacts.length === 1 ? allFacts[0] : null;
+const facts = allFacts.length >= 2 ? allFacts : [];
 const investment = detailInvestment(listing);
 const pricing = detailPricing(listing);
 const agency = agencyFor(listing.marketing?.agency);
@@ -50,6 +53,9 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
         </div>
         <h1 class="ld-h1">{listing.title}</h1>
         {location && <p class="ld-loc">{location}</p>}
+        {compactFact && (compactFact.bare
+          ? <p class="ld-fact">{compactFact.value}</p>
+          : <p class="ld-fact"><span>{compactFact.label}</span> {compactFact.value}</p>)}
       </div>
       {!sold && <a class="btn b1 ld-head-cta" href="#enquire">Enquire about this property</a>}
     </header>
@@ -117,6 +123,8 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
 .ld-cat{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--white);border:1px solid color-mix(in srgb,var(--blue) 70%,transparent);border-radius:2px;padding:4px 10px}
 .ld-h1{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(30px,4.2vw,50px);line-height:1.08;letter-spacing:-.01em;margin:0;max-width:24ch;overflow-wrap:anywhere}
 .ld-loc{font-family:var(--geo);font-size:15px;letter-spacing:.04em;color:var(--pale);margin:12px 0 0}
+.ld-fact{margin:14px 0 0;font-family:var(--sans);font-size:17px;font-weight:600;color:var(--white)}
+.ld-fact span{margin-right:8px;font-family:var(--geo);font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--pale)}
 .ld-head-cta{flex:0 0 auto;display:inline-block;text-align:center}
 
 .ld-main{background:var(--navy);padding-top:16px}
@@ -136,7 +144,8 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
 .ld-steps li{margin:0 0 6px}
 .ld-sold{max-width:66ch}
 
-.ld-enquire{background:var(--navy)}
+/* both enquiry buttons link here; keep the heading clear of the fixed navigation when it scrolls into view */
+.ld-enquire{background:var(--navy);scroll-margin-top:calc(var(--nav-top) + var(--nav-height) + 16px)}
 .ld-enquire-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
 @media(max-width:860px){.ld-enquire-grid{grid-template-columns:1fr;gap:32px}}
 .ld-card{border:1px solid color-mix(in srgb,var(--pale) 26%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 10%,transparent);padding:36px 34px}

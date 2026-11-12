@@ -20,7 +20,9 @@ export const designText = (l: PublicListing): string | undefined => {
   return d.length ? d.map((x) => DESIGN_LABEL[x]).join(', ') : undefined;
 };
 
-export interface Row { label: string; value: string }
+/** bare: the value already says what it is (for example approved OOA wording), so it is shown without repeating its label. Presentation only: the value is never changed. */
+export interface Row { label: string; value: string; bare?: boolean }
+const SELF_DESCRIBING_OOA = /overnight|\bOOA\b/i;
 const m2 = (n: number) => `${n.toLocaleString('en-AU')} m²`;
 
 /**
@@ -40,7 +42,7 @@ export const detailFacts = (l: PublicListing): Row[] => {
   add('Land area', p?.landAreaM2 !== undefined ? m2(p.landAreaM2) : undefined);
   add('Municipality', p?.municipality);
   add('Participant places', l.sda.residentPlaces);
-  add('Onsite overnight assistance', l.sda.ooa);
+  if (l.sda.ooa) rows.push({ label: 'Onsite overnight assistance', value: l.sda.ooa, ...(SELF_DESCRIBING_OOA.test(l.sda.ooa) ? { bare: true } : {}) });
   return rows;
 };
 
@@ -79,7 +81,9 @@ export const detailPricing = (l: PublicListing): Row | null => {
 export interface GalleryPlan { mainIndex: number; thumbIndexes: number[]; floorplanIndex: number }
 export const isFloorplan = (p: Photo): boolean => !isDemoPhoto(p) && p.kind === 'floorplan';
 export const galleryPlan = (photos: Photo[]): GalleryPlan => {
-  const main = coverPhoto(photos);
+  // the main image is the first photograph that is not a floorplan; when every image is a floorplan the first one is the main image, so it is not
+  // also listed as a thumbnail (the full floorplan stays one click away in the viewer)
+  const main = coverPhoto(photos) ?? photos[0];
   const mainIndex = main ? photos.indexOf(main) : -1;
   return { mainIndex, thumbIndexes: photos.map((_, i) => i).filter((i) => i !== mainIndex), floorplanIndex: photos.findIndex(isFloorplan) };
 };
