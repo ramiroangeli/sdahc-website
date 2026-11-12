@@ -1,5 +1,5 @@
 // Optional listing data contract: physical facts, SDA facts, the approved commercial block (lease, occupancy, income, yield), the marketing agency.
-// Everything here is synthetic except the three real approved files, which are only READ to prove they are unchanged by the contract.
+// Contract behaviour uses synthetic snapshots; real approved files are read only to verify their integrity.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
@@ -19,6 +19,7 @@ export default async function run({ t, section }) {
     const id = `lst_${String(n).padStart(10, '0')}`;
     const c = structuredClone(NT.content);
     c.slug = `synthetic-${'abcdefghijklmnopqrstuvwxyz'[n % 26]}${'abcdefghijklmnopqrstuvwxyz'[(n * 7) % 26]}${'abcdefghijklmnopqrstuvwxyz'[(n * 11) % 26]}-nt`;
+    delete c.property; delete c.investment; delete c.marketing; delete c.descriptionApproval;
     c.title = 'Synthetic Street, Darwin NT 0800';
     c.address = { street: 'Synthetic Street', suburb: 'Darwin', state: state ?? 'NT', postcode: '0800' };
     if (type) c.type = type;
@@ -40,13 +41,22 @@ export default async function run({ t, section }) {
     t(`${r.content.slug}: still parses and the parse adds nothing`, JSON.stringify(parsed) === JSON.stringify(r.content) || L.contentHash(parsed) === r.contentHash);
     t(`${r.content.slug}: content hash unchanged (${r.contentHash.slice(0, 10)})`, L.contentHash(r.content) === r.contentHash && L.contentHash(parsed) === r.contentHash);
     t(`${r.content.slug}: still passes the safety checks`, safety(r.content).length === 0);
-    t(`${r.content.slug}: carries none of the optional groups`, !('property' in r.content) && !('investment' in r.content) && !('marketing' in r.content));
   }
   {
-    const built = L.buildPublicListings({ records: REAL.map((r) => ({ id: r.listingId, webStatus: 'published', featured: false, draft: null, approval: { by: r.approvedBy, at: r.approvedAt }, isFixture: false, internal: {} })), snapshots: REAL, now, ctx: { allowDemo: false, mediaBaseUrl: MEDIA } });
-    t('the three real listings still build, in full, with no optional group', built.length === 3 && built.every((l) => !('property' in l) && !('investment' in l) && !('marketing' in l)));
-    t('and the public view of their commercial block is empty', built.every((l) => L.publicInvestment(l) === null));
-    t('and they resolve to the default agency', built.every((l) => L.agencyFor(l.marketing?.agency).key === 'sdahc'));
+    const empty = listing();
+    const investment = withHash({ leaseStatus: 'fully_leased', ...FIG });
+    const enriched = listing({ inv: investment, mod: (c) => { c.property = { carSpaces: 2, landAreaM2: 448 }; c.sda.residentPlaces = 3; } });
+    const result = build([empty, enriched]);
+    const plain = result.find((l) => l.slug === empty.c.slug);
+    const full = result.find((l) => l.slug === enriched.c.slug);
+    t('a synthetic listing without optional groups builds unchanged', !!plain && !plain.property && !plain.investment && !plain.marketing && L.publicInvestment(plain) === null);
+    t('a synthetic existing listing can acquire optional fields and build alongside an unchanged listing', !!full && JSON.stringify(full.property) === JSON.stringify(enriched.c.property) && full.sda.residentPlaces === 3 && JSON.stringify(full.investment) === JSON.stringify(investment) && JSON.stringify(plain.description) === JSON.stringify(empty.c.description));
+    t('the public commercial view preserves the approved income and yield', L.publicInvestment(full)?.income?.amountAud === FIG.annualIncomeAud && L.publicInvestment(full)?.yield?.pct === FIG.yieldPct);
+    const updatedContent = { ...structuredClone(enriched.c), slug: empty.c.slug };
+    const updated = { ...enriched, id: empty.id, snapshot: { ...enriched.snapshot, content: updatedContent, contentHash: L.contentHash(updatedContent), listingId: empty.id, version: 2 }, record: { ...enriched.record, id: empty.id } };
+    const updatedView = build([updated])[0];
+    t('an existing synthetic listing can gain optional data without changing its identity or values', updatedView?.slug === empty.c.slug && updated.snapshot.listingId === empty.snapshot.listingId && JSON.stringify(updatedView?.investment) === JSON.stringify(investment) && JSON.stringify(updatedView?.property) === JSON.stringify(enriched.c.property));
+    t('the public schema rejects unknown internal metadata', !L.publicContentSchema.safeParse({ ...enriched.c, internal: { confidential: true } }).success);
   }
 
   section('optional data contract: schema');
