@@ -22,21 +22,25 @@ export default async function run({ t, section }) {
   t('a floorplan is never the cover, even when it is the only image (placeholder instead)', L.coverPhoto([plan]) === undefined && L.coverPhoto([]) === undefined);
   t('a demo photograph can be a cover (fixtures)', L.coverPhoto([{ demo: true, id: 'demo-a-one', accent: 'blue', alt: 'DEMO placeholder image 1 of 1.' }]) !== undefined);
 
-  section('catalogue card: facts');
-  t('only values that exist are listed, in a fixed order, nothing invented', JSON.stringify(L.cardFacts(pl())) === JSON.stringify([{ label: 'Design category', value: 'Robust' }]));
-  t('a listing with no facts has an empty list (no placeholders)', L.cardFacts(pl({ mod: (c) => { c.sda = {}; } })).length === 0);
+  section('catalogue card: heading, location and compact facts');
+  t('the heading is the approved public title and the location line is dropped when the title already says where it is', L.cardLocation(pl()) === undefined);
+  t('a title that does not name the suburb gets the public location underneath (suburb, state, postcode only)', L.cardLocation(pl({ mod: (c) => { c.title = 'Established SDA house'; } })) === 'Berrimah NT 0832');
+  t('the location line never carries the street or a number', !/\d{1,3}\s|Whipray/.test(L.cardLocation(pl({ mod: (c) => { c.title = 'Established SDA house'; } }))));
+  t('design category is stated in words, separately from the compact facts', L.cardFacts(pl()).design === 'Robust' && L.cardFacts(pl()).parts.length === 0);
+  t('a listing with no facts has no design and no parts (nothing invented, no empty labels)', (() => { const f = L.cardFacts(pl({ mod: (c) => { c.sda = {}; } })); return f.design === undefined && f.parts.length === 0; })());
   const rich = L.cardFacts(pl({ mod: (c) => { c.sda = { designCategories: ['IL'], buildingType: 'House', bedrooms: 3, residentPlaces: 3 }; c.property = { bathrooms: 2, carSpaces: 2 }; } }));
-  t('physical and SDA facts appear with their labels, capped at five', rich.length === 5 && rich[0].value === 'Improved Liveability' && rich.some((f) => f.label === 'Bedrooms' && f.value === '3') && rich.some((f) => f.label === 'Car spaces'));
-  t('zero car spaces is a real value and is shown', L.cardFacts(pl({ mod: (c) => { c.property = { carSpaces: 0 }; } })).some((f) => f.label === 'Car spaces' && f.value === '0'));
+  t('facts read House, 3 bed, 2 bath, 2 car, 3 participant places in that order', rich.design === 'Improved Liveability' && rich.parts.join(' | ') === 'House | 3 bed | 2 bath | 2 car | 3 participant places');
+  t('missing values are omitted, not shown empty', L.cardFacts(pl({ mod: (c) => { c.sda = { buildingType: 'House', bedrooms: 3 }; } })).parts.join(' | ') === 'House | 3 bed');
+  t('zero car spaces is a real value and is shown', L.cardFacts(pl({ mod: (c) => { c.property = { carSpaces: 0 }; } })).parts.includes('0 car'));
 
   section('catalogue card: commercial column');
   const comm = (o) => L.cardCommercial(pl(o));
   t('no commercial data means no commercial column at all', comm() === null);
-  t('an approved yield shows with its type and basis; lease and occupancy are separate lines', (() => { const c = comm({ mod: (x) => { x.investment = ap(FULL); } }); return c.yield.text === '11.1%' && c.yield.label === 'Net yield' && c.yield.basis === 'Projected' && c.lease === 'Fully leased' && c.occupancy === 'Partially occupied'; })());
-  t('tenancy without occupancy shows only the lease line', (() => { const c = comm({ mod: (x) => { x.investment = ap({ leaseStatus: 'fully_leased' }); } }); return c.lease === 'Fully leased' && !('occupancy' in c) && !('yield' in c); })());
-  t('occupancy without a lease shows only the occupancy line', (() => { const c = comm({ mod: (x) => { x.investment = ap({ occupancyStatus: 'vacant' }); } }); return c.occupancy === 'Vacant' && !('lease' in c); })());
+  t('an approved yield shows with its type and basis; lease and occupancy are separate lines', (() => { const c = comm({ mod: (x) => { x.investment = ap(FULL); } }); return c.yield.text === '11.1%' && c.yield.label === 'Net yield' && c.yield.basis === 'Projected' && c.lease.value === 'Fully leased' && c.occupancy.value === 'Partially occupied' && c.occupancy.label === 'Occupancy'; })());
+  t('tenancy without occupancy shows only the lease line', (() => { const c = comm({ mod: (x) => { x.investment = ap({ leaseStatus: 'fully_leased' }); } }); return c.lease.value === 'Fully leased' && c.lease.label === 'Lease' && !('occupancy' in c) && !('yield' in c); })());
+  t('occupancy without a lease shows only the occupancy line', (() => { const c = comm({ mod: (x) => { x.investment = ap({ occupancyStatus: 'vacant' }); } }); return c.occupancy.value === 'Vacant' && c.occupancy.label === 'Occupancy' && !('lease' in c); })());
   t('unapproved or altered figures show nothing', comm({ mod: (x) => { x.investment = { ...ap(FULL), yieldPct: 15 }; } }) === null);
-  t('Victoria: no yield on the card, lease and occupancy still allowed', (() => { const c = comm({ state: 'VIC', mod: (x) => { x.investment = ap(FULL); } }); return !('yield' in c) && c.lease === 'Fully leased'; })());
+  t('Victoria: no yield on the card, lease and occupancy still allowed', (() => { const c = comm({ state: 'VIC', mod: (x) => { x.investment = ap(FULL); } }); return !('yield' in c) && c.lease.value === 'Fully leased'; })());
   t('Victoria with only income and yield figures shows no column', comm({ state: 'VIC', mod: (x) => { x.investment = ap({ annualIncomeAud: 1000, incomeType: 'gross', yieldPct: 7, yieldType: 'gross', basis: 'actual' }); } }) === null);
   t('Sold shows no commercial column', comm({ status: 'sold', mod: (x) => { x.investment = ap(FULL); } }) === null);
   t('an approved price is shown as approved on an Available card, never on a Sold card, and Contact Agent shows none', L.cardCommercial(pl({ mod: (c) => { c.pricing = { mode: 'asking_price', display: '$695,000' }; } })).price.value === '$695,000' && L.cardCommercial(pl({ status: 'sold', mod: (c) => { c.pricing = { mode: 'asking_price', display: '$695,000' }; } })) === null && L.cardCommercial(pl()) === null);
@@ -49,6 +53,10 @@ export default async function run({ t, section }) {
   const card = rd('src/components/ListingCard.astro');
   t('Contact Agent goes to that listing\'s enquiry form, View details to the listing, Sold to the contact page', /href=\{`\$\{href\}#enquire`\}>Contact Agent/.test(card) && /href=\{href\}>View details/.test(card) && /href="\/contact-us\/">Find similar properties/.test(card));
   t('the logo is in the commercial column when there is one, otherwise at the right of the footer', /\{commercial && \([\s\S]*lc-comm[\s\S]*<Image class="lc-logo"/.test(card) && /\{!commercial && logo && <Image class="lc-logo lc-logo--foot"/.test(card) && /\.lc-logo--foot\{margin-left:auto/.test(card));
+  t('every card has the same photograph column; a commercial column adds no photo width change', /\.lc-main\{--ph:310px;--cc:200px;display:grid;grid-template-columns:var\(--ph\) minmax\(0,1fr\)/.test(card) && /\.lc-main--comm\{grid-template-columns:var\(--ph\) minmax\(0,1fr\) var\(--cc\)\}/.test(card));
+  t('the catalogue card has no description and the title is the approved title, two lines at most', !/listing\.summary|lc-sum/.test(card) && /\{listing\.title\}<\/a>/.test(card) && /-webkit-line-clamp:2/.test(card));
+  t('lease and occupancy render as separate labelled indicators', /lc-ind-k">\{i\.label\}/.test(card) && /lc-ind-v">\{i\.value\}/.test(card));
+  t('the logo is 44 to 48px tall and never wraps to its own row on a phone', /height=\{44\}/.test(card) && /height=\{48\}/.test(card) && !/lc-logo--foot\{[^}]*flex:0 0 100%/.test(card));
   t('photographs are cropped to a 4:3 frame, never stretched', /\.lc-media\{[^}]*aspect-ratio:4\/3/.test(card) && /\.lc-logo\{[^}]*object-fit:contain/.test(card));
   t('the card keeps the data attributes the filter script reads', ['data-state', 'data-type', 'data-status', 'data-design', 'data-search', 'data-suburb', 'data-index'].every((a) => card.includes(a)));
 
@@ -58,8 +66,10 @@ export default async function run({ t, section }) {
   t('the catalogue heading and its paragraph are removed', !/Available SDA Properties/.test(cat) && !/SDA properties we can show publicly/.test(cat));
   t('the "Listed publicly" card is gone and the hero holds no path cards or fan', !/>Listed publicly</i.test(hero + page + cat) && !/oh-k/.test(hero) && !/HeroCardFan|oh-path/.test(hero));
   t('order on the page: hero, catalogue (filters and cards), then the fan band, then Why off-market', (() => { const i = (s) => page.indexOf(s); return i('<OpportunitiesHero') < i('<ListingsCatalogue') && i('<ListingsCatalogue') < i('<HeroCardFan') && i('<HeroCardFan') < i('Why off-market'); })());
-  t('Confidential Access sits beside the results (desktop grid) and after them in the page (mobile)', /lcat-layout\{[^}]*grid-template-columns:minmax\(0,1fr\) 320px/.test(cat) && cat.indexOf('lcat-results') < cat.indexOf('lcat-side') && /max-width:1100px\)\{\.lcat-layout\{grid-template-columns:1fr/.test(cat));
+  t('Confidential Access sits beside the results (desktop grid) and after them in the page (mobile)', /lcat-layout\{[^}]*grid-template-columns:minmax\(0,1fr\) 280px/.test(cat) && cat.indexOf('lcat-results') < cat.indexOf('lcat-side') && /max-width:1100px\)\{\.lcat-layout\{grid-template-columns:1fr/.test(cat));
   t('the static Why off-market content and the access steps are kept', /Why off-market/.test(page) && /How access works/.test(page) && /A curated, confidential market/.test(page));
+  t('on a phone the secondary filters sit behind a labelled Filters disclosure, the search stays visible, and the selections and Clear stay available', /<details class="lcat-more" open data-lcat-more>/.test(cat) && /<summary class="lcat-more-sum"><span>Filters<\/span>/.test(cat) && cat.indexOf('id="f-q"') < cat.indexOf('data-lcat-more') && /data-lcat-active/.test(cat) && /type="reset" class="lcat-reset">Clear/.test(cat) && /max-width: 700px/.test(cat));
+  t('the filter fields and their names are unchanged (behaviour preserved)', ['name="q"', 'name="state"', 'name="design"', 'name="type"', 'name="status"', 'name="sort"'].every((n) => cat.includes(n)));
   t('the existing filters are kept and sit before the results', ['f-q', 'f-state', 'f-design', 'f-type', 'f-status', 'f-sort'].every((id) => cat.includes(`id="${id}"`)) && cat.indexOf('data-lcat-filters') < cat.indexOf('lcat-layout'));
   t('the page keeps its #listings and #access anchors', /id="listings"/.test(cat) && /id="access"/.test(page));
 }

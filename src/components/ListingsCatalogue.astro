@@ -31,6 +31,9 @@ const showDesign = designs.length > 0;
             <label for="f-q">Search suburb or street</label>
             <input type="search" id="f-q" name="q" placeholder="e.g. Shepparton" autocomplete="off" />
           </div>
+          <details class="lcat-more" open data-lcat-more>
+            <summary class="lcat-more-sum"><span>Filters</span><span class="lcat-more-n" data-lcat-n hidden></span></summary>
+            <div class="lcat-more-body">
           {showState && (
             <div class="lcat-field">
               <label for="f-state">State</label>
@@ -75,6 +78,9 @@ const showDesign = designs.length > 0;
               <option value="status">Availability</option>
             </select>
           </div>
+            </div>
+          </details>
+          <p class="lcat-active" data-lcat-active hidden></p>
           <button type="reset" class="lcat-reset">Clear</button>
         </form>
 
@@ -116,6 +122,9 @@ const showDesign = designs.length > 0;
   const empty = document.querySelector<HTMLElement>('[data-lcat-empty]');
 
   if (grid && form && count && empty) {
+    const more = form.querySelector<HTMLDetailsElement>('[data-lcat-more]');
+    const badge = form.querySelector<HTMLElement>('[data-lcat-n]');
+    const active = form.querySelector<HTMLElement>('[data-lcat-active]');
     const cards = [...grid.querySelectorAll<HTMLElement>('.lc')];
     const keys = ['q', 'state', 'design', 'type', 'status', 'sort'] as const;
     const rank: Record<string, number> = { available: 0, under_offer: 1, sold: 2 };
@@ -147,6 +156,14 @@ const showDesign = designs.length > 0;
       });
       ordered.forEach((c) => grid.append(c));
       count.textContent = `Showing ${shown} of ${cards.length} properties`;
+      // the secondary filters sit behind a disclosure on small screens: say what is selected, even when it is closed
+      const chosen = (['state', 'design', 'type', 'status'] as const).filter((k) => f[k]).map((k) => {
+        const el = form.elements.namedItem(k);
+        return el instanceof HTMLSelectElement ? el.selectedOptions[0]?.textContent?.trim() ?? f[k] : f[k];
+      });
+      if (by !== 'newest') chosen.push(`Sorted: ${(form.elements.namedItem('sort') as HTMLSelectElement).selectedOptions[0]?.textContent?.trim() ?? by}`);
+      if (badge) { badge.hidden = chosen.length === 0; badge.textContent = String(chosen.length); }
+      if (active) { active.hidden = chosen.length === 0; active.textContent = chosen.length ? `Selected: ${chosen.join(', ')}` : ''; }
       empty.hidden = shown > 0;
       grid.hidden = shown === 0;
       // keep the view shareable without adding history entries
@@ -162,6 +179,14 @@ const showDesign = designs.length > 0;
       if (!v) continue;
       if (el instanceof HTMLSelectElement && [...el.options].some((o) => o.value === v)) el.value = v;
       else if (el instanceof HTMLInputElement) el.value = v.slice(0, 60);
+    }
+
+    // open on desktop (every control visible, as before); on a phone start closed unless a filter is already selected
+    if (more) {
+      const small = window.matchMedia('(max-width: 700px)');
+      const place = () => { more.open = !small.matches || !!(params.get('state') || params.get('design') || params.get('type') || params.get('status')); };
+      place();
+      small.addEventListener('change', () => { if (!small.matches) more.open = true; });
     }
 
     form.addEventListener('input', apply);
@@ -187,15 +212,35 @@ const showDesign = designs.length > 0;
 .lcat-field select:focus-visible,.lcat-field input:focus-visible,.lcat-reset:focus-visible{outline:2px solid var(--white);outline-offset:2px;border-color:var(--blue)}
 .lcat-reset{font-family:var(--sans);font-size:15px;font-weight:600;color:var(--white);background:transparent;border:1px solid color-mix(in srgb,var(--pale) 40%,transparent);border-radius:2px;padding:12px 18px;cursor:pointer;transition:.18s}
 .lcat-reset:hover{border-color:var(--white)}
+/* secondary filters: always visible on desktop; behind a "Filters" disclosure on a phone, with a count and the selections shown even when closed */
+.lcat-more{flex:1 1 auto;min-width:0}
+.lcat-more-sum{display:none;list-style:none;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--white);background-color:color-mix(in srgb,var(--white) 6%,transparent);border:1px solid color-mix(in srgb,var(--pale) 35%,transparent);border-radius:4px;padding:12px 14px}
+.lcat-more-sum::-webkit-details-marker{display:none}
+.lcat-more-sum::after{content:"";width:8px;height:8px;border-right:2px solid var(--pale);border-bottom:2px solid var(--pale);transform:rotate(45deg);margin:-3px 2px 0 auto;transition:transform .15s ease}
+.lcat-more[open] .lcat-more-sum::after{transform:rotate(-135deg);margin-top:3px}
+.lcat-more-sum:focus-visible{outline:2px solid var(--white);outline-offset:2px}
+.lcat-more-n{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;margin-left:8px}
+.lcat-more-n[hidden]{display:none}
+.lcat-more-body{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:16px}
+.lcat-active{display:none;margin:0;font-family:var(--sans);font-size:13px;line-height:1.4;color:var(--pale)}
+@media(max-width:700px){.lcat-active:not([hidden]){display:block}}
 
 .lcat-count{font-family:var(--geo);font-size:13px;letter-spacing:.06em;color:var(--pale);text-align:center;margin:0 0 24px}
 /* results beside the Confidential Access panel on desktop; the panel follows the results on tablet and mobile */
-.lcat-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:32px;align-items:start}
+.lcat-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:28px;align-items:start}
 .lcat-side{position:sticky;top:calc(var(--nav-top) + var(--nav-height) + 20px)}
 .lcat-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:20px}
 .lcat-grid[hidden]{display:none}
 @media(max-width:1100px){.lcat-layout{grid-template-columns:1fr;gap:28px}.lcat-side{position:static}}
-@media(max-width:620px){.lcat-field,.lcat-field-search{flex:1 1 100%;max-width:none}.lcat-filters{align-items:stretch}}
+@media(max-width:700px){
+  .lcat-field,.lcat-field-search{flex:1 1 100%;max-width:none;min-width:0}
+  .lcat-filters{flex-direction:column;align-items:stretch;gap:12px;margin-bottom:12px}
+  .lcat-more{flex:0 0 auto}
+  .lcat-more-sum{display:flex}
+  .lcat-more-body{flex-direction:column;align-items:stretch;margin-top:12px;gap:12px}
+  .lcat-reset{align-self:flex-end;padding:8px 16px;font-size:14px}
+  .lcat-count{margin-bottom:16px}
+}
 
 .lcat-empty{max-width:54ch;margin:0 auto;text-align:center;font-family:var(--sans);color:var(--pale);padding:32px 28px;border:1px dashed color-mix(in srgb,var(--pale) 30%,transparent);border-radius:10px}
 .lcat-empty[hidden]{display:none}
