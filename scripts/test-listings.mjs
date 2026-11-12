@@ -938,7 +938,7 @@ section('publication job started by the internal app (dry run only in this relea
     t('the job resumes a merged status move only when the status also matches, and rejects an invalid or non-Available first-publication status', /statusParity\(previousSnap, payload\)\.length === 0/.test(jobSrc) && /mode === 'publish' && asked !== 'available'/.test(jobSrc));
     const slugPage = rd('src/pages/opportunities/[slug].astro');
     const soldBranch = slugPage.slice(slugPage.indexOf('{sold ? ('), slugPage.indexOf(') : ('));
-    t('a Sold page has no price row, no purchase enquiry, no access steps and no enquiry form, and offers a general enquiry route', /const sold = listing\.commercialStatus === 'sold'/.test(slugPage) && /\.\.\.\(sold \? \[\]/.test(slugPage) && /\{!sold && \(/.test(slugPage) && !/ListingEnquiryForm/.test(soldBranch) && /href="\/contact-us\/"/.test(soldBranch) && /This property has been sold/.test(soldBranch));
+    t('a Sold page has no price row, no purchase enquiry, no access steps and no enquiry form, and offers a general enquiry route', /const sold = listing\.commercialStatus === 'sold'/.test(slugPage) && /if \(l\.commercialStatus === 'sold'\) return null/.test(rd('src/data/listings/detail.ts')) && /pricing=\{pricing\}/.test(slugPage) && /\{!sold && \(/.test(slugPage) && !/ListingEnquiryForm/.test(soldBranch) && /href="\/contact-us\/"/.test(soldBranch) && /This property has been sold/.test(soldBranch));
     t('the enquiry endpoint refuses an enquiry about a sold listing', /commercialStatus === 'sold'\) return json\(\{ ok: false[^)]*409\)/.test(rd('src/pages/api/listing-enquiry.ts')));
     t('a sold card in the catalogue does not show a price', /l\.commercialStatus !== 'sold'\) c\.price/.test(rd('src/data/listings/card.ts')));
   }
@@ -1026,6 +1026,7 @@ await (await import('./test-publish-git.mjs')).default({ t, section });
 await (await import('./test-optional-fields.mjs')).default({ t, section });
 await (await import('./test-catalogue.mjs')).default({ t, section });
 await (await import('./test-offmarket.mjs')).default({ t, section });
+await (await import('./test-listing-page.mjs')).default({ t, section });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

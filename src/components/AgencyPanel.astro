@@ -1,0 +1,61 @@
+---
+import { Image } from 'astro:assets';
+import type { Agency } from '../data/listings/agencies';
+import { DEFAULT_AGENCY_KEY } from '../data/listings/agencies';
+import type { Row } from '../data/listings/detail';
+
+/*
+  Marketing agency and enquiry panel, shown beside the property information on desktop and stacked after it on a phone. It takes an approved agency
+  from the small registry (logo and name only), so another approved agency can use it later without a new component. Contact lines are the existing
+  SDA Home Choices details and are shown only for the default agency: another agency never inherits them. There are no agent profiles here.
+  A Sold property shows no enquiry button and offers the general route instead.
+*/
+interface Props { agency: Agency; sold: boolean; pricing: Row | null }
+const { agency, sold, pricing } = Astro.props;
+const logos = import.meta.glob<{ default: ImageMetadata }>('../assets/logo-*.png', { eager: true });
+const logo = logos[`../assets/${agency.logoOnDark}`]?.default;
+const isDefault = agency.key === DEFAULT_AGENCY_KEY;
+---
+<aside class="ag" aria-label="Marketing agent and enquiry">
+  <div class="ag-head">
+    {logo && <Image class="ag-logo" src={logo} alt="" height={72} loading="lazy" />}
+    <div>
+      <p class="ag-k">Marketed by</p>
+      <p class="ag-name">{agency.name}</p>
+    </div>
+  </div>
+  {pricing && (
+    <dl class="ag-price"><div><dt>{pricing.label}</dt><dd>{pricing.value}</dd></div></dl>
+  )}
+  {sold ? (
+    <>
+      <p class="ag-sold">This property has been sold and is no longer available.</p>
+      <a class="btn b1 ag-cta" href="/contact-us/">Tell us what you are looking for</a>
+    </>
+  ) : (
+    <a class="btn b1 ag-cta" href="#enquire">Enquire about this property</a>
+  )}
+  {isDefault && (
+    <ul class="ag-contact">
+      <li><span>Phone</span><a href="tel:+61408550441">+61 408 550 441</a></li>
+      <li><span>Email</span><a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a></li>
+    </ul>
+  )}
+</aside>
+<style>
+.ag{padding:24px 24px 26px;border:1px solid color-mix(in srgb,var(--pale) 22%,transparent);border-radius:12px;background:color-mix(in srgb,var(--white) 5%,transparent)}
+.ag-head{display:flex;align-items:center;gap:16px;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid color-mix(in srgb,var(--pale) 16%,transparent)}
+.ag-logo{display:block;width:auto;max-width:96px;height:72px;object-fit:contain;flex:0 0 auto}
+.ag-k{margin:0 0 4px;font-family:var(--geo);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--pale)}
+.ag-name{margin:0;font-family:var(--serif);font-weight:600;font-size:20px;line-height:1.2;color:var(--white)}
+.ag-price{margin:0 0 18px}
+.ag-price dt{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin:0 0 4px}
+.ag-price dd{margin:0;font-family:var(--sans);font-size:20px;font-weight:700;color:var(--white)}
+.ag-sold{margin:0 0 16px;font-family:var(--sans);font-size:16px;line-height:1.5;color:var(--white)}
+.ag-cta{display:block;text-align:center}
+.ag-contact{list-style:none;margin:20px 0 0;padding:16px 0 0;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent);display:grid;gap:10px}
+.ag-contact li{display:flex;flex-direction:column;gap:2px}
+.ag-contact span{font-family:var(--geo);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale)}
+.ag-contact a{font-family:var(--sans);font-size:16px;font-weight:600;color:var(--white);text-underline-offset:3px;overflow-wrap:anywhere}
+.ag-contact a:hover,.ag-contact a:focus-visible{color:var(--blue)}
+</style>

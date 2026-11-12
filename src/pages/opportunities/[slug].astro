@@ -1,14 +1,16 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHeader from '../../components/PageHeader.astro';
 import ListingGallery from '../../components/ListingGallery.astro';
 import ListingStatusBadge from '../../components/ListingStatusBadge.astro';
 import ListingEnquiryForm from '../../components/ListingEnquiryForm.astro';
+import ListingFacts from '../../components/ListingFacts.astro';
+import ListingInvestment from '../../components/ListingInvestment.astro';
+import AgencyPanel from '../../components/AgencyPanel.astro';
 import { getPublicListings } from '../../data/listings';
-import { formatPublicAddress, localityLine } from '../../data/listings/address';
-import { formatPricing } from '../../data/listings/pricing';
+import { agencyFor } from '../../data/listings/agencies';
+import { detailFacts, detailInvestment, detailLocation, detailPricing, designText } from '../../data/listings/detail';
 import { listingJsonLd, listingOgImage } from '../../data/listings/seo';
-import { DESIGN_LABEL, TYPE_LABEL } from '../../data/listings/schema';
+import { TYPE_LABEL } from '../../data/listings/schema';
 
 // Only published listings get a page. A draft, withdrawn or fixture-in-production listing is simply
 // absent from getPublicListings(), so its URL does not exist after the next build.
@@ -17,67 +19,68 @@ export function getStaticPaths() {
 }
 
 const { listing } = Astro.props;
-const { sda, address } = listing;
-const price = formatPricing(listing.pricing);
-// a sold property is not offered: no price, no purchase enquiry, no access steps (a general enquiry route instead)
+const { address } = listing;
+// a sold property is not offered: no price, no purchase enquiry, no access steps, no commercial figures (a general enquiry route instead)
 const sold = listing.commercialStatus === 'sold';
-const facts: [string, string][] = [
-  ['Address', formatPublicAddress(address)],
-  ['Type', TYPE_LABEL[listing.type]],
-  ...(sold ? [] : [[price.label, price.value ? `${price.value} AUD` : price.label === 'Contact Agent' ? 'Enquire for details' : 'Registrations open'] as [string, string]]),
-  ...(sda.designCategories?.length ? [['Design category', sda.designCategories.map((d) => DESIGN_LABEL[d]).join(', ')] as [string, string]] : []),
-  ...(sda.buildingType ? [['Build type', sda.buildingType] as [string, string]] : []),
-  ...(sda.bedrooms ? [['Bedrooms', String(sda.bedrooms)] as [string, string]] : []),
-  ...(sda.residentPlaces ? [['Resident places', String(sda.residentPlaces)] as [string, string]] : []),
-];
-const hasSdaDetail = Object.values(sda).some((v) => v !== undefined);
+const location = detailLocation(listing);
+const design = designText(listing);
+const facts = detailFacts(listing);
+const investment = detailInvestment(listing);
+const pricing = detailPricing(listing);
+const agency = agencyFor(listing.marketing?.agency);
+const hasSdaDetail = Object.values(listing.sda).some((v) => v !== undefined) || facts.length > 0;
 const jsonLd = listingJsonLd(listing, Astro.site!.href);
 const ogImage = listingOgImage(listing);
 const title = `${address.street}, ${address.suburb} ${address.state} | SDA property | SDA Home Choices`;
 ---
 <BaseLayout title={title} description={listing.summary} ogImage={ogImage ?? undefined}>
   <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-  <PageHeader eyebrow={`${localityLine(address)}`} title={listing.title} standfirst={listing.summary} />
 
-  <section class="section ld-main"><div class="wrap">
-    <p class="ld-back"><a href="/opportunities/#listings">&larr; All available properties</a></p>
+  <section class="ld-top"><div class="wrap">
+    <p class="ld-back"><a href="/opportunities/#listings">&larr; All public listings</a></p>
     {listing.isPreview && <p class="ld-fixture" role="note">Local draft preview. Not published, not approved. Enquiries are not sent.</p>}
     {listing.isDemo && <p class="ld-fixture" role="note">Demo listing. Not a live property and contains no verified facts. Images are placeholders.</p>}
 
-    <div class="ld-grid">
-      <div class="ld-primary">
-        <ListingGallery photos={listing.photos} title={listing.title} />
-        <div class="ld-copy">
-          <h2>About this property</h2>
-          {listing.description.map((p) => <p>{p}</p>)}
-          {!hasSdaDetail && <p>Design category, dwelling configuration, enrolment and tenancy detail are released to registered parties under NDA.</p>}
+    <header class="ld-head">
+      <div class="ld-head-main">
+        <div class="ld-badges">
+          <ListingStatusBadge status={listing.commercialStatus} />
+          <span class="ld-type">{TYPE_LABEL[listing.type]}</span>
+          {design && <span class="ld-cat">{design}</span>}
         </div>
+        <h1 class="ld-h1">{listing.title}</h1>
+        {location && <p class="ld-loc">{location}</p>}
       </div>
+      {!sold && <a class="btn b1 ld-head-cta" href="#enquire">Enquire about this property</a>}
+    </header>
 
-      <aside class="ld-aside" aria-label="Key details">
-        <div class="ld-panel">
-          <span class="card-mark" aria-hidden="true"></span>
-          <div class="ld-status"><ListingStatusBadge status={listing.commercialStatus} /></div>
-          <h2 class="ld-panel-h">Key details</h2>
-          <dl class="ld-facts">
-            {facts.map(([k, v]) => (<><dt>{k}</dt><dd>{v}</dd></>))}
-          </dl>
-          {sold
-            ? <><p class="ld-sold-note">This property has been sold and is no longer available.</p><a class="btn b1 ld-cta" href="/opportunities/#listings">See available properties</a></>
-            : <a class="btn b1 ld-cta" href="#enquire">Enquire about this property</a>}
+    <ListingGallery photos={listing.photos} title={listing.title} />
+  </div></section>
+
+  <section class="section ld-main"><div class="wrap ld-grid">
+    <div class="ld-primary">
+      <ListingFacts heading="Key property information" rows={facts} id="facts-h" />
+      <ListingInvestment section={investment} />
+      <section class="ld-copy" aria-labelledby="about-h">
+        <h2 class="ld-h2" id="about-h">About this property</h2>
+        {listing.description.map((p) => <p>{p}</p>)}
+        {!hasSdaDetail && <p>Design category, dwelling configuration, enrolment and tenancy detail are released to registered parties under NDA.</p>}
+      </section>
+    </div>
+
+    <div class="ld-aside">
+      <AgencyPanel agency={agency} sold={sold} pricing={pricing} />
+      {!sold && (
+        <div class="ld-steps-panel">
+          <h2 class="ld-panel-h">How access works</h2>
+          <ol class="ld-steps">
+            <li>Register your interest below.</li>
+            <li>Sign a short mutual NDA.</li>
+            <li>Receive the Information Memorandum.</li>
+            <li>Submit an EOI.</li>
+          </ol>
         </div>
-        {!sold && (
-          <div class="ld-panel ld-panel-soft">
-            <h2 class="ld-panel-h">How access works</h2>
-            <ol class="ld-steps">
-              <li>Register your interest below.</li>
-              <li>Sign a short mutual NDA.</li>
-              <li>Receive the Information Memorandum.</li>
-              <li>Submit an EOI.</li>
-            </ol>
-          </div>
-        )}
-      </aside>
+      )}
     </div>
   </div></section>
 
@@ -101,38 +104,41 @@ const title = `${address.street}, ${address.suburb} ${address.state} | SDA prope
 </BaseLayout>
 
 <style>
-.ld-main{background:var(--navy);padding-top:24px}
-.ld-back{margin:0 0 20px;font-family:var(--geo);font-size:13px;letter-spacing:.06em}
+/* the top of the page: same navy surface as the page headers, with the gallery directly under the title */
+.ld-top{padding:calc(118px + var(--nav-top)) 0 44px;position:relative;background:radial-gradient(1000px 520px at 78% 10%,rgba(4,118,217,.10),transparent 60%),var(--navy)}
+.ld-back{margin:0 0 18px;font-family:var(--geo);font-size:13px;letter-spacing:.06em}
 .ld-back a{color:var(--pale);text-underline-offset:3px}
 .ld-back a:hover,.ld-back a:focus-visible{color:var(--white)}
-.ld-fixture{display:inline-block;margin:0 0 24px;font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:8px 12px}
-.ld-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:40px;align-items:start}
-@media(max-width:900px){.ld-grid{grid-template-columns:1fr;gap:32px}}
+.ld-fixture{display:inline-block;margin:0 0 20px;font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);background:var(--amber);border-radius:2px;padding:8px 12px}
+.ld-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:18px 32px;margin:0 0 26px}
+.ld-head-main{min-width:0;flex:1 1 560px}
+.ld-badges{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 14px}
+.ld-type{font-family:var(--geo);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--pale)}
+.ld-cat{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--white);border:1px solid color-mix(in srgb,var(--blue) 70%,transparent);border-radius:2px;padding:4px 10px}
+.ld-h1{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(30px,4.2vw,50px);line-height:1.08;letter-spacing:-.01em;margin:0;max-width:24ch;overflow-wrap:anywhere}
+.ld-loc{font-family:var(--geo);font-size:15px;letter-spacing:.04em;color:var(--pale);margin:12px 0 0}
+.ld-head-cta{flex:0 0 auto;display:inline-block;text-align:center}
 
-.ld-copy{margin-top:32px;max-width:66ch}
-.ld-copy h2,.ld-h2{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(22px,2.8vw,30px);line-height:1.15;margin:0 0 16px}
+.ld-main{background:var(--navy);padding-top:16px}
+.ld-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:48px;align-items:start}
+@media(max-width:940px){.ld-grid{grid-template-columns:1fr;gap:36px}}
+.ld-aside{display:flex;flex-direction:column;gap:20px;position:sticky;top:calc(var(--nav-top) + var(--nav-height) + 20px)}
+@media(max-width:940px){.ld-aside{position:static}}
+
+.ld-copy{max-width:68ch}
+.ld-h2{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(22px,2.6vw,28px);line-height:1.15;margin:0 0 16px}
 .ld-copy p,.ld-lead{font-family:var(--sans);color:var(--pale);font-size:17px;line-height:1.7;margin:0 0 16px}
 .ld-lead a{color:var(--white);text-underline-offset:3px}
 
-.ld-aside{display:flex;flex-direction:column;gap:20px;position:sticky;top:calc(var(--nav-top) + var(--nav-height) + 20px)}
-@media(max-width:900px){.ld-aside{position:static}}
-.ld-panel{padding:26px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 5%,transparent)}
-.ld-panel-soft{background:transparent}
-.ld-panel .card-mark{display:block;width:28px;height:3px;background:var(--blue);margin-bottom:16px;border-radius:2px}
-.ld-status{margin-bottom:14px}
-.ld-panel-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:20px;line-height:1.2;margin:0 0 14px}
-.ld-facts{margin:0 0 22px;display:grid;grid-template-columns:auto 1fr;gap:10px 18px;font-size:15px}
-.ld-facts dt{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);padding-top:3px}
-.ld-facts dd{margin:0;color:var(--white)}
-.ld-cta{display:inline-block}
-.ld-sold-note{margin:0 0 16px;font-family:var(--sans);font-size:16px;line-height:1.5;color:var(--white)}
-.ld-sold{max-width:66ch}
+.ld-steps-panel{padding:22px 22px 20px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:transparent}
+.ld-panel-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:19px;line-height:1.2;margin:0 0 12px}
 .ld-steps{margin:0;padding-left:20px;font-family:var(--sans);font-size:15px;line-height:1.6;color:var(--pale)}
 .ld-steps li{margin:0 0 6px}
+.ld-sold{max-width:66ch}
 
 .ld-enquire{background:var(--navy)}
 .ld-enquire-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
 @media(max-width:860px){.ld-enquire-grid{grid-template-columns:1fr;gap:32px}}
 .ld-card{border:1px solid color-mix(in srgb,var(--pale) 26%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 10%,transparent);padding:36px 34px}
-@media(max-width:520px){.ld-card{padding:28px 22px}}
+@media(max-width:520px){.ld-card{padding:28px 22px}.ld-head-cta{width:100%}}
 </style>

@@ -1,0 +1,45 @@
+---
+import type { InvestmentSection } from '../data/listings/detail';
+
+/*
+  Investment Details. Rendered only when approved commercial facts exist (the section is built by detailInvestment(), which already applies the
+  approval check, the Victorian restriction and the Sold rule). Each figure carries its type and basis. Lease status and occupancy status are separate
+  rows. It states plainly that these are figures supplied by the agent, not a guarantee.
+*/
+interface Props { section: InvestmentSection | null }
+const { section } = Astro.props;
+---
+{section && (
+  <section class="li-inv" aria-labelledby="inv-h">
+    <h2 class="li-inv-h" id="inv-h">Investment details</h2>
+    <div class="li-inv-body">
+      {section.yield && (
+        <p class="li-inv-yield"><span class="li-inv-n">{section.yield.text}</span><span class="li-inv-l">{section.yield.label} <span class="li-inv-b">({section.yield.basis.toLowerCase()})</span></span></p>
+      )}
+      {section.rows.length > 0 && (
+        <dl class="li-inv-grid">
+          {section.rows.map((r) => (<div class="li-inv-row"><dt>{r.label}</dt><dd>{r.value}</dd></div>))}
+        </dl>
+      )}
+    </div>
+    <p class="li-inv-note">Figures are supplied by the marketing agent and are subject to verification. They are not a forecast or a guarantee of return. Detailed information is released to registered parties under NDA.</p>
+  </section>
+)}
+<style>
+.li-inv{margin:0 0 40px;padding:26px 26px 22px;border:1px solid color-mix(in srgb,var(--pale) 22%,transparent);border-radius:10px;background:color-mix(in srgb,var(--white) 4%,transparent)}
+.li-inv-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:clamp(22px,2.6vw,28px);line-height:1.15;margin:0 0 18px}
+.li-inv-body{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px 36px;align-items:start}
+.li-inv-yield{margin:0;display:flex;flex-direction:column;padding-right:36px;border-right:1px solid color-mix(in srgb,var(--pale) 18%,transparent)}
+.li-inv-n{font-family:var(--cond);font-weight:700;font-size:56px;line-height:1;color:var(--teal)}
+.li-inv-l{font-family:var(--geo);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--white);margin-top:6px}
+.li-inv-b{color:var(--pale);font-weight:500}
+.li-inv-grid{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px 24px}
+.li-inv-row dt{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pale);margin:0 0 4px}
+.li-inv-row dd{margin:0;font-family:var(--sans);font-size:17px;font-weight:600;line-height:1.4;color:var(--white)}
+.li-inv-note{margin:20px 0 0;padding-top:16px;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent);font-family:var(--sans);font-size:13.5px;line-height:1.55;color:var(--pale)}
+@media(max-width:640px){
+  .li-inv{padding:22px 18px 18px}
+  .li-inv-body{grid-template-columns:1fr}
+  .li-inv-yield{padding:0 0 16px;border-right:0;border-bottom:1px solid color-mix(in srgb,var(--pale) 18%,transparent)}
+}
+</style>
