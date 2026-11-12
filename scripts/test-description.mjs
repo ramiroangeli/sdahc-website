@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
-import { paragraphs as jobParagraphs } from './lib/publish-job.mjs';
+import { overlayPage, paragraphs as jobParagraphs } from './lib/publish-job.mjs';
 
 export default async function run({ t, section }) {
   const L = await loadTs();
@@ -22,6 +22,10 @@ export default async function run({ t, section }) {
   t('text without line breaks inside blocks reads exactly as it always did', JSON.stringify(L.descriptionBlocks('One  two\n\n\n  Three   four  ')) === JSON.stringify(['One two', 'Three four']));
   t('every existing published description reads back unchanged', ['rutherford-grove-armstrong-creek-vic', 'sheppard-street-shepparton-vic', 'whipray-circuit-berrimah-nt'].every((s) => { const c = JSON.parse(rd(`src/data/listings/approved/${s}.json`)).content.description; return JSON.stringify(L.descriptionBlocks(c.join('\n\n'))) === JSON.stringify(c); }));
   t('the publish job and the website normalise descriptions identically', jobParagraphs(raw).join('|') === L.descriptionBlocks(raw).join('|') && jobParagraphs('a  b\n\nc\nd\n\n').join('|') === L.descriptionBlocks('a  b\n\nc\nd\n\n').join('|'));
+  t('the description survives the publish job overlay exactly (line breaks included), so the approval hash computed from the request text matches', (() => {
+    const out = overlayPage({ properties: {} }, { content: { title: 'A valid title here', description: raw, publicAddress: 'A Street, Town NT 0800', pricingMode: 'contact_agent', displayPrice: null, featured: false } }, { notionUserId: null });
+    return JSON.stringify(L.descriptionBlocks(L.readText(out.properties['Web Description']))) === JSON.stringify(L.descriptionBlocks(raw));
+  })());
   t('more than eight paragraphs are accepted by the schema', L.publicContentSchema.safeParse(content(Array.from({ length: 40 }, (_, i) => `Paragraph number ${i + 1} of a long commercial description.`))).success);
   t('a long block, such as a full bullet list, is accepted', L.publicContentSchema.safeParse(content(['x'.repeat(4000)])).success);
   t('a description of more than 30,000 characters is refused', !L.publicContentSchema.safeParse(content(Array.from({ length: 10 }, () => 'y'.repeat(4000)))).success);
