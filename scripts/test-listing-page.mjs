@@ -68,7 +68,7 @@ export default async function run({ t, section }) {
   t('the investment note says the figures are supplied by the agent and are not a forecast or guarantee', /not a forecast or a guarantee of return/.test(invc) && !/guaranteed|guarantee[ds]? return of/i.test(invc.replace('not a forecast or a guarantee of return', '')));
   t('lease and occupancy are separate rows in the section builder', /label: 'Lease status'/.test(rd('src/data/listings/detail.ts')) && /label: 'Occupancy status'/.test(rd('src/data/listings/detail.ts')));
   t('the agency panel uses the registry logo and name, shows contact lines for the default agency only, and has no profile link', /agency\.logoOnDark/.test(ag) && /isDefault && \(/.test(ag) && /agency\.name/.test(ag) && !/href="[^"]*profile/i.test(ag));
-  t('structured data is built exactly as before (no new field reaches it)', /listingJsonLd\(listing, Astro\.site!\.href\)/.test(page) && !/investment|yield|income/i.test(rd('src/data/listings/seo.ts')));
+  t('structured data carries no financial field (the listing node is built from physical facts only)', /listingNode\(listing, Astro\.site!\.href\)/.test(page) && !/investment|yield|income/i.test(rd('src/data/listings/seo.ts').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\/\*\*[\s\S]*?\*\//g, '')));
 
   section('listing page: gallery');
   t('thumbnails are plain links to the full image without JavaScript, and open a native dialog viewer with it', /href=\{href\(i\)\} data-gx-open=\{i\}/.test(gal) && /<dialog class="gx-dlg"/.test(gal) && /dlg\.showModal\(\)/.test(gal) && /e\.preventDefault\(\); open\(/.test(gal));
