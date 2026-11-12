@@ -205,7 +205,8 @@ export const publicContentSchema = z.object({
     .refine((s) => !RESERVED_SLUGS.includes(s), 'this slug is reserved for a page of the website'),
   type: z.enum(LISTING_TYPES),
   title: z.string().min(5).max(90),
-  description: z.array(z.string().min(1).max(1200)).min(1).max(8),
+  // technical limits only: long commercial descriptions are normal. A block may hold a whole bullet list.
+  description: z.array(z.string().min(1).max(6000)).min(1).max(120).refine((d) => d.reduce((n, b) => n + b.length, 0) <= 30000, 'the description is longer than 30,000 characters'),
   address: publicAddressSchema,
   pricing: pricingSchema,
   sda: sdaSchema,

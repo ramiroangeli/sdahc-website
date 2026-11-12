@@ -1,0 +1,53 @@
+---
+import { parseDescription, splitIntro } from '../data/listings/description';
+
+/*
+  The approved description. Staff write plain text; it is shown as paragraphs, headings and real lists. Every piece of text is output as text
+  (Astro escapes it), so markup typed into a description appears literally and never runs.
+
+  The whole description is in the page HTML. The first paragraph is shown; anything after it sits in a native <details> element, opened by
+  "Read full description" and closed again by "Show less". No script is needed, it works with a keyboard and screen readers, and search engines
+  read the same text visitors can open. Nothing is hidden for search and there is no second version of the text.
+*/
+interface Props { blocks: readonly string[] }
+const { blocks } = Astro.props;
+const parsed = parseDescription(blocks);
+const { intro, rest } = splitIntro(parsed);
+---
+<div class="dsc">
+  {intro.map((b) => (
+    b.type === 'p' ? <p>{b.text}</p>
+    : b.type === 'h' ? <h3 class="dsc-h">{b.text}</h3>
+    : b.type === 'label' ? <p class="dsc-label">{b.text}</p>
+    : <ul class="dsc-list">{b.items.map((t) => <li>{t}</li>)}</ul>
+  ))}
+  {rest.length > 0 && (
+    <details class="dsc-more">
+      <summary class="dsc-toggle"><span class="dsc-open">Read full description</span><span class="dsc-close">Show less</span></summary>
+      <div class="dsc-rest">
+        {rest.map((b) => (
+          b.type === 'p' ? <p>{b.text}</p>
+          : b.type === 'h' ? <h3 class="dsc-h">{b.text}</h3>
+          : b.type === 'label' ? <p class="dsc-label">{b.text}</p>
+          : <ul class="dsc-list">{b.items.map((t) => <li>{t}</li>)}</ul>
+        ))}
+      </div>
+    </details>
+  )}
+</div>
+<style>
+.dsc p{font-family:var(--sans);color:var(--pale);font-size:17px;line-height:1.7;margin:0 0 16px}
+.dsc-h{font-family:var(--serif);font-weight:600;color:var(--white);font-size:20px;line-height:1.25;margin:26px 0 10px}
+.dsc-label{font-weight:600;color:var(--white)!important;margin:20px 0 8px!important}
+.dsc-list{margin:0 0 18px;padding-left:22px;font-family:var(--sans);font-size:17px;line-height:1.65;color:var(--pale)}
+.dsc-list li{margin:0 0 6px}
+.dsc-more{margin:0}
+.dsc-toggle{display:inline-block;cursor:pointer;list-style:none;font-family:var(--sans);font-size:15.5px;font-weight:600;color:var(--white);text-decoration:underline;text-underline-offset:4px;padding:6px 0;margin:0 0 6px}
+.dsc-toggle::-webkit-details-marker{display:none}
+.dsc-toggle:focus-visible{outline:2px solid var(--white);outline-offset:4px;border-radius:2px}
+.dsc-close{display:none}
+.dsc-more[open] .dsc-open{display:none}
+.dsc-more[open] .dsc-close{display:inline}
+.dsc-rest{margin-top:8px}
+.dsc-rest>:first-child{margin-top:0}
+</style>

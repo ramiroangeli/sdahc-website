@@ -18,7 +18,9 @@ export const verifySignature = (secret, timestamp, body, signature, now = Date.n
 
 const PRICING_LABEL = { asking_price: 'Asking Price', price_guide: 'Price Guide', eoi: 'Expressions of Interest', contact_agent: 'Contact Agent' };
 const text = (s) => ({ type: 'rich_text', rich_text: s ? [{ plain_text: s }] : [] });
-const paragraphs = (raw) => String(raw ?? '').split(/\n\s*\n/).map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+// must stay identical to descriptionBlocks in src/data/listings/description.ts (a test compares them)
+const normaliseBlock = (block) => block.split('\n').map((l) => l.replace(/[^\S\n]+/g, ' ').trim()).filter(Boolean).join('\n');
+export const paragraphs = (raw) => String(raw ?? '').replace(/\r\n?/g, '\n').split(/\n\s*\n/).map(normaliseBlock).filter(Boolean);
 
 /**
  * The Notion row as it WOULD read after the approved fields are synchronised: the real row (internal fields intact, used by the

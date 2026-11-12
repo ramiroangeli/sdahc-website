@@ -28,6 +28,13 @@ export interface SafetyContext {
   allowDemo: boolean;
 }
 
+/** The financial words and amounts a description must not carry into public text. Exported so the editor can name exactly what it found. */
+export const findFinancialMentions = (text: string): string[] => {
+  const found = new Set<string>();
+  for (const m of text.matchAll(/\$\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|m|million|p\.?a\.?))?|\b\d[\d,]*\s?(?:aud|dollars)\b|\b(?:yield|cap rate|rental income|net rent|gross rent|noi|roi|return on investment)\b/gi)) found.add(m[0].trim());
+  return [...found];
+};
+
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -44,8 +51,11 @@ const parseInternal = (addr: string) => {
 };
 
 /** Returns a list of problems. Empty means the content is safe to publish. */
-export const checkPublicSafety = (c: PublicContent, ctx: SafetyContext): string[] => {
+export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): string[] => {
   const issues: string[] = [];
+  // A description block can hold several lines (a bullet list). The scans below look at the serialised content, where a line break would become the
+  // two characters "\n" and glue itself to the next word ("\nyield" would no longer be seen as the word "yield"). Line breaks count as spaces here.
+  const c: PublicContent = { ...content, description: content.description.map((b) => b.replace(/\n/g, ' ')) };
   const full = norm(JSON.stringify(c));
   const { pricing, investment, ...rest } = c;
   // dollar amounts are checked everywhere except the approved display value and the structured, approved investment figures. The free-text

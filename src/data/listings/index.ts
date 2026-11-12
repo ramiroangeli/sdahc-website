@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { FIXTURE_RECORDS, FIXTURE_SNAPSHOTS } from './fixtures';
 import { assertFixturesAllowed, buildPublicListings } from './publish';
 import { publicContentSchema, publicListingSchema, type ApprovedSnapshot, type ListingRecord, type PublicListing, type Withdrawal, type WebStatus } from './schema';
+import { firstParagraph } from './description';
 
 /*
   Loader for listings. The single entry point for every page and API route.
@@ -59,7 +60,7 @@ const localPreview = (): PublicListing[] | null => {
   const content = publicContentSchema.parse(d.content);
   const now = new Date().toISOString();
   return [publicListingSchema.parse({
-    ...content, id: d.id, summary: summarise(content.description[0]),
+    ...content, id: d.id, summary: summarise(firstParagraph(content.description)),
     commercialStatus: 'available', featured: false, version: 1, publishedAt: now, updatedAt: now, isDemo: false, isPreview: true,
   })];
 };

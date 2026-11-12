@@ -7,6 +7,7 @@ import ListingFacts from '../../components/ListingFacts.astro';
 import ListingInvestment from '../../components/ListingInvestment.astro';
 import AgencyPanel from '../../components/AgencyPanel.astro';
 import RelatedListings from '../../components/RelatedListings.astro';
+import ListingDescription from '../../components/ListingDescription.astro';
 import ListingResources from '../../components/ListingResources.astro';
 import { getPublicListings } from '../../data/listings';
 import { agencyFor } from '../../data/listings/agencies';
@@ -82,7 +83,7 @@ const breadcrumbs = [{ name: 'Opportunities', path: '/opportunities/' }, { name:
       <ListingInvestment section={investment} />
       <section class="ld-copy" aria-labelledby="about-h">
         <h2 class="ld-h2" id="about-h">About this property</h2>
-        {listing.description.map((p) => <p>{p}</p>)}
+        <ListingDescription blocks={listing.description} />
         {!hasSdaDetail && <p>Design category, dwelling configuration, enrolment and tenancy detail are released to registered parties under NDA.</p>}
       </section>
       <ListingResources context={context} links={resources} />

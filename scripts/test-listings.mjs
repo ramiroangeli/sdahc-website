@@ -1070,6 +1070,7 @@ await (await import('./test-catalogue.mjs')).default({ t, section });
 await (await import('./test-offmarket.mjs')).default({ t, section });
 await (await import('./test-listing-page.mjs')).default({ t, section });
 await (await import('./test-listing-seo.mjs')).default({ t, section });
+await (await import('./test-description.mjs')).default({ t, section });
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
