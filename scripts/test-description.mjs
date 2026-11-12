@@ -8,8 +8,9 @@ export default async function run({ t, section }) {
   const L = await loadTs();
   const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
   const NT = JSON.parse(rd('src/data/listings/approved/whipray-circuit-berrimah-nt.json'));
-  const content = (description, mod) => { const c = structuredClone(NT.content); c.description = description; if (mod) mod(c); return c; };
-  const ctx = { allowDemo: false, mediaBaseUrl: process.env.LISTINGS_MEDIA_BASE_URL };
+  const content = (description, mod) => { const c = structuredClone(NT.content); c.description = description; for (const photo of c.photos) for (const variant of photo.variants) variant.src = `/images/listings/${variant.src.split('/').pop()}`; if (mod) mod(c); return c; };
+  // Use a local synthetic media origin so this description test does not depend on CI configuration.
+  const ctx = { allowDemo: false };
   const EXAMPLE = [
     'An opportunity to secure a fully occupied, established Improved Liveability (IL) Specialist Disability Accommodation investment in Armstrong Creek, within the growing Geelong region.',
     'Investment summary:\n- Gross income: $164,435 p.a. (FY26)\n- Net operating income: $132,704 p.a. (FY26)\n- Net yield: 11.1%\n- 100% occupied with 3 SDA participants',
