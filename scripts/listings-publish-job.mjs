@@ -33,7 +33,7 @@ import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { REAL_MODES } from './lib/publish-job.mjs';
 import { REQUIRED_CHECK, abandon, githubClient, mainHead, mergePr, openPublicationPr, openWithdrawalPr, tombstoneFor, tombstoneText, verifyLive, verifyWithdrawn, waitForChecks, waitForDeployment, withdrawnPath } from './lib/publish-git.mjs';
-import { COMMERCIAL_STATUSES, JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, overlayPage, parity, signedHeaders, statusParity, withRetry } from './lib/publish-job.mjs';
+import { COMMERCIAL_STATUSES, JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, effectiveStatus, overlayPage, parity, signedHeaders, statusParity, verifyDeclaration, withRetry } from './lib/publish-job.mjs';
 
 const argv = process.argv.slice(2);
 const val = (k) => { const i = argv.indexOf(k); return i > -1 ? argv[i + 1] : undefined; };
@@ -233,13 +233,17 @@ async function main() {
   await report('started', 'running');
   log('fetching the approved content from the app');
   const payload = await call('GET', `/api/listings/publish-payload?job=${jobId}`);
-  if (payload.publicId !== publicId || payload.mode !== mode || payload.version !== 1) throw Object.assign(new Error('the payload does not match the job'), { code: 'payload_mismatch' });
+  if (payload.publicId !== publicId || payload.mode !== mode || ![1, 2].includes(payload.version)) throw Object.assign(new Error('the payload does not match the job'), { code: 'payload_mismatch' });
   if (mode === 'withdraw') return withdraw(payload);
+  // A real publication needs the Publisher's recorded declaration, checked against the content it was recorded for. Version 1 (legacy) can never publish.
+  const declarationProblems = verifyDeclaration(payload, mode);
+  if (declarationProblems.length) { await report('payload', 'failed', { issues: declarationProblems }); throw Object.assign(new Error(declarationProblems[0]), { code: 'declaration_invalid', reported: true }); }
   await report('payload', 'ok', { photos: payload.manifest.photos.length });
 
   const mediaBase = process.env.LISTINGS_MEDIA_BASE_URL;
   if (!mediaBase) throw Object.assign(new Error('LISTINGS_MEDIA_BASE_URL is not set'), { code: 'not_configured' });
   const L = await loadTs();
+  if (payload.version === 2 && (!payload.reviewedSda || typeof payload.reviewedSda !== 'object' || Array.isArray(payload.reviewedSda))) throw Object.assign(new Error('reviewed SDA details are required'), { code: 'payload_invalid' });
   const cfg = L.readNotionConfig(process.env);
   if (!cfg) throw Object.assign(new Error('Notion read access is not configured'), { code: 'not_configured' });
 
@@ -247,6 +251,10 @@ async function main() {
   if (asked !== undefined && asked !== null && (!COMMERCIAL_STATUSES.includes(asked) || (mode === 'publish' && asked !== 'available'))) throw Object.assign(new Error('the requested commercial status is not valid for this request'), { code: 'payload_mismatch' });
   const manifestProblems = checkManifest(payload.manifest);
   if (manifestProblems.length) throw Object.assign(new Error(manifestProblems[0]), { code: 'manifest_invalid', problems: manifestProblems });
+
+  // version 2: the photograph metadata the snapshot stores must be exactly what the reviewed manifest produces
+  const reviewedPhotos = payload.version === 2 ? L.manifestToPhotos(payload.manifest, L.manifestUrlFor(publicId, mediaBase), mediaBase) : null;
+  if (reviewedPhotos?.issues.length) throw Object.assign(new Error('the reviewed photographs are invalid'), { code: 'manifest_invalid', problems: reviewedPhotos.issues });
 
   log('reading the property row (read only)');
   const client = new L.NotionReadClient(cfg);
@@ -268,12 +276,21 @@ async function main() {
   const overlay = overlayPage(page, payload, approver ? { notionUserId: approver.id, name: approver.name } : null, previousSnap);
   // the optional public groups travel in the signed payload and are validated here with the same strict schema the site uses; an unknown or malformed
   // group fails the job before anything is proposed
+  // Version 2 (declaration workflow): the Publisher's declaration replaces the separate commercial and Victorian approvals, so the approval records the
+  // snapshot stores are computed HERE from the values (declareOptionalGroups) and any approval carried in the request is discarded. Every other safety rule still runs.
   let extras = new Map();
-  if (payload.content?.optional !== undefined && payload.content.optional !== null) {
-    const parsed = L.optionalGroupsSchema.safeParse(payload.content.optional);
+  let effectiveOptional = payload.content?.optional;
+  if (payload.version === 2) {
+    const state = L.parsePublicAddress(payload.content?.publicAddress ?? '').state;
+    effectiveOptional = L.declareOptionalGroups(payload.content?.optional, { description: L.descriptionBlocks(payload.content?.description), state, status: effectiveStatus(payload, previousSnap) });
+  }
+  if (effectiveOptional !== undefined && effectiveOptional !== null) {
+    const parsed = L.optionalGroupsSchema.safeParse(effectiveOptional);
     if (!parsed.success) throw Object.assign(new Error('the optional public groups in the request are not valid'), { code: 'payload_invalid' });
     extras = new Map([[publicId, parsed.data]]);
   }
+  // what the snapshot must carry is what the declaration produced, so parity compares against that
+  const approved = payload.version === 2 ? { ...payload, content: { ...payload.content, optional: effectiveOptional } } : payload;
   const actions = await L.propose({
     pages: [overlay],
     previous: new Map(jsonDir('approved').map((s) => [s.listingId, s])),
@@ -286,7 +303,7 @@ async function main() {
   });
   let action = actions.find((a) => a.id === publicId);
   // a rerun after the pull request already merged: main holds exactly the approved content, so there is nothing new to propose
-  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, payload).length === 0 && statusParity(previousSnap, payload).length === 0;
+  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, approved, reviewedPhotos?.photos).length === 0 && statusParity(previousSnap, payload).length === 0;
   if (resumed) action = { kind: 'already_published', id: publicId, snapshot: previousSnap, issues: [] };
   const issues = action?.issues ?? [];
   const checks = [
@@ -303,7 +320,7 @@ async function main() {
     throw Object.assign(new Error(why), { code: 'wrong_mode', reported: true });
   }
   checks.push({ name: 'engine_accepts', ok: true, note: resumed ? 'This exact content is already on the main branch.' : `Proposed ${action.kind} v${action.snapshot.version}.` });
-  const problems = [...parity(action.snapshot.content, payload), ...statusParity(action.snapshot, payload)];
+  const problems = [...parity(action.snapshot.content, approved, reviewedPhotos?.photos), ...statusParity(action.snapshot, payload)];
   checks.push({ name: 'matches_approved_draft', ok: problems.length === 0, note: problems.length ? `Differs from the approved draft: ${problems.join(', ')}.` : 'The proposed public content is exactly what was approved.' });
   if (problems.length) {
     await report('engine', 'failed', { kind: action.kind, issues: problems.map((p) => `Does not match the approved draft: ${p}`), checks });

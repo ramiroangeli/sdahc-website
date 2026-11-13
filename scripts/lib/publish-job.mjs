@@ -1,6 +1,6 @@
 // Pure helpers for the publication job that the internal Listings Manager starts (scripts/listings-publish-job.mjs).
 // No network and no file access here, so everything is covered by scripts/test-listings.mjs.
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 export const PUBLIC_ID_RE = /^lst_[a-f0-9]{10}$/;
 export const JOB_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,7 +64,7 @@ export function overlayPage(page, payload, approver, previous = null) {
 const sortedKeys = (v) => (Array.isArray(v) ? v.map(sortedKeys) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortedKeys(v[k])])) : v);
 
 /** Does the snapshot the engine produced say exactly what the Publisher approved? Returns problems (names only, no content). */
-export function parity(snapshotContent, payload) {
+export function parity(snapshotContent, payload, expectedPhotos) {
   const problems = [];
   const c = payload.content;
   if (c.title && snapshotContent.title !== c.title) problems.push('title');
@@ -81,6 +81,44 @@ export function parity(snapshotContent, payload) {
   for (const k of ['bedrooms', 'residentPlaces', 'ooa']) { const want = optional.sda?.[k]; if (want !== undefined && snapshotContent.sda?.[k] !== want) problems.push(`sda ${k}`); }
   const ids = (payload.manifest?.photos ?? []).map((p) => p.id);
   if (JSON.stringify(snapshotContent.photos.map((p) => p.id)) !== JSON.stringify(ids)) problems.push('photo order');
+  // Version 2 freezes every public SDA fact and the complete generated image metadata reviewed by the Publisher.
+  // Version 1 remains supported during the coordinated rollout.
+  if (payload.version === 2) {
+    if (!payload.reviewedSda || JSON.stringify(sortedKeys(snapshotContent.sda ?? null)) !== JSON.stringify(sortedKeys(payload.reviewedSda))) problems.push('reviewed SDA details');
+    if (!expectedPhotos || JSON.stringify(sortedKeys(snapshotContent.photos)) !== JSON.stringify(sortedKeys(expectedPhotos))) problems.push('reviewed photographs');
+  }
+  return problems;
+}
+
+/*
+  THE PUBLISHER'S DECLARATION (payload version 2).
+  A real publication (publish, update) is accepted only when the signed request carries the declaration the Listings Manager recorded: a Publisher ticked the
+  responsibility checkbox for exactly this content, and the app stored that acceptance and the job in one transaction. The app serves a version 2 payload
+  for a real job only after finding that private record; this function lets the website check, independently, that the content it received is the content
+  the declaration was recorded against (the hash covers the listing id, the saved draft version, the public text and optional groups, the photograph
+  manifest and the reviewed SDA facts). It must stay identical to reviewedContentHash in the app (api/_lib/publication-acceptance.js).
+*/
+/** Withdrawal carries no listing content and has its own rules, so only publish and update need the declaration. */
+export const DECLARED_MODES = ['publish', 'update'];
+export const DECLARATION_TERMS_VERSION = 'internal-draft-v1';
+export const declarationHash = (payload, draftVersion) => createHash('sha256').update(JSON.stringify(sortedKeys({ publicId: payload?.publicId, draftVersion, content: payload?.content, manifest: payload?.manifest, reviewedSda: payload?.reviewedSda }))).digest('hex');
+
+/**
+ * Problems that stop a REAL request before anything is proposed. Names only. Version 1 is the legacy request (no declaration): it is still understood by a
+ * dry run, but it can never publish, so the legacy path cannot bypass the declaration.
+ */
+export function verifyDeclaration(payload, mode) {
+  if (!DECLARED_MODES.includes(mode)) return [];
+  if (payload?.version !== 2) return ['declaration required: a real publication needs a version 2 request'];
+  const d = payload.declaration;
+  const problems = [];
+  if (!d || d.accepted !== true) problems.push('the Publisher declaration is missing');
+  else {
+    if (d.termsVersion !== DECLARATION_TERMS_VERSION) problems.push('the declaration terms are not recognised');
+    if (!Number.isInteger(d.draftVersion) || d.draftVersion < 1) problems.push('the declaration has no saved draft version');
+    else if (typeof d.contentHash !== 'string' || d.contentHash !== declarationHash(payload, d.draftVersion)) problems.push('the declaration does not match the content');
+  }
+  if (!payload.reviewedSda || typeof payload.reviewedSda !== 'object' || Array.isArray(payload.reviewedSda)) problems.push('reviewed SDA details are required');
   return problems;
 }
 

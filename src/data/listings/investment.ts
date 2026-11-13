@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { LEASE_LABEL, OCCUPANCY_LABEL, type CommercialStatus, type Investment, type PublicAddress } from './schema';
+import { LEASE_LABEL, OCCUPANCY_LABEL, type CommercialStatus, type Investment, type OptionalGroups, type PublicAddress } from './schema';
 
 /*
   The optional commercial block, and the ONE place that decides what of it a visitor may see.
@@ -72,3 +72,37 @@ export const publicInvestment = (l: { address: Pick<PublicAddress, 'state'>; com
   if (inv.providerArrangement && inv.approval.provider === true) view.provider = inv.providerArrangement;
   return Object.keys(view).length ? view : null;
 };
+
+/**
+ * The Publisher's declaration replaces the separate commercial and Victorian approvals for a request that is signed, authenticated and carries a verified
+ * declaration (scripts/lib/publish-job.mjs, verifyDeclaration). It turns the optional groups the request carried into the groups the snapshot stores: the
+ * values hash is computed here from the values themselves, so nothing about an approval is ever taken from the request. Pure.
+ *   - A Sold listing carries no commercial block and no description approval (a sold property is not offered), so commercial wording must be edited out.
+ *   - Any approval record or hash in the request is discarded and recomputed.
+ *   - Victoria: income and yield travel under the declaration (the stored flag records that they were published under it, not a legal classification).
+ * Every other protection (private address, CRM price and yield, links, email, phone, participant names, images, pricing compliance) still runs afterwards.
+ */
+export const declareOptionalGroups = (
+  optional: OptionalGroups | undefined | null,
+  ctx: { description: readonly string[]; state: string; status: CommercialStatus },
+): OptionalGroups | undefined => {
+  const out: Record<string, unknown> = { ...(optional ?? {}) };
+  delete out.descriptionApproval;
+  const sold = ctx.status === 'sold';
+  if (sold) delete out.investment;
+  else if (out.investment) {
+    const { approval: _discarded, ...values } = out.investment as Investment;
+    const vic = ctx.state === 'VIC' && hasFinancialFigures(values);
+    const approval: Investment['approval'] = { valuesHash: '0'.repeat(64), ...(values.providerArrangement ? { provider: true as const } : {}), ...(vic ? { victorian: true as const } : {}) };
+    approval.valuesHash = investmentValuesHash({ ...values, approval });
+    out.investment = { ...values, approval };
+  }
+  if (!sold && findFinancialMentionsIn(ctx.description)) {
+    out.descriptionApproval = { textHash: descriptionApprovalHash(ctx.description, out.investment as Investment | undefined), ...(ctx.state === 'VIC' ? { victorian: true as const } : {}) };
+  }
+  return Object.keys(out).length ? (out as OptionalGroups) : undefined;
+};
+
+// must stay identical to MONEY in guards.ts (guards.ts imports this module, so it cannot be imported back); a test compares them
+export const FINANCIAL_WORDING = /\$\s?\d|\b\d[\d,]*\s?(?:aud|dollars)\b|\b(?:yield|cap rate|rental income|net rent|gross rent|noi|roi|return on investment)\b/i;
+const findFinancialMentionsIn = (blocks: readonly string[]): boolean => FINANCIAL_WORDING.test(blocks.join('\n'));
