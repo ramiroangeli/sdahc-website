@@ -1,22 +1,25 @@
 {
   "listingId": "lst_454f05d21f",
-  "version": 4,
+  "version": 5,
   "approvedBy": "SDA Home Choices",
   "approvedById": "listings-manager",
-  "approvedAt": "2026-11-11T15:23:18.785Z",
+  "approvedAt": "2026-11-13T14:54:43.879Z",
   "firstPublishedAt": "2026-11-05T12:29:09.094Z",
   "commercialStatus": "available",
   "featured": false,
   "sourceEditedAt": "2026-11-08T04:37:00.000Z",
-  "contentHash": "f62abffb94c90bbf534a8138ab998ff5152adee32626af3d66ada67a6ede0eaf",
+  "contentHash": "0f821a9332ff5069a0da98b37c2648f818297cae7105fbc67eb7d0fe3dcd8cf5",
   "content": {
     "slug": "rutherford-grove-armstrong-creek-vic",
     "type": "property",
     "title": "Armstrong Creek VIC | IL SDA Investment",
     "description": [
-      "An established Improved Liveability (IL) Specialist Disability Accommodation investment in Armstrong Creek, in the Geelong region.",
-      "The property has 3 participant places + Onsite Overnight Assistance (OOA) and has been enrolled with the NDIA since August 2021.",
-      "Contact SDA Home Choices for further investment information."
+      "An opportunity to secure a fully occupied, established Improved Liveability (IL) Specialist Disability Accommodation investment in Armstrong Creek, within the growing Geelong region.",
+      "This is a purpose-built, three-participant SDA home with Onsite Overnight Assistance (OOA), enrolled with the NDIA since August 2021.",
+      "The property operates under existing SDA provider arrangements and offers investors an established income stream without the initial participant placement and lease-up risks associated with newly developed SDA properties.",
+      "Investment summary:\n- Gross income: 164,435 p.a. (FY26)\n- Net operating income: 132,704 p.a. (FY26)\n- Fully occupied with 3 SDA participants\n- NDIA-enrolled Improved Liveability accommodation\n- Enrolled in August 2021\n- Existing SDA provider arrangements\n- Income supported by NDIS SDA funding and participant contributions",
+      "Property summary:\n- Purpose-built Specialist Disability Accommodation\n- Improved Liveability (IL) design category\n- 3 participant places plus OOA\n- Designed to support participants with disability\n- Established SDA enrolment and operating arrangements\n- Located within the Armstrong Creek residential growth corridor",
+      "Positioned in one of Geelong's major residential growth areas, the property benefits from access to local shopping, healthcare, community facilities and disability support services. Armstrong Creek is strategically located between central Geelong and the Surf Coast, with convenient connections to the broader Geelong region. The established residential catchment and access to essential services provide a practical setting for long-term specialist disability accommodation."
     ],
     "address": {
       "street": "Rutherford Grove",
@@ -31,7 +34,10 @@
       "designCategories": [
         "IL"
       ],
-      "buildingType": "House"
+      "buildingType": "House",
+      "bedrooms": 3,
+      "residentPlaces": 3,
+      "ooa": "OOA"
     },
     "photos": [
       {
@@ -143,6 +149,30 @@
         ],
         "privacyReviewed": true
       }
-    ]
+    ],
+    "property": {
+      "carSpaces": 2,
+      "floorAreaM2": 262,
+      "landAreaM2": 448,
+      "parking": "Double Lock Up Garage",
+      "municipality": "City of Greater Geelong"
+    },
+    "investment": {
+      "leaseStatus": "fully_leased",
+      "occupancyStatus": "fully_occupied",
+      "tenure": "Tenanted investment",
+      "annualIncomeAud": 164435,
+      "incomeType": "gross",
+      "yieldPct": 11.1,
+      "yieldType": "net",
+      "basis": "actual",
+      "approval": {
+        "valuesHash": "36adc34c5f28a43643417dfdb6758e722806ad0dc3b391d202019f2f485d6e48",
+        "victorian": true
+      }
+    },
+    "marketing": {
+      "agency": "sdahc"
+    }
   }
 }
