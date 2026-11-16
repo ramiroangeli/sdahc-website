@@ -5,6 +5,7 @@ export * from './address';
 export * from './pricing';
 export * from './guards';
 export * from './versioning';
+export * from './ordering';
 export * from './publish';
 export * from './notion';
 export * from './seo';

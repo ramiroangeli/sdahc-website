@@ -5,6 +5,7 @@ import {
   type ListingRecord,
   type PublicListing,
 } from './schema';
+import { orderListings } from './ordering';
 import { contentHash, resolveListing } from './versioning';
 import { firstParagraph } from './description';
 
@@ -27,9 +28,11 @@ export interface BuildInput {
   ctx: SafetyContext;
   /** Ids with an explicit withdrawal (tombstone). Hidden regardless of status. */
   withdrawn?: ReadonlySet<string>;
+  /** SDA Home Choices' saved default order (listing ids). Featured listings still come first. */
+  order?: readonly string[];
 }
 
-export const buildPublicListings = ({ records, snapshots, now, ctx, withdrawn }: BuildInput): PublicListing[] => {
+export const buildPublicListings = ({ records, snapshots, now, ctx, withdrawn, order }: BuildInput): PublicListing[] => {
   const byId = new Map(snapshots.map((s) => [s.listingId, s]));
   const slugs = new Set<string>();
   const out: PublicListing[] = [];
@@ -64,7 +67,7 @@ export const buildPublicListings = ({ records, snapshots, now, ctx, withdrawn }:
       isDemo: r.isFixture,
     }));
   }
-  return out.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.title.localeCompare(b.title));
+  return orderListings(out, order);
 };
 
 /** Fixtures may exist in development and previews, never in a production deployment. */

@@ -3,6 +3,7 @@
 # Modes:
 #   dry_run  checks that an approved draft WOULD publish and changes nothing (no Notion write, no branch, no pull request).
 #   publish  first publication of a listing.   update  a new version of a listing that is already live.
+#   withdraw  removes a listing.   reorder  sets the default order of the public catalogue (one file of listing ids; public_id is any listing in it).
 # Real modes open ONE pull request that changes ONLY src/data/listings/approved/<slug>.json, wait for the required CI check (ci.yml) on that
 # exact commit, merge it under the branch rules, wait for the Vercel Production deployment and prove the live page, images and catalogue.
 # If anything fails the pull request is closed and its branch deleted: main, and so the live site, is never touched.
@@ -29,7 +30,7 @@ on:
         description: 'Public listing id (lst_...)'
         required: true
       mode:
-        description: 'dry_run changes nothing; publish, update and withdraw change the live site'
+        description: 'dry_run changes nothing; publish, update, withdraw and reorder change the live site'
         required: true
         type: choice
         default: dry_run
@@ -38,6 +39,7 @@ on:
           - publish
           - update
           - withdraw
+          - reorder
 
 # the workflow's own token can only read; every write goes through the GitHub App token created below (contents, pull requests; read of checks
 # and deployments)

@@ -75,6 +75,7 @@ const showDesign = designs.length > 0;
           <div class="lcat-field">
             <label for="f-sort">Sort by</label>
             <select id="f-sort" name="sort">
+              <option value="recommended">Recommended</option>
               <option value="newest">Newest first</option>
               <option value="suburb">Suburb A to Z</option>
               <option value="status">Availability</option>
@@ -143,7 +144,7 @@ const showDesign = designs.length > 0;
     const apply = () => {
       const f = read();
       const q = f.q.toLowerCase();
-      const by = f.sort || 'newest';
+      const by = f.sort || 'recommended';
       // filter and sort across the whole inventory first, then show only the first `limit` matches
       const matched = cards.filter((card) =>
         (!q || (card.dataset.search ?? '').includes(q)) &&
@@ -154,6 +155,8 @@ const showDesign = designs.length > 0;
       const sorter = (a: HTMLElement, b: HTMLElement) => {
         if (by === 'suburb') return (a.dataset.suburb ?? '').localeCompare(b.dataset.suburb ?? '');
         if (by === 'status') return (rank[a.dataset.status ?? ''] ?? 9) - (rank[b.dataset.status ?? ''] ?? 9) || Number(a.dataset.index) - Number(b.dataset.index);
+        // newest is a visitor choice by publication date; the default (recommended) is SDA Home Choices' own order, which is the order of the HTML
+        if (by === 'newest') return (b.dataset.published ?? '').localeCompare(a.dataset.published ?? '') || Number(a.dataset.index) - Number(b.dataset.index);
         return Number(a.dataset.index) - Number(b.dataset.index);
       };
       matched.sort(sorter);
@@ -175,11 +178,11 @@ const showDesign = designs.length > 0;
         const el = form.elements.namedItem(k);
         return el instanceof HTMLSelectElement ? el.selectedOptions[0]?.textContent?.trim() ?? f[k] : f[k];
       });
-      if (by !== 'newest') chosen.push(`Sorted: ${(form.elements.namedItem('sort') as HTMLSelectElement).selectedOptions[0]?.textContent?.trim() ?? by}`);
+      if (by !== 'recommended') chosen.push(`Sorted: ${(form.elements.namedItem('sort') as HTMLSelectElement).selectedOptions[0]?.textContent?.trim() ?? by}`);
       if (badge) { badge.hidden = chosen.length === 0; badge.textContent = String(chosen.length); }
       if (active) { active.hidden = chosen.length === 0; active.textContent = chosen.length ? `Selected: ${chosen.join(', ')}` : ''; }
       // keep the view shareable without adding history entries
-      const params = new URLSearchParams(Object.entries(f).filter(([k, v]) => v && !(k === 'sort' && v === 'newest')));
+      const params = new URLSearchParams(Object.entries(f).filter(([k, v]) => v && !(k === 'sort' && v === 'recommended')));
       history.replaceState(null, '', params.size ? `?${params}${location.hash}` : `${location.pathname}${location.hash}`);
       shownBefore = shown.length;
       return matched;
