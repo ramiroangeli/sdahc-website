@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIXTURE_RECORDS, FIXTURE_SNAPSHOTS } from './fixtures';
+import displayOrderFile from './display-order.json';
+import { parseDisplayOrder } from './ordering';
 import { assertFixturesAllowed, buildPublicListings } from './publish';
 import { publicContentSchema, publicListingSchema, type ApprovedSnapshot, type ListingRecord, type PublicListing, type Withdrawal, type WebStatus } from './schema';
 import { firstParagraph } from './description';
@@ -70,7 +72,8 @@ export const getPublicListings = (now: Date = new Date()): PublicListing[] => {
   if (preview) return preview;
   const { records, snapshots, allowDemo } = load();
   const withdrawn = new Set(Object.values(withdrawalFiles).map((w) => w.listingId));
-  return buildPublicListings({ records, snapshots, now, withdrawn, ctx: { allowDemo, mediaBaseUrl: mediaBaseUrl() } });
+  // a malformed order file fails the build rather than quietly publishing in the wrong order
+  return buildPublicListings({ records, snapshots, now, withdrawn, order: parseDisplayOrder(displayOrderFile).order, ctx: { allowDemo, mediaBaseUrl: mediaBaseUrl() } });
 };
 
 export const getListingBySlug = (slug: string) => getPublicListings().find((l) => l.slug === slug);

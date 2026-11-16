@@ -20,6 +20,7 @@
     "listings:propose": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --propose",
     "listings:withdraw": "node scripts/listings-sync.mjs --withdraw",
     "check:withdrawal": "node scripts/check-withdrawal.mjs",
+    "check:order": "node scripts/check-display-order.mjs",
     "check:readiness": "node scripts/check-readiness.mjs",
     "listings:manifest": "node scripts/print-schema-manifest.mjs",
     "listings:doctor": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --doctor",

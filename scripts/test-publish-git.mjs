@@ -1,7 +1,7 @@
 // Tests for scripts/lib/publish-git.mjs against a fake GitHub (in memory) and a fake production site. No network, no git, no secrets.
 // Called from scripts/test-listings.mjs with its t() and section() helpers.
 import { createHash } from 'node:crypto';
-import { REQUIRED_CHECK, abandon, artifactPath, assertOnlyArtifact, assertOnlyTombstone, branchFor, githubClient, mergePr, openPublicationPr, openWithdrawalPr, snapshotText, tombstoneFor, tombstoneText, verifyLive, verifyWithdrawn, waitForChecks, waitForDeployment, withdrawnPath } from './lib/publish-git.mjs';
+import { ORDER_PATH, REQUIRED_CHECK, abandon, assertOnlyOrder, checkOrder, openOrderPr, orderText, slugsInCatalogue, verifyOrderLive, artifactPath, assertOnlyArtifact, assertOnlyTombstone, branchFor, githubClient, mergePr, openPublicationPr, openWithdrawalPr, snapshotText, tombstoneFor, tombstoneText, verifyLive, verifyWithdrawn, waitForChecks, waitForDeployment, withdrawnPath } from './lib/publish-git.mjs';
 
 const sha1 = (text) => createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex');
 const rid = (() => { let n = 1000; return () => (n += 1); })();
@@ -222,5 +222,47 @@ export default async function run({ t, section }) {
     t('live proof fails when the catalogue does not list the page', !(await verifyLive({ ...args, fetchImpl: site({ noCatalogue: true }) })).ok);
     let n = 0; const flaky = async (...a) => (n++ < 6 ? { ok: false, status: 404, headers: new Headers(), text: async () => '', body: null } : site()(...a));
     t('while the new deployment propagates the proof retries and then succeeds', (await verifyLive({ ...args, attempts: 4, fetchImpl: flaky })).ok);
+  }
+
+  section('display order: one-file pull request of listing ids, and proof that the live catalogue shows it');
+  {
+    const IDS = ['lst_0000000003', 'lst_0000000001', 'lst_0000000002'];
+    t('the order file holds the version and the ids and nothing else', orderText(IDS) === `${JSON.stringify({ version: 1, order: IDS }, null, 2)}\n` && !/title|slug|price|address/i.test(orderText(IDS)));
+    t('an order is refused unless it is a list of public listing ids with no repeats (and at most 500)', checkOrder(IDS).length === 0 && checkOrder([]).length === 0 && checkOrder('x').length === 1 && checkOrder(['../x']).length === 1 && checkOrder([IDS[0], IDS[0]]).length === 1 && checkOrder(Array.from({ length: 501 }, (_, i) => `lst_${String(i).padStart(10, '0')}`)).length === 1);
+    t('only the display order file may change: nothing else, no listing snapshot, no second file', (() => {
+      const bad = (c) => { try { assertOnlyOrder(c); return false; } catch (e) { return e.code === 'unexpected_files'; } };
+      assertOnlyOrder([ORDER_PATH]);
+      return bad([]) && bad(['package.json']) && bad([ORDER_PATH, artifactPath(SLUG)]) && bad([artifactPath(SLUG)]);
+    })());
+    {
+      const { s, gh } = fakeGitHub({ state: { files: { main: { 'package.json': '{}\n', [ORDER_PATH]: orderText([]), [artifactPath(SLUG)]: snapshotText(snap()) } } } });
+      const r = await openOrderPr({ gh, ids: IDS, jobId: 'job-o' });
+      t('it changes exactly the order file, on its own branch, and leaves every listing snapshot as it was', s.files[r.branch][ORDER_PATH] === orderText(IDS) && s.files[r.branch][artifactPath(SLUG)] === s.files.main[artifactPath(SLUG)] && r.branch.startsWith('order/') && Object.keys(s.files[r.branch]).filter((k) => s.files[r.branch][k] !== s.files.main[k]).join() === ORDER_PATH);
+      t('the pull request and commit say what happened and carry no listing content and no person', r.title === 'Set the website display order' && !/@/.test(JSON.stringify([s.lastCommit, s.prs])) && /job-o/.test(s.lastCommit.message));
+      const again = await openOrderPr({ gh, ids: IDS, jobId: 'job-o' });
+      t('repeating the request finds the same branch and pull request', again.branch === r.branch && again.prNumber === r.prNumber && s.prs.length === 1);
+      const other = await openOrderPr({ gh, ids: [IDS[1], IDS[0], IDS[2]], jobId: 'job-p' });
+      t('a different order gets its own branch', other.branch !== r.branch);
+    }
+    {
+      const { gh } = fakeGitHub({ state: { files: { main: { 'package.json': '{}\n', [ORDER_PATH]: orderText(IDS) } } } });
+      t('an order that is already on main (a rerun after the merge) opens nothing', (await openOrderPr({ gh, ids: IDS, jobId: 'j' })).alreadyOnMain === true);
+    }
+    {
+      const { gh } = fakeGitHub({ alsoTouch: 'package.json' });
+      let err; try { await openOrderPr({ gh, ids: IDS, jobId: 'j' }); } catch (e) { err = e; }
+      t('an order change that would touch any other file is refused before the pull request', err?.code === 'unexpected_files');
+      let bad; try { await openOrderPr({ gh: fakeGitHub().gh, ids: ['nope'], jobId: 'j' }); } catch (e) { bad = e; }
+      t('an invalid order is refused before any request', bad?.code === 'bad_order');
+    }
+    const card = (slug) => `<li class="lc"><a href="/opportunities/${slug}/"><img></a><a href="/opportunities/${slug}/">title</a></li>`;
+    t('the catalogue order is read from the first link to each listing, ignoring Off-market and repeated links', slugsInCatalogue(`<a href="/opportunities/off-market/">o</a>${card('b-st-vic')}${card('a-st-vic')}<a href="/opportunities/b-st-vic/">again</a>`).join() === 'b-st-vic,a-st-vic');
+    const site = (html, o = {}) => async () => ({ ok: !o.fail, status: o.fail ? 500 : 200, headers: new Headers(), text: async () => html });
+    const expected = ['b-st-vic', 'a-st-vic', 'c-st-vic'];
+    const args = { siteUrl: 'https://www.example.test', expected, sleep: async () => {}, attempts: 2 };
+    t('live proof passes when the production catalogue lists every property in exactly the built order', (await verifyOrderLive({ ...args, fetchImpl: site(expected.map(card).join('')) })).ok);
+    t('it fails on the old order, on a missing property, and when the catalogue cannot be read', !(await verifyOrderLive({ ...args, fetchImpl: site([...expected].reverse().map(card).join('')) })).ok && !(await verifyOrderLive({ ...args, fetchImpl: site(expected.slice(0, 2).map(card).join('')) })).ok && !(await verifyOrderLive({ ...args, fetchImpl: site('', { fail: true }) })).ok);
+    let n = 0; const flaky = async (...a) => (n++ < 2 ? site([...expected].reverse().map(card).join(''))(...a) : site(expected.map(card).join(''))(...a));
+    t('while the new deployment propagates the proof retries and then succeeds', (await verifyOrderLive({ ...args, attempts: 4, fetchImpl: flaky })).ok);
   }
 }

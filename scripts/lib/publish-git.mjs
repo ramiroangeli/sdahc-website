@@ -303,3 +303,83 @@ export async function verifyWithdrawn({ siteUrl, slug, fetchImpl = fetch, sleep 
   }
   return { ok: false, checks: last, url: `${base}/opportunities/${slug}/` };
 }
+
+/* ---------------------------------------------------------------- display order (the default order of the public catalogue) */
+export const ORDER_PATH = 'src/data/listings/display-order.json';
+export const ORDER_ID_RE = /^lst_[a-f0-9]{10}$/;
+/** The order file holds listing ids only: no content, no person. It is public like everything else in this repository. */
+export const orderText = (ids) => `${JSON.stringify({ version: 1, order: ids }, null, 2)}\n`;
+/** The ids of a requested order, or the reason it is refused (at most 500, each a public listing id, none twice). */
+export function checkOrder(ids) {
+  if (!Array.isArray(ids) || ids.length > 500) return ['the order must be a list of at most 500 listing ids'];
+  const bad = ids.filter((x) => typeof x !== 'string' || !ORDER_ID_RE.test(x));
+  if (bad.length) return ['the order contains something that is not a listing id'];
+  if (new Set(ids).size !== ids.length) return ['a listing appears twice in the order'];
+  return [];
+}
+export function assertOnlyOrder(changed) {
+  if (changed.length !== 1 || changed[0] !== ORDER_PATH) throw Object.assign(new Error('a display order change may change only the display order file'), { code: 'unexpected_files' });
+}
+
+/**
+ * Opens (or finds) the display order pull request. { alreadyOnMain: true } when main already holds exactly this order (a rerun after the merge).
+ * Otherwise { branch, headSha, prNumber, prUrl, title } ready for checks. The only file it may change is display-order.json.
+ */
+export async function openOrderPr({ gh, ids, jobId, defaultBranch = 'main' }) {
+  const problems = checkOrder(ids);
+  if (problems.length) throw Object.assign(new Error(problems[0]), { code: 'bad_order' });
+  const text = orderText(ids);
+  const onMain = await gh.call('GET', `/contents/${ORDER_PATH}?ref=${defaultBranch}`, null, { allow: [404] });
+  if (onMain.status === 200 && onMain.data?.sha === sha1blob(text)) return { alreadyOnMain: true };
+
+  const branch = `order/${sha1blob(text).slice(0, 10)}`;
+  const base = (await gh.call('GET', `/git/ref/heads/${defaultBranch}`)).data.object.sha;
+  const existing = await gh.call('GET', `/git/ref/heads/${branch}`, null, { allow: [404] });
+  if (existing.status === 404) await gh.call('POST', '/git/refs', { ref: `refs/heads/${branch}`, sha: base });
+  const onBranch = await gh.call('GET', `/contents/${ORDER_PATH}?ref=${branch}`, null, { allow: [404] });
+  if (!(onBranch.status === 200 && onBranch.data?.sha === sha1blob(text))) {
+    const put = await gh.call('PUT', `/contents/${ORDER_PATH}`, {
+      message: `Set the website display order\n\nApproved in the Listings Manager. Job ${jobId}.`,
+      content: enc(text), branch, ...(onBranch.status === 200 ? { sha: onBranch.data.sha } : onMain.status === 200 && existing.status === 404 ? { sha: onMain.data.sha } : {}),
+    });
+    if (put.data?.commit?.sha === undefined) throw Object.assign(new Error('GitHub did not confirm the commit'), { code: 'commit_failed' });
+  }
+  const cmp = (await gh.call('GET', `/compare/${defaultBranch}...${branch}`)).data;
+  assertOnlyOrder((cmp.files ?? []).map((f) => f.filename));
+  const headSha = cmp.commits?.length ? cmp.commits[cmp.commits.length - 1].sha : (await gh.call('GET', `/git/ref/heads/${branch}`)).data.object.sha;
+  const open = (await gh.call('GET', `/pulls?state=open&head=${encodeURIComponent(`${gh.repo}:${branch}`)}`)).data ?? [];
+  let pr = open[0];
+  const title = 'Set the website display order';
+  if (!pr) {
+    pr = (await gh.call('POST', '/pulls', {
+      title, head: branch, base: defaultBranch,
+      body: `Opened by the Listings Manager publication job \`${jobId}\`.\n\nChanges one file only: \`${ORDER_PATH}\` (listing ids, no content).\nThe pull request is merged by the job once the required check \`${REQUIRED_CHECK}\` passes on this exact commit.`,
+    })).data;
+  }
+  return { branch, headSha, prNumber: pr.number, prUrl: pr.html_url, title };
+}
+
+/** The listing slugs in the order a catalogue page shows them (first appearance of each listing link; off-market is not a listing). */
+export const slugsInCatalogue = (html) => {
+  const seen = [];
+  for (const m of String(html).matchAll(/href="\/opportunities\/([a-z]+(?:-[a-z]+)*)\/"/g)) if (m[1] !== 'off-market' && !seen.includes(m[1])) seen.push(m[1]);
+  return seen;
+};
+
+/**
+ * Proof that the live catalogue shows the listings in the order the build produced. Retries while the new deployment propagates.
+ * Returns { ok, checks:[{name, ok, note}] }. Notes never contain listing text.
+ */
+export async function verifyOrderLive({ siteUrl, expected, fetchImpl = fetch, sleep = sleepDefault, attempts = 18, pollMs = 10000 }) {
+  const base = siteUrl.replace(/\/$/, '');
+  let last = [];
+  for (let i = 0; i < attempts; i += 1) {
+    let html = null;
+    try { const r = await fetchImpl(`${base}/opportunities/?v=${Date.now()}${i}`, { redirect: 'follow', headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(20000) }); html = r.ok ? await r.text() : null; } catch { html = null; }
+    const got = html === null ? null : slugsInCatalogue(html);
+    last = [{ name: 'catalogue_order', ok: got !== null && JSON.stringify(got) === JSON.stringify(expected), note: got === null ? 'The catalogue could not be read.' : JSON.stringify(got) === JSON.stringify(expected) ? `The live catalogue lists all ${expected.length} properties in the new order.` : 'The live catalogue does not show the new order yet.' }];
+    if (last.every((c) => c.ok)) return { ok: true, checks: last, url: `${base}/opportunities/` };
+    if (i < attempts - 1) await sleep(pollMs);
+  }
+  return { ok: false, checks: last, url: `${base}/opportunities/` };
+}

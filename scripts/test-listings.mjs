@@ -972,6 +972,11 @@ section('publication job started by the internal app (dry run only in this relea
     t('the withdraw path never reads or writes anything private: no Notion, no reason, no person, no content, only constant words', wf.length > 500 && !/Notion|queryAll|notion_read|reason|requestedBy|approval|email|actor/i.test(wf.replace(/reason:\s*'withdrawn'/g, '')) && !/console\.log\([^)]*payload/.test(wf));
     t('the withdraw path proves the build without the listing (public output only) and the privacy scan BEFORE any pull request, then verifies the live site', wf.indexOf('check-withdrawal.mjs') > -1 && wf.indexOf("'--dist', '.vercel/output/static'") > -1 && wf.indexOf('check:privacy') < wf.indexOf('openWithdrawalPr') && wf.indexOf('openWithdrawalPr') < wf.indexOf('waitForChecks') && wf.indexOf('waitForChecks') < wf.indexOf('mergePr') && wf.indexOf('mergePr') < wf.indexOf('verifyWithdrawn'));
     t('a withdrawal reports success as withdrawn and never as live, and a rerun after the merge only verifies', /withdrawn: true/.test(wf) && /live: false/.test(wf) && /const resumed = jsonDir\('withdrawn'\)/.test(wf));
+    const ro = jobSrc.slice(jobSrc.indexOf('async function reorder('), jobSrc.indexOf('\nasync function main()'));
+    t('reorder mode exists in the job, the helper modes and the workflow choices, and is a real (merging) mode', /if \(mode === 'reorder'\) return reorder\(payload\)/.test(jobSrc) && MODES_FROM_LIB.includes('reorder') && /- reorder/.test(rd('.github/workflows/publish-listing.yml')) && jobSrc.includes('REAL_MODES'));
+    t('the reorder path reads nothing private and writes no listing: no Notion, no person, no snapshot, only the order file', ro.length > 500 && !/Notion|queryAll|notion_read|requestedBy|approval|email|actor|approved\/|snapshot/i.test(ro.replace(/jsonDir\('approved'\)/g, '')));
+    t('the reorder path refuses a stale order, builds with the new order and scans it BEFORE any pull request, then proves the live catalogue', ro.indexOf("code: 'order_stale'") > -1 && ro.indexOf("run('npm', ['run', 'build']") > -1 && ro.indexOf("run('npm', ['run', 'build']") < ro.indexOf('openOrderPr(') && ro.indexOf("'check:privacy'") < ro.indexOf('openOrderPr(') && ro.indexOf('verifyOrderLive(') > ro.indexOf('waitForDeployment('));
+    t('a reorder reports success as an order change and never as a listing going live, and a rerun after the merge only verifies', /kind: 'reorder'/.test(ro) && /live: false/.test(ro) && /const resumed = current === orderText\(ids\)/.test(ro));
     t('the emergency CLI no longer takes a public reason or name', !/val\('--reason'\)\s*;/.test(rd('scripts/listings-sync.mjs')) && /withdrawnBy: 'SDA Home Choices', reason: 'withdrawn'/.test(rd('scripts/listings-sync.mjs')));
   }
   t('the manifest check refuses photographs outside a gallery review, non-hash ids and an empty gallery', checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: true }] }).length === 0 && checkManifest({ version: 1, photos: [{ id: 'a1b2c3d4e5f6', privacyReviewed: false }] }).length > 0 && checkManifest({ version: 1, photos: [{ id: 'x', privacyReviewed: true }] }).length > 0 && checkManifest({ version: 1, photos: [] }).length > 0);
@@ -1093,6 +1098,7 @@ await (await import('./test-publish-git.mjs')).default({ t, section });
 await (await import('./test-optional-fields.mjs')).default({ t, section });
 await (await import('./test-catalogue.mjs')).default({ t, section });
 await (await import('./test-offmarket.mjs')).default({ t, section });
+await (await import('./test-display-order.mjs')).default({ t, section });
 
 section('publication engine: an exact commercial description approved by a Publisher');
 {

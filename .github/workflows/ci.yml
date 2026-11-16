@@ -33,3 +33,5 @@ jobs:
         run: npm run build
       - name: Privacy scan of the build output
         run: npm run check:privacy
+      - name: Catalogue order in the build output
+        run: npm run check:order

@@ -2,7 +2,7 @@
 /*
   Publication job started by the internal Listings Manager (workflow .github/workflows/publish-listing.yml).
 
-    node scripts/listings-publish-job.mjs --job <uuid> --public-id <lst_...> --mode dry_run|publish|update|withdraw
+    node scripts/listings-publish-job.mjs --job <uuid> --public-id <lst_...> --mode dry_run|publish|update|withdraw|reorder
 
   It reuses the EXISTING engine: the same propose() that listings-sync uses, the same safety guards and compliance gates, the same
   test suite, the same build and the same dist privacy scan. It adds only the plumbing around them.
@@ -21,6 +21,10 @@
   Notion is not consulted. Before any pull request it proves the build WITHOUT the listing is clean (check:withdrawal: no route, catalogue entry, link or
   sitemap entry) and passes the privacy scan; then required check, merge, deployment, and live proof that the page answers 404 and the catalogue and sitemap
   no longer list it. A rerun after the merge only verifies. The approved snapshot and the public photographs stay (history, and any later manual administrative process; no automatic deletion).
+  REORDER. Sets the default order of the public catalogue: a one-file pull request that changes ONLY src/data/listings/display-order.json (listing ids, no content),
+  then the same required check, merge, deployment and live proof. Before any pull request the build with the new order must succeed, pass the privacy scan, and the
+  order must name only listings that are published and not withdrawn. The live proof reads the production catalogue and requires the listings in exactly the order the
+  build produced. No listing, snapshot, photograph or status is touched. A rerun after the merge only verifies.
   Progress and the result go back to the app over a signed request. This script prints step names only: never listing text, prices or
   internal values, because Actions logs of a public repository are public.
 
@@ -32,7 +36,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { REAL_MODES } from './lib/publish-job.mjs';
-import { REQUIRED_CHECK, abandon, githubClient, mainHead, mergePr, openPublicationPr, openWithdrawalPr, tombstoneFor, tombstoneText, verifyLive, verifyWithdrawn, waitForChecks, waitForDeployment, withdrawnPath } from './lib/publish-git.mjs';
+import { ORDER_PATH, REQUIRED_CHECK, abandon, checkOrder, githubClient, mainHead, mergePr, openOrderPr, openPublicationPr, openWithdrawalPr, orderText, slugsInCatalogue, tombstoneFor, tombstoneText, verifyLive, verifyOrderLive, verifyWithdrawn, waitForChecks, waitForDeployment, withdrawnPath } from './lib/publish-git.mjs';
 import { COMMERCIAL_STATUSES, JOB_ID_RE, MODES, PUBLIC_ID_RE, approverFor, checkManifest, effectiveStatus, overlayPage, parity, signedHeaders, statusParity, verifyDeclaration, withRetry } from './lib/publish-job.mjs';
 
 const argv = process.argv.slice(2);
@@ -229,12 +233,95 @@ async function withdraw(payload) {
   log('withdrawn and verified');
 }
 
+/** REORDER: set the default order of the public catalogue. See the header. Nothing private is read, written or printed here. */
+async function reorder(payload) {
+  const ids = payload.order;
+  const problems = checkOrder(ids);
+  if (payload.action !== 'reorder' || problems.length || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/.test(payload.at ?? '')) throw Object.assign(new Error(problems[0] ?? 'the display order request is not valid'), { code: 'payload_mismatch' });
+  await report('payload', 'ok', { kind: 'reorder' });
+  const dataDir = join(repoRoot, 'src/data/listings');
+  const jsonDir = (d) => (existsSync(join(dataDir, d)) ? readdirSync(join(dataDir, d)).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(join(dataDir, d, f), 'utf8'))) : []);
+  const withdrawnIds = new Set(jsonDir('withdrawn').map((w) => w.listingId));
+  const live = new Set(jsonDir('approved').map((x) => x.listingId).filter((id) => !withdrawnIds.has(id)));
+  // the order may name only listings that are published right now: a listing withdrawn a moment ago makes the request stale, so it is refused (nothing changes) and staff try again
+  const unknown = ids.filter((id) => !live.has(id));
+  if (unknown.length) throw Object.assign(new Error('the order names a listing that is not published, so the list on screen is out of date: reload and try again'), { code: 'order_stale' });
+  const current = existsSync(join(dataDir, 'display-order.json')) ? readFileSync(join(dataDir, 'display-order.json'), 'utf8') : null;
+  const resumed = current === orderText(ids);
+  const checks = [];
+  await report('engine', 'ok', { kind: resumed ? 'already_ordered' : 'reorder', checks: [{ name: 'order_valid', ok: true, note: resumed ? 'This order is already on the main branch.' : `${ids.length} published properties, none withdrawn.` }] });
+
+  const token = process.env.GITHUB_TOKEN; const repository = process.env.GITHUB_REPOSITORY; const siteUrl = process.env.LISTINGS_SITE_URL || 'https://sdahomechoices.com.au';
+  if (!token || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? '')) throw Object.assign(new Error('GitHub access is not available to this run'), { code: 'not_configured' });
+  const gh = githubClient({ token, repo: repository, api: process.env.GITHUB_API_URL || 'https://api.github.com' });
+
+  // the build WITH the new order, in this runner's workspace only (never committed), must succeed and be clean before any pull request exists
+  log('building the site with the new order');
+  writeFileSync(join(repoRoot, ORDER_PATH), orderText(ids));
+  const mediaBase = (process.env.LISTINGS_MEDIA_BASE_URL ?? '').replace(/\/$/, '');
+  const build = run('npm', ['run', 'build'], { LISTINGS_MEDIA_BASE_URL: mediaBase });
+  const buildOk = build.status === 0;
+  const privacy = buildOk ? run('npm', ['run', 'check:privacy']) : build;
+  const privacyOk = buildOk && privacy.status === 0;
+  let expected = [];
+  try { expected = slugsInCatalogue(readFileSync(join(repoRoot, '.vercel/output/static/opportunities/index.html'), 'utf8')); } catch { expected = []; }
+  // every published, visible listing must be in the catalogue exactly once
+  const orderOk = buildOk && expected.length === live.size;
+  checks.push({ name: 'build', ok: buildOk, note: buildOk ? 'The production build with the new order succeeds.' : tail(build) });
+  checks.push({ name: 'catalogue_built', ok: orderOk, note: orderOk ? `The built catalogue lists all ${expected.length} published properties.` : 'The built catalogue does not list every published property exactly once.' });
+  checks.push({ name: 'privacy_scan', ok: privacyOk, note: privacyOk ? 'The privacy scan of the build output is clean.' : tail(privacy) });
+  await report('build', buildOk && orderOk && privacyOk ? 'ok' : 'failed', { checks });
+  if (!(buildOk && orderOk && privacyOk)) throw Object.assign(new Error('the build with the new order, or its privacy scan, failed'), { code: 'build_failed', reported: true });
+
+  let pr = null; let mergeSha;
+  try {
+    const opened = resumed ? { alreadyOnMain: true } : await openOrderPr({ gh, ids, jobId });
+    if (opened.alreadyOnMain) {
+      mergeSha = await mainHead(gh); after.merged = true; after.mergeCommit = mergeSha;
+      await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha });
+    } else {
+      pr = opened;
+      await report('pull_request', 'ok', { number: pr.prNumber, url: pr.prUrl, files: 1 });
+      log('waiting for the required check');
+      const c = await waitForChecks({ gh, headSha: pr.headSha });
+      checks.push({ name: 'required_check', ok: c.ok, note: c.ok ? `The required check (${REQUIRED_CHECK}) passed on the exact commit.` : c.conclusion === 'not_started' ? `The required check (${REQUIRED_CHECK}) did not start on the pull request.` : `The required check (${REQUIRED_CHECK}) ended as ${c.conclusion}.` });
+      await report('checks', c.ok ? 'ok' : 'failed', { checks, url: c.url ?? null });
+      if (!c.ok) throw Object.assign(new Error('the required check did not pass'), { code: 'checks_failed', reported: true });
+      log('merging');
+      const m = await mergePr({ gh, prNumber: pr.prNumber, headSha: pr.headSha, title: `${pr.title} (#${pr.prNumber})` });
+      mergeSha = m.sha; pr = null; after.merged = true; after.mergeCommit = mergeSha;
+      await report('merge', 'ok', { sha: mergeSha });
+    }
+  } catch (e) {
+    if (pr) await abandon({ gh, prNumber: pr.prNumber, branch: pr.branch });
+    if (!e.reported) await report(e.code === 'merge_refused' ? 'merge' : 'pull_request', 'failed', { issues: [String(e.message).slice(0, 200)] });
+    throw Object.assign(e, { reported: true });
+  }
+
+  log('waiting for the Production deployment');
+  const dep = await waitForDeployment({ gh, sha: mergeSha });
+  const depOk = dep === null || dep.state === 'success';
+  checks.push({ name: 'deployment', ok: depOk, note: dep === null ? 'No deployment record was found; the live site checks below decide.' : dep.state === 'success' ? 'The Vercel Production deployment succeeded.' : `The Vercel Production deployment ended as ${dep.state}.` });
+  await report('deploy', depOk ? 'ok' : 'failed', { checks });
+  if (!depOk) throw Object.assign(new Error('the production deployment did not succeed'), { code: 'deploy_failed', reported: true });
+
+  log('checking the live site');
+  const proof = await verifyOrderLive({ siteUrl, expected });
+  for (const c of proof.checks) checks.push({ name: `live_${c.name}`, ok: c.ok, note: c.note });
+  await report('verify', proof.ok ? 'ok' : 'failed', { checks, url: proof.url });
+  if (!proof.ok) throw Object.assign(new Error('the live catalogue does not yet show the new order'), { code: 'verify_failed', reported: true });
+
+  await report('finished', 'succeeded', { dryRun: false, live: false, kind: 'reorder', mergeCommit: mergeSha, url: proof.url, checks });
+  log('display order set and verified');
+}
+
 async function main() {
   await report('started', 'running');
   log('fetching the approved content from the app');
   const payload = await call('GET', `/api/listings/publish-payload?job=${jobId}`);
   if (payload.publicId !== publicId || payload.mode !== mode || ![1, 2].includes(payload.version)) throw Object.assign(new Error('the payload does not match the job'), { code: 'payload_mismatch' });
   if (mode === 'withdraw') return withdraw(payload);
+  if (mode === 'reorder') return reorder(payload);
   // A real publication needs the Publisher's recorded declaration, checked against the content it was recorded for. Version 1 (legacy) can never publish.
   const declarationProblems = verifyDeclaration(payload, mode);
   if (declarationProblems.length) { await report('payload', 'failed', { issues: declarationProblems }); throw Object.assign(new Error(declarationProblems[0]), { code: 'declaration_invalid', reported: true }); }
