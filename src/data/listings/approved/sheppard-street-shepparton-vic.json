@@ -1,23 +1,24 @@
 {
   "listingId": "lst_94fe48835b",
-  "version": 2,
+  "version": 3,
   "approvedBy": "SDA Home Choices",
-  "approvedById": "app-cc8a4a7b33e7",
-  "approvedAt": "2026-11-09T17:58:21.356Z",
+  "approvedById": "listings-manager",
+  "approvedAt": "2026-11-16T19:09:01.441Z",
   "firstPublishedAt": "2026-11-09T15:39:12.976Z",
   "commercialStatus": "available",
   "featured": false,
-  "sourceEditedAt": "2026-11-08T22:55:00.000Z",
-  "contentHash": "201bbea12ebbfce585ad2ed4f0cc6894eee6b1e69a5acc56e7713860aaceed16",
+  "sourceEditedAt": "2026-11-16T18:17:00.000Z",
+  "contentHash": "77e53f5636041efb80feee99a25b9c02d999d0201c155d70eacd300c86ac557e",
   "content": {
     "slug": "sheppard-street-shepparton-vic",
     "type": "property",
-    "title": "Shepparton VIC | IL SDA Investment",
+    "title": "Shepparton VIC",
     "description": [
-      "An established IL Specialist Disability Accommodation investment opportunity in Shepparton, Victoria.",
-      "The SDA-enrolled property is configured for 3 participant places and includes Onsite Overnight Assistance (OOA). The property operates under an existing SDA provider management arrangement, supporting the ongoing administration of SDA accommodation services.",
-      "Located in Greater Shepparton, the property benefits from access to regional healthcare, disability support and community infrastructure.",
-      "Contact SDAHC for further information about the property, current occupancy and investment details."
+      "An Improved Liveability (IL) Specialist Disability Accommodation investment opportunity in Shepparton, Victoria, fully leased and fully occupied, offering a 9.9% Net ROI based on FY26 actual figures.",
+      "Investment summary:\n- Net ROI: 9.9%\n- FY26 actual gross income: $135,188 per annum\n- FY26 actual net income: $99,509 per annum\n- Fully leased and fully occupied\n- Three SDA participant places with Onsite Overnight Assistance (OOA)",
+      "Property summary:\n- Improved Liveability (IL) SDA design category\n- Three participant places plus OOA\n- Single lock-up garage\n- Land area: 400 m²\n- Floor area: 177 m²",
+      "Located in Shepparton, Victoria, the property provides an opportunity to acquire an SDA investment with an established leasing and occupancy position.",
+      "Contact SDA Home Choices for further information, pricing and supporting investment documentation."
     ],
     "address": {
       "street": "Sheppard Street",
@@ -32,7 +33,9 @@
       "designCategories": [
         "IL"
       ],
-      "buildingType": "House"
+      "buildingType": "House",
+      "residentPlaces": 3,
+      "ooa": "Onsite Overnight Assistance (OOA) available"
     },
     "photos": [
       {
@@ -212,6 +215,29 @@
         ],
         "privacyReviewed": true
       }
-    ]
+    ],
+    "property": {
+      "carSpaces": 1,
+      "floorAreaM2": 177,
+      "landAreaM2": 400,
+      "parking": "Single lock-up garage"
+    },
+    "investment": {
+      "leaseStatus": "fully_leased",
+      "occupancyStatus": "fully_occupied",
+      "annualIncomeAud": 135188,
+      "incomeType": "gross",
+      "yieldPct": 9.9,
+      "yieldType": "net",
+      "basis": "actual",
+      "approval": {
+        "valuesHash": "a0f406041f91aa9d5fbb6452b05127976302daa5cce16e56e11de050daf7178f",
+        "victorian": true
+      }
+    },
+    "descriptionApproval": {
+      "textHash": "d83ec78525033000b479adf69139a5d930c6dd6d51d9c7dcbbf6ce5274342310",
+      "victorian": true
+    }
   }
 }
