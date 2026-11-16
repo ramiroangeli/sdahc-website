@@ -52,11 +52,11 @@ export default async function run({ t, section }) {
   t('Sold flips the primary action to similar properties', L.cardView(pl({ status: 'sold' })).sold === true && L.cardView(pl()).sold === false);
   const card = rd('src/components/ListingCard.astro');
   t('Contact Agent goes to that listing\'s enquiry form, View details to the listing, Sold to the contact page', /href=\{`\$\{href\}#enquire`\}>Contact Agent/.test(card) && /href=\{href\}>View details/.test(card) && /href="\/contact-us\/">Find similar properties/.test(card));
-  t('the logo is in the commercial column when there is one, otherwise at the right of the footer', /\{commercial && \([\s\S]*lc-comm[\s\S]*<Image class="lc-logo"/.test(card) && /\{!commercial && logo && <Image class="lc-logo lc-logo--foot"/.test(card) && /\.lc-logo--foot\{margin-left:auto/.test(card));
+  t('there is exactly one logo per card, in the action row at the right of the buttons, with or without a commercial column and never inside it', (card.match(/<Image class="lc-logo/g) || []).length === 1 && /\{logo && <Image class="lc-logo lc-logo--foot"/.test(card) && /\.lc-logo--foot\{margin-left:auto/.test(card) && !/lc-comm[^>]*>[\s\S]{0,1500}<Image class="lc-logo/.test(card.slice(card.indexOf('{commercial && ('), card.indexOf('<div class="lc-actions">'))));
   t('every card has the same photograph column; a commercial column adds no photo width change', /\.lc-main\{flex:1 0 auto;--ph:310px;--cc:200px;display:grid;grid-template-columns:var\(--ph\) minmax\(0,1fr\)/.test(card) && /\.lc-main--comm\{grid-template-columns:var\(--ph\) minmax\(0,1fr\) var\(--cc\)\}/.test(card));
   t('the catalogue card has no description and the title is the approved title, two lines at most', !/listing\.summary|lc-sum/.test(card) && /\{listing\.title\}<\/a>/.test(card) && /-webkit-line-clamp:2/.test(card));
   t('lease and occupancy render as separate labelled indicators', /lc-ind-k">\{i\.label\}/.test(card) && /lc-ind-v">\{i\.value\}/.test(card));
-  t('the logo is 44 to 48px tall and never wraps to its own row on a phone', /height=\{44\}/.test(card) && /height=\{48\}/.test(card) && !/lc-logo--foot\{[^}]*flex:0 0 100%/.test(card));
+  t('the logo is one size (44px tall) on every card and never wraps to its own row on a phone', /height=\{44\}/.test(card) && !/height=\{48\}/.test(card) && !/lc-logo--foot\{[^}]*flex:0 0 100%/.test(card));
   t('photographs are cropped to a 4:3 frame, never stretched', /\.lc-media\{[^}]*aspect-ratio:4\/3/.test(card) && /\.lc-logo\{[^}]*object-fit:contain/.test(card));
   t('the card keeps the data attributes the filter script reads', ['data-state', 'data-type', 'data-status', 'data-design', 'data-search', 'data-suburb', 'data-index'].every((a) => card.includes(a)));
 
