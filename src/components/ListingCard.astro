@@ -10,7 +10,7 @@ import { cardView } from '../data/listings/card';
     photograph (4:3)  |  property information  |  commercial column (ONLY when approved commercial facts exist, see src/data/listings/card.ts)
   then an action row. The heading is the approved public title (two lines at most; the full title is the link's title attribute). The public location
   line appears only when the title does not already say where the property is. There is no description here: it lives on the listing page.
-  The marketing agency logo is always visible: at the foot of the commercial column when there is one, otherwise at the right of the action row.
+  The marketing agency logo is always visible, once per card, at the right of the action row (with the buttons at the left), whether or not the card has a commercial column.
   The list item keeps the data-* attributes the catalogue filter script reads.
 */
 interface Props { listing: PublicListing; index?: number; first?: boolean; beyondFirstPage?: boolean }
@@ -78,7 +78,6 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
               </ul>
             )}
           </div>
-          {logo && <Image class="lc-logo" src={logo} alt={agency.name} height={44} loading="lazy" />}
         </div>
       )}
     </div>
@@ -88,7 +87,7 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
         ? <a class="btn b1 lc-btn" href="/contact-us/">Find similar properties</a>
         : <a class="btn b1 lc-btn" href={`${href}#enquire`}>Contact Agent<span class="lc-sr"> about {listing.title}</span></a>}
       <a class="btn b2 lc-btn" href={href}>View details<span class="lc-sr"> for {listing.title}</span></a>
-      {!commercial && logo && <Image class="lc-logo lc-logo--foot" src={logo} alt={agency.name} height={48} loading="lazy" />}
+      {logo && <Image class="lc-logo lc-logo--foot" src={logo} alt={agency.name} height={44} loading="lazy" />}
     </div>
   </article>
 </li>
@@ -115,7 +114,7 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
 .lc-loc{font-family:var(--geo);font-size:13px;letter-spacing:.04em;color:var(--pale);margin:0 0 8px}
 .lc-cat{display:inline-block;align-self:flex-start;margin:6px 0 0;font-family:var(--geo);font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--white);border:1px solid color-mix(in srgb,var(--blue) 70%,transparent);border-radius:2px;padding:3px 8px}
 .lc-facts{margin:10px 0 0;font-family:var(--sans);font-size:15px;font-weight:600;line-height:1.4;color:var(--white)}
-/* optional commercial column: concise indicators, balanced from top to the logo at the foot */
+/* optional commercial column: concise indicators (the logo is in the action row, not here) */
 .lc-comm{display:flex;flex-direction:column;justify-content:space-between;gap:8px;padding:14px 18px;border-left:1px solid color-mix(in srgb,var(--pale) 18%,transparent)}
 .lc-comm-top{display:flex;flex-direction:column;gap:8px}
 .lc-price,.lc-yield{margin:0;display:flex;flex-direction:column}
@@ -129,7 +128,6 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
 .lc-ind-v{font-family:var(--sans);font-size:13.5px;font-weight:600;line-height:1.25;color:var(--white)}
 /* the agency logo: the whole mark is always visible (contain), never cropped or stretched */
 .lc-logo{display:block;width:auto;max-width:100%;object-fit:contain;flex:0 0 auto}
-.lc-comm .lc-logo{align-self:flex-end}
 .lc-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 22px;border-top:1px solid color-mix(in srgb,var(--pale) 16%,transparent)}
 .lc-btn{padding:10px 20px;font-size:14.5px;white-space:nowrap}
 .lc-logo--foot{margin-left:auto}
@@ -154,14 +152,14 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
 /* tablet: the same three columns, a little narrower (photo still 4:3 and the same width on every card) */
 @media(max-width:899px){
   .lc-main,.lc-main--comm{--ph:230px;grid-template-columns:var(--ph) minmax(0,1fr)}
-  /* the commercial facts become one compact strip under the photograph and information, with the logo at its right */
+  /* the commercial facts become one compact strip under the photograph and information */
   .lc-comm{grid-column:1 / -1;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;border-left:0;border-top:1px solid color-mix(in srgb,var(--pale) 18%,transparent);padding:12px 18px}
   .lc-comm-top{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 20px}
   .lc-inds{flex-direction:row;flex-wrap:wrap}
   .lc-body{padding:16px 18px}
   .lc-actions{padding:12px 18px}
 }
-/* mobile: photo, information, commercial, actions. The commercial block is one row with the logo at its right, so the card stays short */
+/* mobile: photo, information, commercial, actions. The commercial block is one compact row; the logo stays at the right of the action row */
 @media(max-width:620px){
   .lc-main,.lc-main--comm{grid-template-columns:1fr;min-height:0}
   .lc-body{padding:16px 18px}
