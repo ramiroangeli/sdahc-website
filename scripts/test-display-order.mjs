@@ -29,7 +29,7 @@ export default async function run({ t, section }) {
   const F = [mk(1, { featured: true }), mk(2), mk(3, { featured: true }), mk(4)];
   t('every featured listing precedes every other listing', ids(L.orderListings(F)).join() === '3,1,4,2');
   t('inside the featured group the saved order applies', ids(L.orderListings(F, [id(1), id(3)])).join() === '1,3,4,2');
-  t('inside the featured group, listings with no saved place are newest first', ids(L.orderListings(F, [id(1)])).join() === '3,1,4,2');
+  t('inside the featured group a placed listing comes before an unplaced one', ids(L.orderListings(F, [id(1)])).join() === '1,3,4,2');
   t('only one listing is ever first: the order is a strict total order (no ties, same result for every input permutation)', (() => {
     const perms = [[0, 1, 2, 3], [3, 2, 1, 0], [2, 0, 3, 1], [1, 3, 0, 2]].map((p) => ids(L.orderListings(p.map((i) => F[i]), [id(3), id(1), id(2), id(4)])).join());
     return new Set(perms).size === 1 && perms[0] === '3,1,2,4';
@@ -42,9 +42,9 @@ export default async function run({ t, section }) {
   t('the same saved order gives the same result however the site loads the listings', ids(L.orderListings([...five].reverse(), [id(4), id(2), id(1), id(5), id(3)])).join() === ids(L.orderListings(five, [id(4), id(2), id(1), id(5), id(3)])).join());
 
   section('display order: adding a new listing');
-  t('a listing published after the order was saved is not in it: it appears at the top (newest first, as before), below any featured listing', ids(L.orderListings([mk(1), mk(2), mk(3), mk(9)], [id(2), id(3), id(1)])).join() === '9,2,3,1');
-  t('the placed listings keep their relative order when a new one arrives', ids(L.orderListings([mk(1), mk(2), mk(3), mk(9)], [id(3), id(1), id(2)]).filter((l) => l.id !== id(9))).join() === '3,1,2');
-  t('a new featured listing goes ahead of an older featured one that has a place', ids(L.orderListings([mk(1, { featured: true }), mk(9, { featured: true }), mk(2)], [id(1), id(2)])).join() === '9,1,2');
+  t('a listing published after the order was saved is not in it: it appears after the placed listings, and below any featured listing', ids(L.orderListings([mk(1), mk(2), mk(3), mk(9)], [id(2), id(3), id(1)])).join() === '2,3,1,9');
+  t('several unplaced listings come last, newest first, and the placed ones keep their order', ids(L.orderListings([mk(1), mk(2), mk(3), mk(8), mk(9)], [id(3), id(1)])).join() === '3,1,9,8,2');
+  t('the full precedence: featured placed, featured unplaced, other placed, other unplaced (newest first)', ids(L.orderListings([mk(1, { featured: true }), mk(9, { featured: true }), mk(2, { featured: true }), mk(3), mk(4), mk(5), mk(6)], [id(2), id(1), id(4), id(3)])).join() === '2,1,9,4,3,6,5');
 
   section('display order: removing or withdrawing a listing');
   t('an id in the saved order that is no longer public is ignored and the others keep their order', ids(L.orderListings([mk(1), mk(3)], [id(3), id(2), id(1)])).join() === '3,1');

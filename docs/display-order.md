@@ -4,9 +4,11 @@
 
 One rule, applied in `src/data/listings/ordering.ts` and used by every page that lists properties (catalogue, homepage cards, related properties):
 
-1. Featured listings first. The flag is a checkbox per listing, so several can be featured; inside that group the saved order applies.
-2. Inside each group, a listing that has no place in the saved order yet (a newly published listing) comes first, newest first. This is how the site behaved before an order existed.
-3. Then the listings named in the saved order, in that order.
+1. Featured listings first. The flag is a checkbox per listing, so several can be featured.
+2. Inside each group, the listings the saved order names come first, in that order.
+3. Then listings with no place in the saved order (for example a newly published one), newest first.
+
+With no saved order: featured first, then newest first.
 
 Ids in the saved order that are not public any more (withdrawn) are ignored. Sold and Withdrawn visibility is decided before ordering, so ordering can never reveal or hide a listing. Off-market opportunities are not part of this feature.
 

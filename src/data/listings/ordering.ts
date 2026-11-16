@@ -5,10 +5,10 @@ import { z } from 'zod';
   display-order.json through the same reviewed publication path as a listing, so the static site only ever reads a local file.
 
   One rule, used by every page that lists properties (catalogue, homepage cards, related properties):
-    1. Featured listings first. Several may be featured (the flag is a checkbox per listing), so within the featured group the saved order applies.
-    2. Within each group, listings that have no place in the saved order yet (a newly published listing) come first, newest first,
-       which is exactly how the site behaved before an order existed. Staff can then place them.
-    3. Then the listings the saved order names, in that order.
+    1. Featured listings first. Several may be featured (the flag is a checkbox per listing).
+    2. Within each group, listings the saved order names come first, in that order.
+    3. Then listings with no place in the saved order (for example a newly published one), newest first.
+  With no saved order this is: featured first, then newest first (how the site behaved before an order existed).
   Ids in the saved order that are not public any more (withdrawn, never published) are ignored, so a stale entry can never hide or reveal anything.
   The order file holds listing ids only. It cannot add a listing to the site and carries no listing content.
 */
@@ -33,8 +33,8 @@ export const orderListings = <T extends Orderable>(listings: readonly T[], order
     const ra = rank.get(a.id);
     const rb = rank.get(b.id);
     if (ra !== rb) {
-      if (ra === undefined) return -1; // not placed yet: ahead of the placed ones, as before
-      if (rb === undefined) return 1;
+      if (ra === undefined) return 1; // not placed yet: after the placed ones
+      if (rb === undefined) return -1;
       return ra - rb;
     }
     return b.publishedAt.localeCompare(a.publishedAt) || a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
