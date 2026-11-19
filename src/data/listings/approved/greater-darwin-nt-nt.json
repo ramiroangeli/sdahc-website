@@ -1,0 +1,158 @@
+{
+  "listingId": "lst_cd4013527e",
+  "version": 1,
+  "approvedBy": "SDA Home Choices",
+  "approvedById": "listings-manager",
+  "approvedAt": "2026-11-19T23:50:54.877Z",
+  "firstPublishedAt": "2026-11-19T23:50:54.877Z",
+  "commercialStatus": "available",
+  "featured": false,
+  "sourceEditedAt": "2026-10-28T03:29:00.000Z",
+  "contentHash": "5adb9dc2662a41862b174c1decc71ee1021a76a269410c7a0296e173f0027a0f",
+  "content": {
+    "slug": "greater-darwin-nt-nt",
+    "type": "property",
+    "title": "GREATER DARWIN",
+    "description": [
+      "FREEHOLD PASSIVE INVESTMENT UNDER FULL MANAGEMENT",
+      "- Net yield: 9.5%\n- Gross approx. income: $111,154 p.a.\n- Net approx. income: $88,923 p.a\n- 2-participant Robust SDA dwelling with OOA\n- Established SDA provider and management arrangement",
+      "An opportunity to acquire an established, tenanted Specialist Disability Accommodation (SDA) investment in Greater Darwin. The property offers a completed Robust-design SDA dwelling configured with an existing highly experienced SDA provider and demonstrated income.",
+      "This is an opportunity to acquire an established SDA investment with existing provider arrangements and demonstrated income, suitable for investors seeking completed and operational disability accommodation assets.",
+      "Income figures are vendor-reported and subject to purchaser due diligence. Occupancy, management arrangements and property details should be independently verified.",
+      "Confidentiality conditions apply. Interested parties will be required to enter into a Non-Disclosure Agreement (NDA) before receiving further information."
+    ],
+    "location": {
+      "label": "Greater Darwin, NT",
+      "state": "NT"
+    },
+    "pricing": {
+      "mode": "asking_price",
+      "display": "$935,000"
+    },
+    "sda": {
+      "designCategories": [
+        "Robust"
+      ],
+      "bedrooms": 2,
+      "residentPlaces": 2,
+      "ooa": "OOA"
+    },
+    "photos": [
+      {
+        "id": "ba827226ff31",
+        "alt": "Facade",
+        "width": 2800,
+        "height": 2045,
+        "accent": "teal",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/ba827226ff31-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/ba827226ff31-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/ba827226ff31-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "3303e3358ae4",
+        "alt": "Local amenities",
+        "width": 3264,
+        "height": 2448,
+        "accent": "blue",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/3303e3358ae4-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/3303e3358ae4-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/3303e3358ae4-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "606ca73a1f16",
+        "alt": "Local amenities",
+        "width": 2800,
+        "height": 2100,
+        "accent": "teal",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/606ca73a1f16-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/606ca73a1f16-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/606ca73a1f16-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "8c4f56b7b706",
+        "alt": "Floorplan",
+        "width": 1646,
+        "height": 2046,
+        "accent": "slate",
+        "kind": "floorplan",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/8c4f56b7b706-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/8c4f56b7b706-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_cd4013527e/8c4f56b7b706-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      }
+    ],
+    "property": {
+      "bathrooms": 2,
+      "carSpaces": 1,
+      "floorAreaM2": 223,
+      "landAreaM2": 441,
+      "parking": "Single Lock Up Garage",
+      "municipality": "City of Darwin"
+    },
+    "investment": {
+      "leaseStatus": "partially_leased",
+      "occupancyStatus": "partially_occupied",
+      "tenure": "One of two places currently occupied",
+      "annualIncomeAud": 111154,
+      "incomeType": "gross",
+      "yieldPct": 9.5,
+      "yieldType": "net",
+      "basis": "actual",
+      "providerArrangement": "Experienced SDA provider arrangement",
+      "approval": {
+        "valuesHash": "37ff16199323d015d2c1167d7e10e2572480021e72ed01453e5b3146e3a150f9",
+        "provider": true
+      }
+    },
+    "descriptionApproval": {
+      "textHash": "a76a41aafea0abfa395ef47409137da64c23e2c0ae475ccde6f45b8f5fb60b42"
+    }
+  }
+}
