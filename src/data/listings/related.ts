@@ -1,5 +1,6 @@
 import statesData from '../sda-states.json';
 import type { PublicListing } from './schema';
+import { listingStates } from './portfolio';
 
 /*
   Internal links and context for a listing page. Everything is derived from real, published, public sources:
@@ -22,7 +23,7 @@ export const relatedListings = (listing: PublicListing, all: PublicListing[], ma
     .filter((o) => o.id !== listing.id && o.slug !== listing.slug && o.commercialStatus !== 'sold')
     .map((o) => ({
       o,
-      score: (o.address.state === listing.address.state ? 4 : 0) + ((o.sda.designCategories ?? []).some((c) => cats.has(c)) ? 3 : 0) + (o.type === listing.type ? 1 : 0),
+      score: (listingStates(o).some((s) => listingStates(listing).includes(s)) ? 4 : 0) + ((o.sda.designCategories ?? []).some((c) => cats.has(c)) ? 3 : 0) + (o.type === listing.type ? 1 : 0),
     }))
     // a property is related only if it shares the state or the design category (the type alone is not enough)
     .filter((x) => x.score >= 3);
@@ -51,9 +52,12 @@ const STATES = statesData as Record<string, { name: string; d: number }>;
 
 /** The verified market context for a listing's state, or null when there is none. */
 export const marketContext = (listing: PublicListing): MarketContext | null => {
-  const s = STATES[listing.address.state];
+  // market context is stated for ONE state; a portfolio spanning several states has none rather than an arbitrary one
+  const states = listingStates(listing);
+  if (states.length !== 1) return null;
+  const s = STATES[states[0]];
   const nat = STATES.NATIONAL;
-  const statePage = STATE_PAGE[listing.address.state];
+  const statePage = STATE_PAGE[states[0]];
   if (!s || !nat || !statePage) return null;
   return { stateName: s.name, stateDwellings: fmt(s.d), nationalDwellings: fmt(nat.d), asAt: MARKET_FIGURES_AS_AT, source: MARKET_FIGURES_SOURCE, statePage };
 };

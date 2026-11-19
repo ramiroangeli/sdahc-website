@@ -10,8 +10,8 @@ import type { Row } from '../data/listings/detail';
   SDA Home Choices details and are shown only for the default agency: another agency never inherits them. There are no agent profiles here.
   A Sold property shows no enquiry button and offers the general route instead.
 */
-interface Props { agency: Agency; sold: boolean; pricing: Row | null }
-const { agency, sold, pricing } = Astro.props;
+interface Props { agency: Agency; sold: boolean; pricing: Row | null; noun?: string }
+const { agency, sold, pricing, noun = 'property' } = Astro.props;
 const logos = import.meta.glob<{ default: ImageMetadata }>('../assets/logo-*.png', { eager: true });
 const logo = logos[`../assets/${agency.logoOnDark}`]?.default;
 const isDefault = agency.key === DEFAULT_AGENCY_KEY;
@@ -33,7 +33,7 @@ const isDefault = agency.key === DEFAULT_AGENCY_KEY;
       <a class="btn b1 ag-cta" href="/contact-us/">Tell us what you are looking for</a>
     </>
   ) : (
-    <a class="btn b1 ag-cta" href="#enquire">Enquire about this property</a>
+    <a class="btn b1 ag-cta" href="#enquire">Enquire about this {noun}</a>
   )}
   {isDefault && (
     <ul class="ag-contact">

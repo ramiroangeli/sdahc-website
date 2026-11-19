@@ -4,6 +4,7 @@ import ListingStatusBadge from './ListingStatusBadge.astro';
 import ListingImage from './ListingImage.astro';
 import { TYPE_LABEL, type PublicListing } from '../data/listings/schema';
 import { cardView } from '../data/listings/card';
+import { listingStates } from '../data/listings/portfolio';
 
 /*
   Horizontal catalogue card, one size for every listing. The photograph column is the same width whether or not the card has a commercial column.
@@ -17,7 +18,9 @@ interface Props { listing: PublicListing; index?: number; first?: boolean; beyon
 const { listing, index = 0, first = false, beyondFirstPage = false } = Astro.props;
 const designs = listing.sda.designCategories ?? [];
 const a = listing.address;
-const search = [a.street, a.suburb, a.state, a.postcode].join(' ').toLowerCase();
+// an individual property is found by its public address; a portfolio by its title, coverage and states (member addresses are never on the site)
+const states = listingStates(listing);
+const search = (a ? [a.street, a.suburb, a.state, a.postcode] : [listing.title, listing.portfolio?.coverage ?? '', ...states]).join(' ').toLowerCase();
 const { cover, facts, location, commercial, agency, sold } = cardView(listing);
 const href = `/opportunities/${listing.slug}/`;
 // brand files already in src/assets; the card is on a dark surface, so the white variant is used
@@ -28,12 +31,12 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
 <li
   class={`lc${first ? ' lc--first' : ''}`}
   hidden={beyondFirstPage}
-  data-state={a.state}
+  data-state={states.join(' ')}
   data-type={listing.type}
   data-status={listing.commercialStatus}
   data-design={designs.join(' ')}
   data-search={search}
-  data-suburb={a.suburb.toLowerCase()}
+  data-suburb={(a ? a.suburb : listing.portfolio?.coverage ?? '').toLowerCase()}
   data-published={listing.publishedAt}
   data-index={index}
 >
@@ -41,7 +44,7 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
     <div class={`lc-main${commercial ? ' lc-main--comm' : ''}`}>
       <a class="lc-media" href={href} tabindex="-1" aria-hidden="true">
         <ListingImage photo={cover} sizes="(min-width: 900px) 300px, (min-width: 620px) 240px, 100vw" demoTag={false} />
-        <span class="lc-state">{a.state}</span>
+        <span class="lc-state">{states.join(' \u00b7 ')}</span>
         {listing.isPreview && <span class="lc-demo">Draft preview</span>}
         {listing.isDemo && <span class="lc-demo">Demo listing</span>}
       </a>
