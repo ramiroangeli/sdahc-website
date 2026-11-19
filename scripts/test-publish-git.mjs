@@ -24,8 +24,9 @@ function fakeGitHub(opts = {}) {
       if (opts.alsoTouch) s.files[b][opts.alsoTouch] = 'changed';
       return json(200, { commit: { sha: c } });
     }
+    if (method === 'DELETE' && (m = path.match(/^\/contents\/(.+)$/))) { const b = body.branch; delete s.files[b][decodeURIComponent(m[1])]; const c = commitSha(); s.refs[b] = c; s.lastCommit = body; return json(200, { commit: { sha: c } }); }
     if (method === 'GET' && (m = path.match(/^\/compare\/main\.\.\.(.+)$/))) {
-      const b = m[1]; const changed = Object.keys(s.files[b]).filter((k) => s.files[b][k] !== s.files.main[k]);
+      const b = m[1]; const changed = Object.keys({ ...s.files.main, ...s.files[b] }).filter((k) => s.files[b][k] !== s.files.main[k]);
       return json(200, { files: changed.map((filename) => ({ filename })), commits: changed.length ? [{ sha: s.refs[b] }] : [] });
     }
     if (method === 'GET' && path === '/pulls') return json(200, s.prs.filter((p) => p.state === 'open' && u.searchParams.get('head').endsWith(`:${p.head}`)));
@@ -43,6 +44,7 @@ function fakeGitHub(opts = {}) {
       if (body.sha !== s.refs[p.head]) return json(409, { message: 'head changed' });
       s.mergeTries = (s.mergeTries ?? 0) + 1;
       if (!ok || opts.refuseMerge || s.mergeTries <= (opts.mergeFlaky ?? 0)) return json(405, { message: 'Required status check is expected.' });
+      for (const k of Object.keys(s.files.main)) if (!(k in s.files[p.head])) delete s.files.main[k];
       Object.assign(s.files.main, s.files[p.head]); s.refs.main = commitSha(); p.state = 'closed'; s.merged.push(p.number);
       return json(200, { merged: true, sha: s.refs.main });
     }
@@ -264,5 +266,62 @@ export default async function run({ t, section }) {
     t('it fails on the old order, on a missing property, and when the catalogue cannot be read', !(await verifyOrderLive({ ...args, fetchImpl: site([...expected].reverse().map(card).join('')) })).ok && !(await verifyOrderLive({ ...args, fetchImpl: site(expected.slice(0, 2).map(card).join('')) })).ok && !(await verifyOrderLive({ ...args, fetchImpl: site('', { fail: true }) })).ok);
     let n = 0; const flaky = async (...a) => (n++ < 2 ? site([...expected].reverse().map(card).join(''))(...a) : site(expected.map(card).join(''))(...a));
     t('while the new deployment propagates the proof retries and then succeeds', (await verifyOrderLive({ ...args, attempts: 4, fetchImpl: flaky })).ok);
+  }
+
+  section('restore: the same publication goes back, its withdrawal marker is lifted in the same pull request, nothing else changes');
+  {
+    const ID = 'lst_0123456789'; const OTHER = 'lst_0000000009'; const AT = '2026-11-11T05:00:00.000Z';
+    const old = snap({ version: 1, contentHash: 'aaaaaaaaaaaaaaaa' }); const next = snap({ version: 2, contentHash: 'bbbbbbbbbbbbbbbb' });
+    const TOMB = withdrawnPath(ID);
+    const files = (extra = {}) => ({ main: { 'package.json': '{}\n', [artifactPath(SLUG)]: snapshotText(old), [TOMB]: tombstoneText(tombstoneFor(ID, AT)), [ORDER_PATH]: orderText([OTHER, ID, 'lst_0000000008']), ...extra } });
+    t('a restoring publication may change its listing file, its withdrawal marker and its display order entry, and nothing else', (() => {
+      const ok = (c) => { try { assertOnlyArtifact(c, SLUG, ID); return true; } catch { return false; } };
+      return ok([artifactPath(SLUG)]) && ok([artifactPath(SLUG), TOMB]) && ok([artifactPath(SLUG), TOMB, ORDER_PATH]) && ok([TOMB]) && !ok([]) && !ok(['package.json']) && !ok([artifactPath(SLUG), 'src/data/listings/compliance.json']) && !ok([artifactPath(SLUG), withdrawnPath('lst_9999999999')]);
+    })());
+    t('without the restore request the tombstone can never be touched: the old exact-one-file rule stands', (() => { try { assertOnlyArtifact([artifactPath(SLUG), TOMB], SLUG); return false; } catch (e) { return e.code === 'unexpected_files'; } })());
+    {
+      const { s, gh } = fakeGitHub({ state: { files: files() } });
+      const r = await openPublicationPr({ gh, snapshot: next, slug: SLUG, jobId: 'job-r', mode: 'update', restore: { listingId: ID } });
+      const b = s.files[r.branch];
+      t('one pull request: the new version of the same listing file, the withdrawal marker removed, and the listing taken out of the saved order (the others keep their order)', b[artifactPath(SLUG)] === snapshotText(next) && !(TOMB in b) && b[ORDER_PATH] === orderText([OTHER, 'lst_0000000008']) && b['package.json'] === '{}\n');
+      t('it is titled as a restore, and says exactly what it changes (the listing id is public, the person and the reason are not)', r.title === `Restore ${SLUG} (version 2)` && /withdrawal marker/.test(s.prs[0].body) && !/@|reason|restored by/i.test(JSON.stringify([s.prs, s.lastCommit])));
+      const again = await openPublicationPr({ gh, snapshot: next, slug: SLUG, jobId: 'job-r', mode: 'update', restore: { listingId: ID } });
+      t('repeating the request finds the same branch and pull request', again.branch === r.branch && again.prNumber === r.prNumber && s.prs.length === 1);
+      const c = await (async () => { s.checkRuns[s.refs[r.branch]] = [{ id: 1, name: REQUIRED_CHECK, status: 'completed', conclusion: 'success' }]; return mergePr({ gh, prNumber: r.prNumber, headSha: s.refs[r.branch], title: 't', sleep: noSleep }); })();
+      t('after the merge main has the new version, no withdrawal marker and the order without it', c.merged && !(TOMB in s.files.main) && s.files.main[artifactPath(SLUG)] === snapshotText(next) && s.files.main[ORDER_PATH] === orderText([OTHER, 'lst_0000000008']));
+      t('a rerun after the merge finds nothing left to do', (await openPublicationPr({ gh, snapshot: next, slug: SLUG, jobId: 'job-r2', mode: 'update', restore: { listingId: ID } })).alreadyOnMain === true);
+    }
+    {
+      const { s, gh } = fakeGitHub({ state: { files: files() } });
+      const r = await openPublicationPr({ gh, snapshot: old, slug: SLUG, jobId: 'job-u', mode: 'update', restore: { listingId: ID } });
+      t('restoring the SAME content still opens a pull request (the withdrawal must be lifted) and changes only the marker and the order entry', !r.alreadyOnMain && s.files[r.branch][artifactPath(SLUG)] === snapshotText(old) && !(TOMB in s.files[r.branch]) && Object.keys({ ...s.files.main, ...s.files[r.branch] }).filter((k) => s.files[r.branch][k] !== s.files.main[k]).sort().join() === [ORDER_PATH, TOMB].sort().join());
+    }
+    {
+      const { s, gh } = fakeGitHub({ state: { files: files() } });
+      const r = await openPublicationPr({ gh, snapshot: next, slug: SLUG, jobId: 'job-n', mode: 'update' });
+      t('without a restore request a withdrawn listing is not lifted: the ordinary path changes only the listing file and leaves the marker and the order alone', TOMB in s.files[r.branch] && s.files[r.branch][ORDER_PATH] === s.files.main[ORDER_PATH] && Object.keys({ ...s.files.main, ...s.files[r.branch] }).filter((k) => s.files[r.branch][k] !== s.files.main[k]).join() === artifactPath(SLUG) && /^Update /.test(r.title));
+    }
+    {
+      const noMarker = files(); delete noMarker.main[TOMB]; noMarker.main[ORDER_PATH] = orderText([OTHER]);
+      const { gh } = fakeGitHub({ state: { files: noMarker } });
+      t('a restore request for a listing that is not withdrawn and not in the order behaves as an ordinary publication', (await openPublicationPr({ gh, snapshot: old, slug: SLUG, jobId: 'j', mode: 'update', restore: { listingId: ID } })).alreadyOnMain === true);
+    }
+    {
+      const { gh } = fakeGitHub({ state: { files: files() }, alsoTouch: 'package.json' });
+      let err; try { await openPublicationPr({ gh, snapshot: next, slug: SLUG, jobId: 'j', mode: 'update', restore: { listingId: ID } }); } catch (e) { err = e; }
+      t('a restoring publication that would touch any other file is refused before the pull request', err?.code === 'unexpected_files');
+    }
+    const site = (o = {}) => async (url) => {
+      const u = new URL(url); const res = (status, body = '', type = 'text/html') => ({ ok: status < 400, status, headers: new Headers({ 'content-type': type }), text: async () => body, body: null });
+      if (u.hostname === 'media.test') return res(200, '', 'image/webp');
+      if (u.pathname === `/opportunities/${SLUG}/`) return res(200, '<h1>Tom</h1>');
+      if (u.pathname === '/opportunities/') return res(200, `<a href="/opportunities/${SLUG}/">x</a>`);
+      if (u.pathname === '/sitemap-index.xml') return res(200, '<sitemapindex><sitemap><loc>https://www.example.test/sitemap-0.xml</loc></sitemap></sitemapindex>');
+      if (u.pathname === '/sitemap-0.xml') return o.notInSitemap ? res(200, '<loc>https://www.example.test/other/</loc>') : res(200, `<loc>https://www.example.test/opportunities/${SLUG}/</loc>`);
+      return res(404);
+    };
+    const args = { siteUrl: 'https://www.example.test', slug: SLUG, title: 'Tom', photos: [], sleep: noSleep, attempts: 2, checkSitemap: true };
+    t('live proof of a restore also needs the listing back in the sitemap', (await verifyLive({ ...args, fetchImpl: site() })).ok && !(await verifyLive({ ...args, fetchImpl: site({ notInSitemap: true }) })).ok);
+    t('an ordinary publication does not read the sitemap in its live proof (unchanged)', !(await verifyLive({ ...args, checkSitemap: false, fetchImpl: site() })).checks.some((c) => c.name === 'sitemap'));
   }
 }

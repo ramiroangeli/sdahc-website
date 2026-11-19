@@ -16,6 +16,9 @@
   that changes ONLY src/data/listings/approved/<slug>.json, waits for the required CI check on that exact commit, merges it, waits for the Vercel
   Production deployment and then proves the live listing page, every image and the catalogue. It reports "finished: succeeded" (the only signal the
   app turns into Live) only after that proof. On any failure the pull request is closed and the branch deleted, so main and the live site are untouched.
+  RESTORE. A withdrawn listing that staff restored to a draft is published again as the SAME listing by an ordinary update whose signed request says `restore`: the same one pull
+  request replaces its approved file, removes its withdrawal marker and takes its id out of the saved display order (so it does not return to an old place), and the live proof
+  also requires the sitemap. A request without `restore` never lifts a withdrawal.
   WITHDRAW. Removes the listing from public marketing: a one-file pull request that adds src/data/listings/withdrawn/<id>.json (constant words only: no reason
   and no person, because this repository, its pull requests and these logs are public; the reason lives only in the Listings Manager's private audit trail).
   Notion is not consulted. Before any pull request it proves the build WITHOUT the listing is clean (check:withdrawal: no route, catalogue entry, link or
@@ -32,7 +35,7 @@
   Real modes also: GITHUB_TOKEN (the short-lived GitHub App token), GITHUB_REPOSITORY, LISTINGS_SITE_URL (optional GITHUB_API_URL for rehearsals)
 */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 import { REAL_MODES } from './lib/publish-job.mjs';
@@ -76,7 +79,7 @@ const run = (cmd, args, extraEnv = {}) => spawnSync(cmd, args, { cwd: repoRoot, 
 const tail = (r) => `${r.stdout ?? ''}${r.stderr ?? ''}`.split('\n').slice(-12).join('\n').slice(0, 1500);
 
 /** The real half: public media present, one-file pull request, required checks, merge, deployment, live proof. */
-async function publishReal({ snapshot, checks, resumed }) {
+async function publishReal({ snapshot, checks, resumed, restore = null, restoreRequested = false }) {
   const token = process.env.GITHUB_TOKEN; const repository = process.env.GITHUB_REPOSITORY; const siteUrl = process.env.LISTINGS_SITE_URL || 'https://sdahomechoices.com.au';
   if (!token || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? '')) throw Object.assign(new Error('GitHub access is not available to this run'), { code: 'not_configured' });
   const gh = githubClient({ token, repo: repository, api: process.env.GITHUB_API_URL || 'https://api.github.com' });
@@ -97,7 +100,7 @@ async function publishReal({ snapshot, checks, resumed }) {
       await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha });
     } else {
       log('opening the publication pull request');
-      const opened = await openPublicationPr({ gh, snapshot, slug, jobId, mode });
+      const opened = await openPublicationPr({ gh, snapshot, slug, jobId, mode, restore });
       if (opened.alreadyOnMain) { mergeSha = await mainHead(gh); after.merged = true; after.mergeCommit = mergeSha; await report('pull_request', 'ok', { note: 'Already merged.' }); await report('checks', 'ok', { note: 'Already merged.' }); await report('merge', 'ok', { note: 'Already merged.', sha: mergeSha }); } else {
         pr = opened;
         await report('pull_request', 'ok', { number: pr.prNumber, url: pr.prUrl, files: 1 });
@@ -127,7 +130,7 @@ async function publishReal({ snapshot, checks, resumed }) {
   if (!depOk) throw Object.assign(new Error('the production deployment did not succeed'), { code: 'deploy_failed', reported: true });
 
   log('checking the live site');
-  const live = await verifyLive({ siteUrl, slug, title: snapshot.content.title, photos, status: snapshot.commercialStatus });
+  const live = await verifyLive({ siteUrl, slug, title: snapshot.content.title, photos, status: snapshot.commercialStatus, checkSitemap: restoreRequested });
   for (const c of live.checks) checks.push({ name: `live_${c.name}`, ok: c.ok, note: c.note });
   await report('verify', live.ok ? 'ok' : 'failed', { checks, url: live.url });
   if (!live.ok) throw Object.assign(new Error('the live site does not yet serve the listing correctly'), { code: 'verify_failed', reported: true });
@@ -360,6 +363,10 @@ async function main() {
 
   log('running the existing publication engine on the approved content');
   const previousSnap = jsonDir('approved').find((x) => x.listingId === publicId) ?? null;
+  // RESTORE: a withdrawn listing that staff restored to a draft is published again as the SAME listing (a new version of the same snapshot). Its withdrawal marker is
+  // lifted in the same pull request; a request that does not say `restore` never lifts anything, so a withdrawn listing still cannot be published by accident.
+  const restoreRequested = payload.restore === true;
+  const restoring = restoreRequested && jsonDir('withdrawn').some((w) => w.listingId === publicId);
   const overlay = overlayPage(page, payload, approver ? { notionUserId: approver.id, name: approver.name } : null, previousSnap);
   // the optional public groups travel in the signed payload and are validated here with the same strict schema the site uses; an unknown or malformed
   // group fails the job before anything is proposed
@@ -381,7 +388,7 @@ async function main() {
   const actions = await L.propose({
     pages: [overlay],
     previous: new Map(jsonDir('approved').map((s) => [s.listingId, s])),
-    withdrawn: new Set(jsonDir('withdrawn').map((w) => w.listingId)),
+    withdrawn: new Set(jsonDir('withdrawn').filter((w) => !(restoring && w.listingId === publicId)).map((w) => w.listingId)),
     approvers: authorised,
     compliance,
     extras,
@@ -390,8 +397,10 @@ async function main() {
   });
   let action = actions.find((a) => a.id === publicId);
   // a rerun after the pull request already merged: main holds exactly the approved content, so there is nothing new to propose
-  const resumed = REAL && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, approved, reviewedPhotos?.photos).length === 0 && statusParity(previousSnap, payload).length === 0;
+  const resumed = REAL && !restoring && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, approved, reviewedPhotos?.photos).length === 0 && statusParity(previousSnap, payload).length === 0;
   if (resumed) action = { kind: 'already_published', id: publicId, snapshot: previousSnap, issues: [] };
+  // restoring with no editorial change: the same version goes back, and the withdrawal is lifted
+  if (restoring && previousSnap && (!action || action.kind === 'unchanged') && parity(previousSnap.content, approved, reviewedPhotos?.photos).length === 0 && statusParity(previousSnap, payload).length === 0) action = { kind: 'restored_unchanged', id: publicId, snapshot: previousSnap, issues: [] };
   const issues = action?.issues ?? [];
   const checks = [
     { name: 'approved_in_listings_manager', ok: Boolean(approver), note: approver ? 'Approved in the Listings Manager by a Publisher (signed request).' : 'No approval accompanied the request.' },
@@ -400,7 +409,7 @@ async function main() {
     await report('engine', 'failed', { kind: action?.kind ?? 'none', issues, checks });
     throw Object.assign(new Error(`the engine would not publish this listing (${action?.kind ?? 'no result'}, ${issues.length} issue(s))`), { code: 'engine_refused', reported: true });
   }
-  const wrongKind = REAL && !resumed && ((mode === 'publish' && action.kind !== 'new') || (mode === 'update' && action.kind !== 'version' && action.kind !== 'status'));
+  const wrongKind = REAL && !resumed && ((mode === 'publish' && action.kind !== 'new') || (mode === 'update' && action.kind !== 'version' && action.kind !== 'status' && action.kind !== 'restored_unchanged'));
   if (wrongKind) {
     const why = mode === 'publish' ? 'This listing is already published: use an update.' : 'This listing has not been published yet: use a first publication.';
     await report('engine', 'failed', { kind: action.kind, issues: [why], checks });
@@ -419,7 +428,7 @@ async function main() {
     // main already contains this snapshot and passed its checks to get there: go straight to proving the live site
     await report('tests', 'ok', { checks: [{ name: 'site_tests', ok: true, note: 'Already merged: the required checks passed before the merge.' }] });
     await report('build', 'ok', { checks: [{ name: 'build', ok: true, note: 'Already merged: the production build ran at deployment.' }] });
-    return publishReal({ snapshot: action.snapshot, checks, resumed: true });
+    return publishReal({ snapshot: action.snapshot, checks, resumed: true, restoreRequested });
   }
   log('running the site test suite');
   const tests = run('npm', ['run', 'test:listings']);
@@ -432,6 +441,12 @@ async function main() {
   const slug = action.snapshot.content.slug;
   mkdirSync(join(dataDir, 'approved'), { recursive: true });
   writeFileSync(join(dataDir, 'approved', `${slug}.json`), `${JSON.stringify(action.snapshot, null, 2)}\n`);
+  // the build mirrors the final state: no withdrawal marker, and no stale place in the display order, for a restored listing
+  if (restoring) {
+    rmSync(join(dataDir, 'withdrawn', `${publicId}.json`), { force: true });
+    const orderFile = join(dataDir, 'display-order.json');
+    if (existsSync(orderFile)) { const o = JSON.parse(readFileSync(orderFile, 'utf8')); if (Array.isArray(o.order) && o.order.includes(publicId)) writeFileSync(orderFile, orderText(o.order.filter((x) => x !== publicId))); }
+  }
 
   log('building the site with the snapshot');
   const build = run('npm', ['run', 'build'], { LISTINGS_MEDIA_BASE_URL: mediaBase });
@@ -448,7 +463,7 @@ async function main() {
   await report('build', pageBuilt && inSitemap && privacyOk ? 'ok' : 'failed', { checks });
   if (!pageBuilt || !inSitemap || !privacyOk) throw Object.assign(new Error('the build or the privacy scan failed'), { code: 'build_failed', reported: true });
 
-  if (REAL) return publishReal({ snapshot: action.snapshot, checks, resumed: false });
+  if (REAL) return publishReal({ snapshot: action.snapshot, checks, resumed: false, restore: restoring ? { listingId: publicId } : null, restoreRequested });
   const result = { dryRun: true, slug, kind: action.kind, version: action.snapshot.version, contentHash: action.snapshot.contentHash, photos: payload.manifest.photos.length, checks, wouldBlock: checks.filter((c) => !c.ok).map((c) => c.name) };
   await report('finished', 'succeeded', result);
   log('dry run finished: nothing was changed');
