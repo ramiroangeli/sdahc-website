@@ -1,6 +1,6 @@
 import { descriptionBlocks } from './description';
 import { createHash } from 'node:crypto';
-import { AddressError, makeSlug, parsePublicAddress } from './address';
+import { AddressError, LocationError, makeLocationSlug, makeSlug, parsePublicAddress, resolvePublicLocation } from './address';
 import { normalisePriceDisplay } from './pricing';
 import { validateForPublication } from './versioning';
 import {
@@ -156,7 +156,7 @@ const STATE_BY_NAME: Record<string, string> = {
   queensland: 'QLD', victoria: 'VIC', 'south australia': 'SA', 'new south wales': 'NSW',
   'western australia': 'WA', 'australian capital territory': 'ACT', tasmania: 'TAS', 'northern territory': 'NT',
 };
-const toStateCode = (raw: string): string | undefined => {
+export const toStateCode = (raw: string): string | undefined => {
   const t = raw.trim();
   if (!t) return undefined;
   if ((STATES as readonly string[]).includes(t.toUpperCase())) return t.toUpperCase();
@@ -227,13 +227,15 @@ const paragraphs = descriptionBlocks;
 
 /** The allowlist: the only place a Notion value becomes public draft content. */
 const buildDraft = (p: Record<string, any>, issues: string[], photos: Photo[], id: string, opts: MapOptions): PublicContent | null => {
-  let address;
-  try { address = parsePublicAddress(readText(p[NOTION.webPublicAddress])); } catch (e) {
-    issues.push(e instanceof AddressError ? e.message : 'Web Public Address is invalid');
+  const crmState = toStateCode(readText(p[NOTION.state]));
+  let place;
+  try { place = resolvePublicLocation(readText(p[NOTION.webPublicAddress]), crmState); } catch (e) {
+    issues.push(e instanceof AddressError || e instanceof LocationError ? e.message : 'Web Public Address is invalid');
     return null;
   }
-  const crmState = toStateCode(readText(p[NOTION.state]));
-  if (crmState && crmState !== address.state) issues.push(`Web Public Address state ${address.state} disagrees with State/ Territory ${crmState}`);
+  // the street form still has its state in the text: it must agree with the CRM. A location takes its state FROM the CRM.
+  if (place.address && crmState && crmState !== place.address.state) issues.push(`Web Public Address state ${place.address.state} disagrees with State/ Territory ${crmState}`);
+  const placeName = place.address ? place.address.suburb : place.location.label;
 
   const mode = readText(p[NOTION.webPricingMode]).toLowerCase().replace(/[^a-z]/g, '');
   const modeMap: Record<string, PricingMode> = { askingprice: 'asking_price', priceguide: 'price_guide', expressionsofinterest: 'eoi', eoi: 'eoi', contactagent: 'contact_agent' };
@@ -255,9 +257,9 @@ const buildDraft = (p: Record<string, any>, issues: string[], photos: Photo[], i
 
   const description = paragraphs(readText(p[NOTION.webDescription]));
   if (!description.length) issues.push('Web Description is empty');
-  const title = readText(p[NOTION.webTitle]).trim() || `SDA property, ${address.suburb}`;
+  const title = readText(p[NOTION.webTitle]).trim() || `SDA property, ${placeName}`;
   // frozen once published, otherwise derived from the public address
-  const slug = opts.slug ?? makeSlug(address, opts.takenSlugs ?? new Set(), id);
+  const slug = opts.slug ?? (place.address ? makeSlug(place.address, opts.takenSlugs ?? new Set(), id) : makeLocationSlug(place.location, opts.takenSlugs ?? new Set(), id));
   const buildType = readText(p[NOTION.buildType]).trim();
 
   return {
@@ -265,7 +267,7 @@ const buildDraft = (p: Record<string, any>, issues: string[], photos: Photo[], i
     type: 'property',
     title,
     description,
-    address,
+    ...(place.address ? { address: place.address } : { location: place.location }),
     pricing: display ? { mode: pricingMode, display } : { mode: pricingMode },
     sda: { ...(cats.values.length ? { designCategories: cats.values } : {}), ...(buildType ? { buildingType: buildType } : {}) },
     photos,

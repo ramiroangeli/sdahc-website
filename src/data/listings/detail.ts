@@ -14,6 +14,7 @@ import { portfolioView, type PortfolioView } from './portfolio';
 export const detailLocation = (l: PublicListing): string | undefined => {
   const t = l.title.toLowerCase();
   if (l.portfolio) return t.includes(l.portfolio.coverage.toLowerCase()) ? undefined : l.portfolio.coverage;
+  if (l.location) return t.includes(l.location.label.toLowerCase()) ? undefined : l.location.label;
   const a = l.address!;
   return t.includes(a.suburb.toLowerCase()) && t.includes(a.street.toLowerCase()) ? undefined : formatPublicAddress(a);
 };

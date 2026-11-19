@@ -23,9 +23,12 @@ export const portfolioApprovalValid = (p: PortfolioBlock): boolean => !!p.approv
 export const hasPortfolioFigures = (p: PortfolioBlock): boolean => (p.figures ?? []).length > 0;
 
 export const isPortfolio = (l: { type: string }): boolean => l.type === 'portfolio';
-type Placed = { address?: { state: State }; portfolio?: { states: readonly State[] } };
-/** The states a listing covers: its address state, or the states of a portfolio. */
-export const listingStates = (l: Placed): State[] => (l.address ? [l.address.state] : [...(l.portfolio?.states ?? [])]);
+type Placed = { address?: { state: State }; location?: { state: State }; portfolio?: { states: readonly State[] } };
+/** The states a listing covers: its address or location state, or the states of a portfolio. */
+export const listingStates = (l: Placed): State[] => (l.address ? [l.address.state] : l.location ? [l.location.state] : [...(l.portfolio?.states ?? [])]);
+/** The place a visitor reads for a listing: "Suburb, STATE" for an address, the location label (with its state) for a location, the coverage line for a portfolio. */
+export const placeOf = (l: { address?: { suburb: string; state: State }; location?: { label: string; state: State }; portfolio?: { coverage: string } }): string =>
+  (l.address ? `${l.address.suburb}, ${l.address.state}` : l.location ? (new RegExp(`\\b${l.location.state}$`, 'i').test(l.location.label) ? l.location.label : `${l.location.label}, ${l.location.state}`) : l.portfolio?.coverage ?? '');
 export const touchesVictoria = (l: Placed): boolean => listingStates(l).includes('VIC');
 
 export interface PortfolioFigureView { label: string; value: string; basis: 'Actual' | 'Projected'; period: string; coverage: string }

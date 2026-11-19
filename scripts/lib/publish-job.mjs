@@ -70,7 +70,11 @@ export function parity(snapshotContent, payload, expectedPhotos) {
   if (c.title && snapshotContent.title !== c.title) problems.push('title');
   const want = paragraphs(c.description);
   if (JSON.stringify(snapshotContent.description) !== JSON.stringify(want)) problems.push('description');
-  if (`${snapshotContent.address.street}, ${snapshotContent.address.suburb} ${snapshotContent.address.state} ${snapshotContent.address.postcode}` !== c.publicAddress.replace(/\s+/g, ' ').trim()) problems.push('address');
+  // the public place: the street form is compared as written; a location is compared by its label (a trailing postcode in what was typed is dropped, as the engine drops it)
+  const typed = c.publicAddress.replace(/\s+/g, ' ').trim();
+  if (snapshotContent.address) { if (`${snapshotContent.address.street}, ${snapshotContent.address.suburb} ${snapshotContent.address.state} ${snapshotContent.address.postcode}` !== typed) problems.push('address'); }
+  else if (snapshotContent.location) { if (snapshotContent.location.label !== typed.replace(/\s*\b\d{4}$/, '').trim()) problems.push('location'); }
+  else problems.push('address');
   if (snapshotContent.pricing.mode !== c.pricingMode) problems.push('pricing mode');
   const wantPrice = c.displayPrice == null ? undefined : `$${Math.round(c.displayPrice).toLocaleString('en-AU')}`;
   if ((snapshotContent.pricing.display ?? undefined) !== wantPrice) problems.push('display price');

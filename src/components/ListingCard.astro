@@ -20,7 +20,7 @@ const designs = listing.sda.designCategories ?? [];
 const a = listing.address;
 // an individual property is found by its public address; a portfolio by its title, coverage and states (member addresses are never on the site)
 const states = listingStates(listing);
-const search = (a ? [a.street, a.suburb, a.state, a.postcode] : [listing.title, listing.portfolio?.coverage ?? '', ...states]).join(' ').toLowerCase();
+const search = (a ? [a.street, a.suburb, a.state, a.postcode] : [listing.title, listing.location?.label ?? listing.portfolio?.coverage ?? '', ...states]).join(' ').toLowerCase();
 const { cover, facts, location, commercial, agency, sold } = cardView(listing);
 const href = `/opportunities/${listing.slug}/`;
 // brand files already in src/assets; the card is on a dark surface, so the white variant is used
@@ -36,7 +36,7 @@ const inds = commercial ? [commercial.lease, commercial.occupancy].filter((x): x
   data-status={listing.commercialStatus}
   data-design={designs.join(' ')}
   data-search={search}
-  data-suburb={(a ? a.suburb : listing.portfolio?.coverage ?? '').toLowerCase()}
+  data-suburb={(a ? a.suburb : listing.location?.label ?? listing.portfolio?.coverage ?? '').toLowerCase()}
   data-published={listing.publishedAt}
   data-index={index}
 >

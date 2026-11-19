@@ -5,6 +5,7 @@ import { coverPhoto } from '../data/listings/card';
 import { designText } from '../data/listings/detail';
 import { listingPath } from '../data/listings/seo';
 import { localityLine } from '../data/listings/address';
+import { placeOf } from '../data/listings/portfolio';
 import type { PublicListing } from '../data/listings/schema';
 
 /*
@@ -24,7 +25,7 @@ const { items } = Astro.props;
           <div class="rl-body">
             <ListingStatusBadge status={l.commercialStatus} />
             <h3 class="rl-title"><a href={listingPath(l)}>{l.title}</a></h3>
-            <p class="rl-meta">{l.address ? localityLine(l.address) : l.portfolio ? `${l.portfolio.coverage} · ${l.portfolio.propertyCount} properties` : ''}{designText(l) ? ` · ${designText(l)}` : ''}</p>
+            <p class="rl-meta">{l.address ? localityLine(l.address) : l.location ? placeOf(l) : l.portfolio ? `${l.portfolio.coverage} · ${l.portfolio.propertyCount} properties` : ''}{designText(l) ? ` · ${designText(l)}` : ''}</p>
           </div>
         </li>
       ))}

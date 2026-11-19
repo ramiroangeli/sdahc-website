@@ -2,6 +2,7 @@ import { DESIGN_LABEL, isDemoPhoto, type Photo, type PublicListing } from './sch
 import { pricingBounds } from './pricing';
 import { coverPhoto } from './card';
 import { ORG_ID, SITE, WEBSITE_ID } from '../seo';
+import { placeOf } from './portfolio';
 
 /*
   Search and social metadata for a listing page. Built only from PublicListing, so it inherits the same guarantees: street name without a number,
@@ -16,7 +17,7 @@ const designWords = (l: PublicListing): string => {
   return d.length ? d.map((x) => DESIGN_LABEL[x]).join(', ') : '';
 };
 const noun = (l: PublicListing): string => (l.type === 'portfolio' ? 'SDA portfolio' : 'SDA property');
-const place = (l: PublicListing): string => (l.portfolio ? l.portfolio.coverage : `${l.address!.suburb}, ${l.address!.state}`);
+const place = (l: PublicListing): string => placeOf(l);
 export const listingPath = (l: PublicListing): string => `/opportunities/${l.slug}/`;
 
 /**
@@ -38,7 +39,7 @@ export const uniqueSeoTitles = (all: PublicListing[]): Map<string, string> => {
   for (const t of base.values()) counts.set(t, (counts.get(t) ?? 0) + 1);
   return new Map(all.map((l) => {
     const t = base.get(l.id)!;
-    return [l.id, (counts.get(t) ?? 0) > 1 ? t.replace(` in ${place(l)} |`, ` in ${place(l)} (${l.address ? l.address.street : l.title}) |`) : t] as const;
+    return [l.id, (counts.get(t) ?? 0) > 1 ? t.replace(` in ${place(l)} |`, ` in ${place(l)} (${l.address ? l.address.street : l.location ? l.location.label : l.title}) |`) : t] as const;
   }));
 };
 
@@ -113,7 +114,7 @@ export const listingNode = (l: PublicListing, siteUrl: string = SITE) => {
     datePosted: l.publishedAt,
     dateModified: l.updatedAt,
     ...(images.length ? { image: images, primaryImageOfPage: images[0] } : {}),
-    about: l.portfolio ? { '@type': 'Place', name: l.portfolio.coverage } : {
+    about: l.portfolio ? { '@type': 'Place', name: l.portfolio.coverage } : l.location ? { '@type': 'Place', name: l.location.label, address: { '@type': 'PostalAddress', addressRegion: l.location.state, addressCountry: 'AU' } } : {
       '@type': 'Accommodation',
       address: {
         '@type': 'PostalAddress',
