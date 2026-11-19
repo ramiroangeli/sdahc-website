@@ -37,9 +37,9 @@ export const resolvePublicLocation = (raw: string, crmState?: string | null): { 
   const text = String(raw ?? '').trim().replace(/\s+/g, ' ');
   if (!text) throw new LocationError('Add a public location, such as "Greater Darwin" or "Berrimah NT". The full CRM address stays private.');
   try { return { address: parsePublicAddress(text) }; } catch { /* not the street form: a location */ }
-  if (/[<>@\/\\]|https?:|www\./i.test(text)) throw new LocationError('A public location cannot contain a link, an email address or a slash.');
   const withoutPostcode = text.replace(POSTCODE_TAIL, '');
   if (/\d/.test(withoutPostcode)) throw new LocationError('A public location cannot contain a house or unit number (or a lot number). Leave numbers out: a postcode at the end is allowed.');
+  if (/[<>@\/\\]|https?:|www\./i.test(text)) throw new LocationError('A public location cannot contain a link, an email address or a slash.');
   if (NUMBER_WORDS.test(withoutPostcode)) throw new LocationError('A public location cannot name a unit, lot or level. Use the region or suburb.');
   const label = withoutPostcode.trim();
   if (label.length < 2 || label.length > 80) throw new LocationError('A public location is 2 to 80 characters.');
