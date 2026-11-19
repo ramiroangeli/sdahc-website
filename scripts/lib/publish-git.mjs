@@ -23,11 +23,19 @@ export const snapshotText = (snapshot) => `${JSON.stringify(snapshot, null, 2)}\
 export const branchFor = (publicId, version, contentHash, tag = '') => `publish/${publicId}-v${version}-${String(contentHash).replace(/[^a-f0-9]/gi, '').slice(0, 10)}${tag ? `-${String(tag).replace(/[^a-f0-9]/gi, '').slice(0, 8)}` : ''}`;
 const STATUS_WORDS = { available: 'available', under_offer: 'under offer', sold: 'sold' };
 
-/** Refuses anything but the single approved artifact. `changed` is the list of paths the commit would touch. */
-export function assertOnlyArtifact(changed, slug) {
+/**
+ * Refuses anything but the single approved artifact. `changed` is the list of paths the commit would touch. A publication that RESTORES a withdrawn listing
+ * (`restoreId`) may also remove that listing's withdrawal marker and take its id out of the saved display order: nothing else.
+ */
+export function assertOnlyArtifact(changed, slug, restoreId = null) {
   const want = artifactPath(slug);
-  const bad = changed.filter((f) => f !== want || !ARTIFACT_RE.test(f));
-  if (bad.length || changed.length !== 1) throw Object.assign(new Error('a publication may change only its own approved listing file'), { code: 'unexpected_files' });
+  if (!restoreId) {
+    const bad = changed.filter((f) => f !== want || !ARTIFACT_RE.test(f));
+    if (bad.length || changed.length !== 1) throw Object.assign(new Error('a publication may change only its own approved listing file'), { code: 'unexpected_files' });
+    return;
+  }
+  const allowed = new Set([want, withdrawnPath(restoreId), ORDER_PATH]);
+  if (changed.length === 0 || changed.some((f) => !allowed.has(f))) throw Object.assign(new Error('a restoring publication may change only its own listing file, its withdrawal marker and its place in the display order'), { code: 'unexpected_files' });
 }
 
 const sleepDefault = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -56,46 +64,73 @@ export function githubClient({ token, repo, fetchImpl = fetch, api = 'https://ap
  *   { alreadyOnMain: true }                      main already holds exactly this file: nothing to open (an idempotent rerun)
  *   { branch, headSha, prNumber, prUrl }         ready for checks
  */
-export async function openPublicationPr({ gh, snapshot, slug, jobId, mode, defaultBranch = 'main' }) {
+export async function openPublicationPr({ gh, snapshot, slug, jobId, mode, restore = null, defaultBranch = 'main' }) {
   const path = artifactPath(slug);
   const text = snapshotText(snapshot);
   const onMain = await gh.call('GET', `/contents/${path}?ref=${defaultBranch}`, null, { allow: [404] });
-  if (onMain.status === 200 && onMain.data?.sha === sha1blob(text)) return { alreadyOnMain: true };
+  // RESTORE: the same publication goes back on the website. Its withdrawal marker is removed in the same pull request, and its id is taken out of the saved
+  // display order (so it does not come back to an old place: it joins the order by the usual rule for a listing with no saved place).
+  const lift = restore ? await liftState(gh, restore.listingId, defaultBranch) : null;
+  const lifting = !!lift && (lift.tombSha !== null || lift.orderHasId);
+  if (onMain.status === 200 && onMain.data?.sha === sha1blob(text) && !lifting) return { alreadyOnMain: true };
 
   // a status-only change keeps the version and the content hash, so its branch needs its own name
   let mainVersion = null;
   try { mainVersion = onMain.status === 200 ? JSON.parse(Buffer.from(onMain.data.content ?? '', 'base64').toString('utf8')).version : null; } catch { mainVersion = null; }
   const statusOnly = mainVersion !== null && mainVersion === snapshot.version;
   const what = statusOnly ? `${slug} (status: ${STATUS_WORDS[snapshot.commercialStatus] ?? 'changed'})` : `${slug} (version ${snapshot.version})`;
-  const branch = branchFor(snapshot.listingId, snapshot.version, snapshot.contentHash, statusOnly ? sha1blob(text) : '');
+  const branch = branchFor(snapshot.listingId, snapshot.version, snapshot.contentHash, lifting ? sha1blob(`restore:${text}`) : statusOnly ? sha1blob(text) : '');
   const base = (await gh.call('GET', `/git/ref/heads/${defaultBranch}`)).data.object.sha;
   const existing = await gh.call('GET', `/git/ref/heads/${branch}`, null, { allow: [404] });
   if (existing.status === 404) await gh.call('POST', '/git/refs', { ref: `refs/heads/${branch}`, sha: base });
 
+  const verb = lifting ? 'Restore' : mode === 'update' ? 'Update' : 'Publish';
   // the file as it is on the branch (it may already carry this commit from an earlier attempt)
   const onBranch = await gh.call('GET', `/contents/${path}?ref=${branch}`, null, { allow: [404] });
   if (!(onBranch.status === 200 && onBranch.data?.sha === sha1blob(text))) {
     const put = await gh.call('PUT', `/contents/${path}`, {
-      message: `${mode === 'update' ? 'Update' : 'Publish'} ${what}\n\nApproved in the Listings Manager. Job ${jobId}.`,
+      message: `${verb} ${what}\n\nApproved in the Listings Manager. Job ${jobId}.`,
       content: enc(text), branch, ...(onBranch.status === 200 ? { sha: onBranch.data.sha } : onMain.status === 200 && existing.status === 404 ? { sha: onMain.data.sha } : {}),
     });
     if (put.data?.commit?.sha === undefined) throw Object.assign(new Error('GitHub did not confirm the commit'), { code: 'commit_failed' });
   }
+  if (lifting) {
+    const tombPath = withdrawnPath(restore.listingId);
+    const tb = await gh.call('GET', `/contents/${tombPath}?ref=${branch}`, null, { allow: [404] });
+    if (tb.status === 200) await gh.call('DELETE', `/contents/${tombPath}`, { message: `Lift the withdrawal of ${slug}\n\nJob ${jobId}.`, sha: tb.data.sha, branch });
+    if (lift.orderHasId) {
+      const ob = await gh.call('GET', `/contents/${ORDER_PATH}?ref=${branch}`, null, { allow: [404] });
+      if (ob.status === 200) {
+        let ids = []; try { ids = JSON.parse(Buffer.from(ob.data.content ?? '', 'base64').toString('utf8')).order ?? []; } catch { ids = []; }
+        const next = orderText(ids.filter((x) => x !== restore.listingId));
+        if (ob.data.sha !== sha1blob(next)) await gh.call('PUT', `/contents/${ORDER_PATH}`, { message: `Take ${slug} out of the saved display order\n\nJob ${jobId}.`, content: enc(next), branch, sha: ob.data.sha });
+      }
+    }
+  }
   // the guard that matters: compare the branch with main and refuse if it touches anything else
   const cmp = (await gh.call('GET', `/compare/${defaultBranch}...${branch}`)).data;
-  assertOnlyArtifact((cmp.files ?? []).map((f) => f.filename), slug);
+  assertOnlyArtifact((cmp.files ?? []).map((f) => f.filename), slug, lifting ? restore.listingId : null);
   const headSha = cmp.commits?.length ? cmp.commits[cmp.commits.length - 1].sha : (await gh.call('GET', `/git/ref/heads/${branch}`)).data.object.sha;
 
   const open = (await gh.call('GET', `/pulls?state=open&head=${encodeURIComponent(`${gh.repo}:${branch}`)}`)).data ?? [];
   let pr = open[0];
   if (!pr) {
     pr = (await gh.call('POST', '/pulls', {
-      title: `${mode === 'update' ? 'Update' : 'Publish'} ${what}`,
+      title: `${verb} ${what}`,
       head: branch, base: defaultBranch,
-      body: `Opened by the Listings Manager publication job \`${jobId}\`.\n\nChanges one file only: \`${path}\`.\nThe pull request is merged by the job once the required check \`${REQUIRED_CHECK}\` passes on this exact commit.`,
+      body: lifting
+        ? `Opened by the Listings Manager publication job \`${jobId}\`.\n\nRestores a withdrawn listing: changes its approved file \`${path}\`, removes its withdrawal marker and, if present, its id from the saved display order. Nothing else.\nThe pull request is merged by the job once the required check \`${REQUIRED_CHECK}\` passes on this exact commit.`
+        : `Opened by the Listings Manager publication job \`${jobId}\`.\n\nChanges one file only: \`${path}\`.\nThe pull request is merged by the job once the required check \`${REQUIRED_CHECK}\` passes on this exact commit.`,
     })).data;
   }
-  return { branch, headSha, prNumber: pr.number, prUrl: pr.html_url, title: pr.title ?? `${mode === 'update' ? 'Update' : 'Publish'} ${what}` };
+  return { branch, headSha, prNumber: pr.number, prUrl: pr.html_url, title: pr.title ?? `${verb} ${what}` };
+}
+/** Is the withdrawal marker still on main, and is the listing still in the saved display order? */
+async function liftState(gh, listingId, defaultBranch) {
+  const tomb = await gh.call('GET', `/contents/${withdrawnPath(listingId)}?ref=${defaultBranch}`, null, { allow: [404] });
+  const ord = await gh.call('GET', `/contents/${ORDER_PATH}?ref=${defaultBranch}`, null, { allow: [404] });
+  let ids = []; try { ids = ord.status === 200 ? JSON.parse(Buffer.from(ord.data.content ?? '', 'base64').toString('utf8')).order ?? [] : []; } catch { ids = []; }
+  return { tombSha: tomb.status === 200 ? tomb.data.sha : null, orderHasId: ids.includes(listingId) };
 }
 
 /**
@@ -173,17 +208,17 @@ const decode = (s) => s.replace(/&amp;/g, '&').replace(/&#39;|&#x27;|&apos;/g, "
  * the approved order, every image answers as WebP, and the catalogue links to the page. Retries while the new deployment propagates.
  * Returns { ok, checks:[{name, ok, note}] }. Notes never contain listing text.
  */
-export async function verifyLive({ siteUrl, slug, title, photos, status, fetchImpl = fetch, sleep = sleepDefault, attempts = 18, pollMs = 10000 }) {
+export async function verifyLive({ siteUrl, slug, title, photos, status, checkSitemap = false, fetchImpl = fetch, sleep = sleepDefault, attempts = 18, pollMs = 10000 }) {
   const base = siteUrl.replace(/\/$/, '');
   let last = [];
   for (let i = 0; i < attempts; i += 1) {
-    last = await verifyOnce({ base, slug, title, photos, status, fetchImpl, bust: `${Date.now()}${i}` });
+    last = await verifyOnce({ base, slug, title, photos, status, checkSitemap, fetchImpl, bust: `${Date.now()}${i}` });
     if (last.every((c) => c.ok)) return { ok: true, checks: last, url: `${base}/opportunities/${slug}/` };
     if (i < attempts - 1) await sleep(pollMs);
   }
   return { ok: false, checks: last, url: `${base}/opportunities/${slug}/` };
 }
-async function verifyOnce({ base, slug, title, photos, status, fetchImpl, bust }) {
+async function verifyOnce({ base, slug, title, photos, status, checkSitemap, fetchImpl, bust }) {
   const checks = [];
   const get = async (url, init) => { try { return await fetchImpl(url, { redirect: 'follow', headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(20000), ...init }); } catch { return null; } };
   const page = await get(`${base}/opportunities/${slug}/?v=${bust}`);
@@ -212,6 +247,15 @@ async function verifyOnce({ base, slug, title, photos, status, fetchImpl, bust }
   const cat = await get(`${base}/opportunities/?v=${bust}`);
   const catHtml = cat && cat.ok ? await cat.text() : '';
   checks.push({ name: 'catalogue', ok: catHtml.includes(`/opportunities/${slug}/`), note: 'The catalogue links to the listing.' });
+  if (checkSitemap) {
+    // a restored listing must be back in the sitemap, not only on its page
+    const idx = await get(`${base}/sitemap-index.xml?v=${bust}`);
+    const idxText = idx && idx.ok ? await idx.text() : '';
+    const maps = [...idxText.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]).filter((u) => u.startsWith(base));
+    let read = 0; let listed = false;
+    for (const u of maps.length ? maps : [`${base}/sitemap-0.xml`]) { const r = await get(`${u}?v=${bust}`); if (r && r.ok) { read += 1; if ((await r.text()).includes(`/opportunities/${slug}/`)) listed = true; } }
+    checks.push({ name: 'sitemap', ok: read > 0 && listed, note: read === 0 ? 'The sitemap could not be read.' : listed ? 'The sitemap lists the listing again.' : 'The sitemap does not list the listing yet.' });
+  }
   return checks;
 }
 
