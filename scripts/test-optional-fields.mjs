@@ -128,8 +128,9 @@ export default async function run({ t, section }) {
     const sold = build([listing({ status: 'sold', inv: withHash({ ...FIG }) })])[0];
     t('Available shows the commercial block; Under offer still shows it', !!view(av) && !!view(uo));
     t('Sold shows no commercial figures (a sold property is not offered)', view(sold) === null);
-    const pf = build([listing({ type: 'portfolio', inv: withHash({ leaseStatus: 'partially_leased', ...FIG }) })])[0];
-    t('a portfolio carries the same optional data', pf.type === 'portfolio' && view(pf).lease.label === 'Partially leased' && !!view(pf).yield);
+    let refused = false;
+    try { build([listing({ type: 'portfolio', inv: withHash({ leaseStatus: 'partially_leased', ...FIG }) })]); } catch { refused = true; }
+    t('a portfolio is no longer one property with an address: it has its own contract (see the portfolio tests)', refused);
     const w = listing({ inv: withHash({ ...FIG }) });
     t('a withdrawn listing does not build at all, so no figure can surface', build([w], [w.id]).length === 0);
   }

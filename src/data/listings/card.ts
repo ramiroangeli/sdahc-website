@@ -2,6 +2,7 @@ import { DESIGN_LABEL, isDemoPhoto, type Photo, type PublicListing } from './sch
 import { agencyFor, type Agency } from './agencies';
 import { publicInvestment } from './investment';
 import { formatPricing } from './pricing';
+import { portfolioView } from './portfolio';
 
 /*
   What a catalogue card may show, decided in one place from the public listing only (no private field can reach it).
@@ -21,6 +22,8 @@ export interface CardFacts {
 }
 
 export const cardFacts = (l: PublicListing): CardFacts => {
+  // a portfolio states how many properties it has and how it is sold. Nothing about one property stands for the whole.
+  if (l.portfolio) { const v = portfolioView(l)!; return { parts: [v.countLabel, v.saleLabel] }; }
   const d = l.sda.designCategories ?? [];
   const parts: string[] = [];
   if (l.sda.buildingType) parts.push(l.sda.buildingType);
@@ -33,7 +36,8 @@ export const cardFacts = (l: PublicListing): CardFacts => {
 
 /** The public location line under the title, only when the title does not already say where the property is. Public address fields only. */
 export const cardLocation = (l: PublicListing): string | undefined => {
-  const a = l.address;
+  if (l.portfolio) return l.title.toLowerCase().includes(l.portfolio.coverage.toLowerCase()) ? undefined : l.portfolio.coverage;
+  const a = l.address!;
   return l.title.toLowerCase().includes(a.suburb.toLowerCase()) ? undefined : `${a.suburb} ${a.state} ${a.postcode}`;
 };
 
@@ -51,6 +55,13 @@ export const cardCommercial = (l: PublicListing): CardCommercial | null => {
   const p = formatPricing(l.pricing);
   // an approved amount is shown exactly as approved, and never on a Sold listing (a sold property is not offered)
   if (p.value && l.commercialStatus !== 'sold') c.price = { label: p.label, value: p.value };
+  if (l.portfolio) {
+    // the card shows only what is true of the whole: lease and occupancy of the whole when approved. Figures stay on the page, with their basis and coverage.
+    const v = portfolioView(l)!;
+    if (v.lease) c.lease = { label: 'Lease', value: v.lease };
+    if (v.occupancy) c.occupancy = { label: 'Occupancy', value: v.occupancy };
+    return Object.keys(c).length ? c : null;
+  }
   const v = publicInvestment(l);
   if (!v) return Object.keys(c).length ? c : null;
   if (v.yield) c.yield = { text: v.yield.text, label: v.yield.label, basis: v.yield.basis };

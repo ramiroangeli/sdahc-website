@@ -2,6 +2,7 @@ import type { ComplianceConfig, PublicContent } from './schema';
 import { isDemoPhoto } from './schema';
 import { descriptionApprovalHash, hasFinancialFigures, investmentApprovalValid, VICTORIAN_FINANCIAL_RESTRICTION } from './investment';
 import { isApprovedAgency } from './agencies';
+import { hasPortfolioFigures, portfolioApprovalValid, touchesVictoria } from './portfolio';
 
 /*
   Safety checks on the public content of a listing. These are a SECOND line of defence: the model
@@ -57,11 +58,13 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   // two characters "\n" and glue itself to the next word ("\nyield" would no longer be seen as the word "yield"). Line breaks count as spaces here.
   const c: PublicContent = { ...content, description: content.description.map((b) => b.replace(/\n/g, ' ')) };
   const full = norm(JSON.stringify(c));
-  const { pricing, investment, ...rest } = c;
+  const { pricing, investment, portfolio, ...rest } = c;
+  // the structured, approved portfolio figures are checked below (hash, Victoria); like the investment block they are numbers, not prose
+  const portfolioText = portfolio ? { propertyCount: portfolio.propertyCount, states: portfolio.states, coverage: portfolio.coverage, saleMode: portfolio.saleMode } : undefined;
   // dollar amounts are checked everywhere except the approved display value and the structured, approved investment figures. The free-text
   // investment fields (tenure, provider wording) are still scanned like any other text.
   const investmentText = investment ? { tenure: investment.tenure, providerArrangement: investment.providerArrangement } : undefined;
-  const withoutPrice = norm(JSON.stringify({ ...rest, pricing: { mode: pricing.mode }, ...(investmentText ? { investment: investmentText } : {}) }));
+  const withoutPrice = norm(JSON.stringify({ ...rest, pricing: { mode: pricing.mode }, ...(investmentText ? { investment: investmentText } : {}), ...(portfolioText ? { portfolio: portfolioText } : {}) }));
   // A Publisher may approve an EXACT description that carries commercial wording (income, yield, occupancy, provider arrangements). The approval is bound to
   // the description (as written, line breaks included) and the structured commercial values, so any change makes it void. On a Victorian listing it must
   // also carry the business authorisation flag. Only the financial scans are relaxed, and only for the description: addresses, links, email, phone and
@@ -69,12 +72,14 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   const approval = content.descriptionApproval;
   const approvalMatches = !!approval && descriptionApprovalHash(content.description, content.investment) === approval.textHash;
   if (approval && !approvalMatches) issues.push('the description approval does not match the description or the commercial values it was approved with');
-  const descriptionApproved = approvalMatches && (c.address.state !== 'VIC' || approval!.victorian === true);
-  const financialScan = descriptionApproved ? norm(JSON.stringify({ ...rest, description: [], pricing: { mode: pricing.mode }, ...(investmentText ? { investment: investmentText } : {}) })) : withoutPrice;
+  const vicContent = touchesVictoria(c);
+  const descriptionApproved = approvalMatches && (!vicContent || approval!.victorian === true);
+  const financialScan = descriptionApproved ? norm(JSON.stringify({ ...rest, description: [], pricing: { mode: pricing.mode }, ...(investmentText ? { investment: investmentText } : {}), ...(portfolioText ? { portfolio: portfolioText } : {}) })) : withoutPrice;
 
   // 1. house or unit number next to the street name, anywhere in the serialised content
-  const street = esc(norm(c.address.street));
-  if (new RegExp(`\\b\\d+[a-z]?(?:\\s*[-/]\\s*\\d+[a-z]?)?\\s+${street}`, 'i').test(full) || new RegExp(`${street}\\s+\\d{1,3}[a-z]?\\b`, 'i').test(full)) {
+  // (a portfolio has no street: the app also refuses a member's house number in its text, and the coverage line may not contain digits at all)
+  const street = c.address ? esc(norm(c.address.street)) : null;
+  if (street && (new RegExp(`\\b\\d+[a-z]?(?:\\s*[-/]\\s*\\d+[a-z]?)?\\s+${street}`, 'i').test(full) || new RegExp(`${street}\\s+\\d{1,3}[a-z]?\\b`, 'i').test(full))) {
     issues.push('a house or unit number appears next to the street name');
   }
   if (ctx.internalAddress) {
@@ -118,7 +123,13 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   // never carry income or yield (conservative restriction pending the OIEC or legal advice; not a legal determination).
   if (investment) {
     if (!investmentApprovalValid(investment)) issues.push('the investment details are not approved for public display, or were changed after they were approved');
-    if (c.address.state === 'VIC' && hasFinancialFigures(investment) && investment.approval.victorian !== true) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
+    if (c.address?.state === 'VIC' && hasFinancialFigures(investment) && investment.approval.victorian !== true) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
+  }
+  if (portfolio) {
+    const claims = hasPortfolioFigures(portfolio) || !!portfolio.leaseStatus || !!portfolio.occupancyStatus;
+    if (claims && !portfolioApprovalValid(portfolio)) issues.push('the portfolio figures are not approved for public display, or were changed after they were approved');
+    if (portfolio.states.includes('VIC') && hasPortfolioFigures(portfolio) && portfolio.approval?.victorian !== true) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
+    if (portfolio.propertyCount < 2) issues.push('a portfolio has at least two properties');
   }
   if (c.marketing && !isApprovedAgency(c.marketing.agency)) issues.push(`marketing agency "${c.marketing.agency}" is not an approved agency`);
 

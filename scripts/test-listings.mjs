@@ -661,7 +661,7 @@ section('hero card fan: decorative cards react to hover without becoming actions
   // hero cards are photo-free icon cards built only from approved public fields
   const body = fan.slice(0, fan.indexOf('<script>'));
   t('hero cards never use photographs (those stay on the listing page and in the catalogue)', !/ListingImage|\.photos|<img|srcset|<picture/.test(fan));
-  t('a real card shows the house icon, the state, the status, the street and the suburb', /class="hf-house"/.test(body) && /M3\.5 11 12 4l8\.5 7/.test(body) && /class="hf-pill">\{l\.address\.state\}/.test(body) && /<ListingStatusBadge status=\{l\.commercialStatus\}/.test(body) && /\{streetLine\(l\.address\)\}/.test(body) && /\{l\.address\.suburb\}/.test(body));
+  t('a real card shows the house icon, the state, the status, the street and the suburb', /class="hf-house"/.test(body) && /M3\.5 11 12 4l8\.5 7/.test(body) && /class="hf-pill">\{l\.address!?\.state\}/.test(body) && /<ListingStatusBadge status=\{l\.commercialStatus\}/.test(body) && /\{streetLine\(l\.address!?\)\}/.test(body) && /\{l\.address!?\.suburb\}/.test(body));
   t('the whole real card is one internal link to its listing page, never an external portal', /<a class="hf-card hf-listing" href=\{`\/opportunities\/\$\{l\.slug\}\/`\}/.test(body) && !/https?:\/\//.test(body.replace(/viewBox|xmlns/g, '')));
   t('the hero reads only approved public fields of a listing', (() => { const used = new Set([...body.matchAll(/\b(?:s\.l|l|a|b)\.(address|slug|commercialStatus|featured|isDemo|sda|photos|title|summary|description|pricing|id|version|publishedAt|updatedAt|type)\b/g)].map((m) => m[1])); return [...used].every((f) => ['address', 'slug', 'commercialStatus', 'featured', 'isDemo'].includes(f)); })());
   t('the hero never shows a postcode, so the card carries street, suburb and state only', !/postcode|localityLine/.test(body));
@@ -1102,6 +1102,7 @@ await (await import('./test-optional-fields.mjs')).default({ t, section });
 await (await import('./test-catalogue.mjs')).default({ t, section });
 await (await import('./test-offmarket.mjs')).default({ t, section });
 await (await import('./test-display-order.mjs')).default({ t, section });
+await (await import('./test-portfolio.mjs')).default({ t, section });
 
 section('publication engine: an exact commercial description approved by a Publisher');
 {

@@ -11,7 +11,7 @@ import ListingDescription from '../../components/ListingDescription.astro';
 import ListingResources from '../../components/ListingResources.astro';
 import { getPublicListings } from '../../data/listings';
 import { agencyFor } from '../../data/listings/agencies';
-import { detailFacts, detailInvestment, detailLocation, detailPricing, designText } from '../../data/listings/detail';
+import { detailFacts, detailInvestment, detailLocation, detailPricing, designText, detailPortfolio, portfolioGlanceRows, portfolioFigureRows } from '../../data/listings/detail';
 import { listingNode, listingOgImageInfo, listingSeoDescription, listingPath, uniqueSeoTitles } from '../../data/listings/seo';
 import { relatedListings, marketContext, resourceLinks } from '../../data/listings/related';
 import { TYPE_LABEL } from '../../data/listings/schema';
@@ -34,7 +34,9 @@ const facts = allFacts.length >= 2 ? allFacts : [];
 const investment = detailInvestment(listing);
 const pricing = detailPricing(listing);
 const agency = agencyFor(listing.marketing?.agency);
-const hasSdaDetail = Object.values(listing.sda).some((v) => v !== undefined) || facts.length > 0;
+const portfolio = detailPortfolio(listing);
+const noun = portfolio ? 'portfolio' : 'property';
+const hasSdaDetail = !!portfolio || Object.values(listing.sda).some((v) => v !== undefined) || facts.length > 0;
 // search and social metadata: generated from approved structured fields only (no staff SEO entry, nothing from the free-text description)
 const everyListing = getPublicListings();
 const title = uniqueSeoTitles(everyListing).get(listing.id)!;
@@ -71,7 +73,7 @@ const breadcrumbs = [{ name: 'Opportunities', path: '/opportunities/' }, { name:
           ? <p class="ld-fact">{compactFact.value}</p>
           : <p class="ld-fact"><span>{compactFact.label}</span> {compactFact.value}</p>)}
       </div>
-      {!sold && <a class="btn b1 ld-head-cta" href="#enquire">Enquire about this property</a>}
+      {!sold && <a class="btn b1 ld-head-cta" href="#enquire">Enquire about this {noun}</a>}
     </header>
 
     <ListingGallery photos={listing.photos} title={listing.title} />
@@ -79,10 +81,12 @@ const breadcrumbs = [{ name: 'Opportunities', path: '/opportunities/' }, { name:
 
   <section class="section ld-main"><div class="wrap ld-grid">
     <div class="ld-primary">
-      <ListingFacts heading="Key property information" rows={facts} id="facts-h" />
+      {portfolio
+        ? (<><ListingFacts heading="Portfolio at a glance" rows={portfolioGlanceRows(portfolio)} id="facts-h" /><ListingFacts heading="Portfolio figures" rows={portfolioFigureRows(portfolio)} id="figs-h" /></>)
+        : <ListingFacts heading="Key property information" rows={facts} id="facts-h" />}
       <ListingInvestment section={investment} />
       <section class="ld-copy" aria-labelledby="about-h">
-        <h2 class="ld-h2" id="about-h">About this property</h2>
+        <h2 class="ld-h2" id="about-h">About this {noun}</h2>
         <ListingDescription blocks={listing.description} />
         {!hasSdaDetail && <p>Design category, dwelling configuration, enrolment and tenancy detail are released to registered parties under NDA.</p>}
       </section>
@@ -90,7 +94,7 @@ const breadcrumbs = [{ name: 'Opportunities', path: '/opportunities/' }, { name:
     </div>
 
     <div class="ld-aside">
-      <AgencyPanel agency={agency} sold={sold} pricing={pricing} />
+      <AgencyPanel agency={agency} sold={sold} pricing={pricing} noun={noun} />
       {!sold && (
         <div class="ld-steps-panel">
           <h2 class="ld-panel-h">How access works</h2>
@@ -119,7 +123,7 @@ const breadcrumbs = [{ name: 'Opportunities', path: '/opportunities/' }, { name:
   ) : (
     <section class="section ld-enquire" id="enquire"><div class="wrap ld-enquire-grid">
       <div>
-        <h2 class="ld-h2">Enquire about this property</h2>
+        <h2 class="ld-h2">Enquire about this {noun}</h2>
         <p class="ld-lead">Tell us a little about your brief. The right person at SDA Home Choices will respond and, where it is a fit, send the NDA.</p>
         <p class="ld-lead">Prefer to talk? Call <a href="tel:+61408550441">+61 408 550 441</a> or email <a href="mailto:steve@sdahomechoices.com.au">steve@sdahomechoices.com.au</a>.</p>
       </div>

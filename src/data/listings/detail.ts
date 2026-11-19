@@ -3,6 +3,7 @@ import { formatPublicAddress } from './address';
 import { publicInvestment } from './investment';
 import { formatPricing } from './pricing';
 import { coverPhoto } from './card';
+import { portfolioView, type PortfolioView } from './portfolio';
 
 /*
   What the individual listing page may show, decided in one place from the public listing only. Nothing here reads a private field, parses prose for
@@ -12,8 +13,23 @@ import { coverPhoto } from './card';
 /** The location line under the title, only when the title does not already give both the street and the suburb. Public address fields only. */
 export const detailLocation = (l: PublicListing): string | undefined => {
   const t = l.title.toLowerCase();
-  return t.includes(l.address.suburb.toLowerCase()) && t.includes(l.address.street.toLowerCase()) ? undefined : formatPublicAddress(l.address);
+  if (l.portfolio) return t.includes(l.portfolio.coverage.toLowerCase()) ? undefined : l.portfolio.coverage;
+  const a = l.address!;
+  return t.includes(a.suburb.toLowerCase()) && t.includes(a.street.toLowerCase()) ? undefined : formatPublicAddress(a);
 };
+
+/** The portfolio section of a portfolio page, or null for an individual property. */
+export const detailPortfolio = (l: PublicListing): PortfolioView | null => portfolioView(l);
+
+/** "Portfolio at a glance": only facts that are true of the whole. Never one property's value standing for the others. */
+export const portfolioGlanceRows = (v: PortfolioView): { label: string; value: string }[] => {
+  const rows = [{ label: 'Properties', value: v.countLabel }, { label: 'Location', value: v.coverage }, { label: 'How it is sold', value: v.saleLabel }];
+  if (v.lease) rows.push({ label: 'Lease status', value: v.lease });
+  if (v.occupancy) rows.push({ label: 'Occupancy status', value: v.occupancy });
+  return rows;
+};
+/** Each approved figure on its own row with its basis, period and coverage. Figures are never added together, averaged or compared across bases. */
+export const portfolioFigureRows = (v: PortfolioView): { label: string; value: string }[] => v.figures.map((f) => ({ label: `${f.label} (${f.basis.toLowerCase()}, ${f.period})`, value: `${f.value} (${f.coverage})` }));
 
 export const designText = (l: PublicListing): string | undefined => {
   const d = l.sda.designCategories ?? [];
@@ -57,6 +73,7 @@ export interface InvestmentSection {
  * listing. Lease status and occupancy status are separate rows. Provider wording only with its own authorisation. Null means: omit the section.
  */
 export const detailInvestment = (l: PublicListing): InvestmentSection | null => {
+  if (l.portfolio) return null;
   const v = publicInvestment(l);
   if (!v) return null;
   const rows: Row[] = [];

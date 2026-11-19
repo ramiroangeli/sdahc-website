@@ -16,7 +16,7 @@ const designWords = (l: PublicListing): string => {
   return d.length ? d.map((x) => DESIGN_LABEL[x]).join(', ') : '';
 };
 const noun = (l: PublicListing): string => (l.type === 'portfolio' ? 'SDA portfolio' : 'SDA property');
-const place = (l: PublicListing): string => `${l.address.suburb}, ${l.address.state}`;
+const place = (l: PublicListing): string => (l.portfolio ? l.portfolio.coverage : `${l.address!.suburb}, ${l.address!.state}`);
 export const listingPath = (l: PublicListing): string => `/opportunities/${l.slug}/`;
 
 /**
@@ -38,7 +38,7 @@ export const uniqueSeoTitles = (all: PublicListing[]): Map<string, string> => {
   for (const t of base.values()) counts.set(t, (counts.get(t) ?? 0) + 1);
   return new Map(all.map((l) => {
     const t = base.get(l.id)!;
-    return [l.id, (counts.get(t) ?? 0) > 1 ? t.replace(` in ${place(l)} |`, ` in ${place(l)} (${l.address.street}) |`) : t] as const;
+    return [l.id, (counts.get(t) ?? 0) > 1 ? t.replace(` in ${place(l)} |`, ` in ${place(l)} (${l.address ? l.address.street : l.title}) |`) : t] as const;
   }));
 };
 
@@ -113,14 +113,14 @@ export const listingNode = (l: PublicListing, siteUrl: string = SITE) => {
     datePosted: l.publishedAt,
     dateModified: l.updatedAt,
     ...(images.length ? { image: images, primaryImageOfPage: images[0] } : {}),
-    about: {
+    about: l.portfolio ? { '@type': 'Place', name: l.portfolio.coverage } : {
       '@type': 'Accommodation',
       address: {
         '@type': 'PostalAddress',
-        streetAddress: l.address.street,
-        addressLocality: l.address.suburb,
-        addressRegion: l.address.state,
-        postalCode: l.address.postcode,
+        streetAddress: l.address!.street,
+        addressLocality: l.address!.suburb,
+        addressRegion: l.address!.state,
+        postalCode: l.address!.postcode,
         addressCountry: 'AU',
       },
       ...(bedrooms ? { numberOfBedrooms: bedrooms } : {}),

@@ -34,6 +34,9 @@ export const PRICING_MODES = ['asking_price', 'price_guide', 'eoi', 'contact_age
 export const LEASE_STATUSES = ['fully_leased', 'partially_leased', 'unleased'] as const;
 export const OCCUPANCY_STATUSES = ['fully_occupied', 'partially_occupied', 'vacant'] as const;
 export const INCOME_TYPES = ['gross', 'net'] as const;
+// A property portfolio is ONE listing for several properties sold together. How it is sold, and the kinds of figure a Publisher may state for the whole.
+export const PORTFOLIO_SALE_MODES = ['whole', 'individual', 'both'] as const;
+export const PORTFOLIO_FIGURE_KINDS = ['gross_income_aud', 'net_income_aud', 'gross_yield_pct', 'net_yield_pct'] as const;
 export const FIGURE_BASES = ['actual', 'projected'] as const;
 // Brand accents an image mask may use. Each maps to a design token in the components, so a
 // colour sampled from a photograph can only ever become one of our own colours.
@@ -47,7 +50,9 @@ export type CommercialStatus = (typeof COMMERCIAL_STATUSES)[number];
 export type PricingMode = (typeof PRICING_MODES)[number];
 export type Accent = (typeof ACCENTS)[number];
 
-export const TYPE_LABEL: Record<ListingType, string> = { property: 'Individual property', portfolio: 'Portfolio' };
+export const TYPE_LABEL: Record<ListingType, string> = { property: 'Individual property', portfolio: 'Property portfolio' };
+export const PORTFOLIO_SALE_LABEL: Record<(typeof PORTFOLIO_SALE_MODES)[number], string> = { whole: 'Sold as one portfolio', individual: 'Sold property by property', both: 'Either as one portfolio or property by property' };
+export const PORTFOLIO_FIGURE_LABEL: Record<(typeof PORTFOLIO_FIGURE_KINDS)[number], string> = { gross_income_aud: 'Gross annual income', net_income_aud: 'Net annual income', gross_yield_pct: 'Gross yield', net_yield_pct: 'Net yield' };
 export const STATUS_LABEL: Record<CommercialStatus, string> = { available: 'Available', under_offer: 'Under offer', sold: 'Sold' };
 export const DESIGN_LABEL: Record<DesignCategory, string> = {
   HPS: 'High Physical Support',
@@ -195,6 +200,46 @@ export const marketingSchema = z.object({
 }).strict();
 
 /**
+ * The public face of a property portfolio. A portfolio has NO street address: it is shown by a coverage line ("Berrimah, Northern Territory"), the states it covers and the number of
+ * properties. Member addresses are never part of it. Nothing is added up or averaged: a figure is one stated value with its basis (actual or projected), its period and how many of
+ * the properties it covers. Lease and occupancy of the whole appear only when the Publisher approved them. `approval.valuesHash` binds the figures and statuses to the values approved
+ * (the Publisher's identity stays in the private audit trail); on a portfolio that includes Victoria, income and yield also need `approval.victorian`.
+ */
+export const portfolioFigureSchema = z.object({
+  kind: z.enum(PORTFOLIO_FIGURE_KINDS),
+  amount: z.number().positive().max(10_000_000_000),
+  basis: z.enum(FIGURE_BASES),
+  period: z.string().min(1).max(40),
+  scope: z.enum(['all', 'some']),
+  /** How many properties the figure covers, when it is not all of them. */
+  count: z.number().int().min(1).max(100).optional(),
+}).strict().superRefine((f, ctx) => {
+  if (f.scope === 'some' && f.count === undefined) ctx.addIssue({ code: 'custom', message: 'a figure for some properties says how many' });
+  if (f.scope === 'all' && f.count !== undefined) ctx.addIssue({ code: 'custom', message: 'a figure for all properties carries no count' });
+  if (f.kind.endsWith('_pct') && (f.amount > 30 || Math.abs(f.amount * 10 - Math.round(f.amount * 10)) > 1e-9)) ctx.addIssue({ code: 'custom', message: 'a yield is at most 30% with one decimal place' });
+  if (f.kind.endsWith('_aud') && !Number.isInteger(f.amount)) ctx.addIssue({ code: 'custom', message: 'an income figure is whole dollars' });
+});
+export const portfolioSchema = z.object({
+  propertyCount: z.number().int().min(2).max(100),
+  states: z.array(z.enum(STATES)).min(1).max(8),
+  coverage: z.string().min(3).max(120).regex(/^[^\d]+$/, 'coverage must not contain digits'),
+  saleMode: z.enum(PORTFOLIO_SALE_MODES),
+  leaseStatus: z.enum(LEASE_STATUSES).optional(),
+  occupancyStatus: z.enum(OCCUPANCY_STATUSES).optional(),
+  figures: z.array(portfolioFigureSchema).max(8).optional(),
+  approval: z.object({ valuesHash: z.string().regex(/^[a-f0-9]{64}$/), victorian: z.literal(true).optional() }).strict().optional(),
+}).strict().superRefine((p, ctx) => {
+  const add = (message: string) => ctx.addIssue({ code: 'custom', message });
+  const claims = p.figures?.length || p.leaseStatus || p.occupancyStatus;
+  if (claims && !p.approval) add('figures and statuses of a portfolio need their approval');
+  if (!claims && p.approval) add('an approval without any figure or status');
+  for (const f of p.figures ?? []) if (f.count !== undefined && f.count > p.propertyCount) add('a figure covers more properties than the portfolio has');
+  const kinds = (p.figures ?? []).map((f) => f.kind);
+  if (new Set(kinds).size !== kinds.length) add('a kind of figure appears more than once');
+  if (new Set(p.states).size !== p.states.length) add('a state appears more than once');
+});
+
+/**
  * The optional public groups a publication request may carry beside the Notion-derived content: physical facts, three SDA facts the CRM does not hold,
  * the approved commercial block and the marketing agency. Strict, so nothing else can ride along. The commercial block still needs its own approval
  * hash and obeys the Victorian restriction (both enforced by the safety checks that every snapshot passes).
@@ -208,7 +253,7 @@ export const optionalGroupsSchema = z.object({
 }).strict();
 export type OptionalGroups = z.infer<typeof optionalGroupsSchema>;
 /** Everything approved for public display, and exactly what the content hash covers. */
-export const publicContentSchema = z.object({
+const publicContentBase = z.object({
   slug: z.string().regex(/^[a-z]+(-[a-z]+)*$/, 'slug may contain letters and hyphens only').max(80)
     // a route that exists beside the listing pages under /opportunities/ can never be a listing's address
     .refine((s) => !RESERVED_SLUGS.includes(s), 'this slug is reserved for a page of the website'),
@@ -216,7 +261,8 @@ export const publicContentSchema = z.object({
   title: z.string().min(5).max(90),
   // technical limits only: long commercial descriptions are normal. A block may hold a whole bullet list.
   description: z.array(z.string().min(1).max(6000)).min(1).max(120).refine((d) => d.reduce((n, b) => n + b.length, 0) <= 30000, 'the description is longer than 30,000 characters'),
-  address: publicAddressSchema,
+  /** An individual property has one public address. A portfolio has none (see `portfolio`). */
+  address: publicAddressSchema.optional(),
   pricing: pricingSchema,
   sda: sdaSchema,
   photos: z.array(photoSchema).max(24),
@@ -225,10 +271,25 @@ export const publicContentSchema = z.object({
   investment: investmentSchema.optional(),
   marketing: marketingSchema.optional(),
   descriptionApproval: descriptionApprovalSchema.optional(),
+  portfolio: portfolioSchema.optional(),
 }).strict();
 
+/** Individual and portfolio listings have different required groups: the one rule that tells them apart. */
+const typeRules = (c: z.infer<typeof publicContentBase>, ctx: z.RefinementCtx) => {
+
+  if (c.type === 'property') {
+    if (!c.address) ctx.addIssue({ code: 'custom', path: ['address'], message: 'an individual property needs its public address' });
+    if (c.portfolio) ctx.addIssue({ code: 'custom', path: ['portfolio'], message: 'an individual property carries no portfolio block' });
+  } else {
+    if (c.address) ctx.addIssue({ code: 'custom', path: ['address'], message: 'a portfolio has no street address' });
+    if (!c.portfolio) ctx.addIssue({ code: 'custom', path: ['portfolio'], message: 'a portfolio needs its portfolio block' });
+    if (c.investment || c.property || c.marketing) ctx.addIssue({ code: 'custom', message: 'a portfolio carries no individual property groups' });
+  }
+};
+export const publicContentSchema = publicContentBase.superRefine(typeRules);
+
 /** The one shape pages and components consume. Strict: an unknown key fails the build. */
-export const publicListingSchema = publicContentSchema.extend({
+export const publicListingSchema = publicContentBase.extend({
   id: z.string().regex(/^[a-z0-9_]+$/),
   summary: z.string().min(10).max(220),
   commercialStatus: z.enum(COMMERCIAL_STATUSES),
@@ -239,7 +300,7 @@ export const publicListingSchema = publicContentSchema.extend({
   isDemo: z.boolean(),
   /** Local draft preview only (astro dev). Never present in a build. */
   isPreview: z.boolean().optional(),
-}).strict();
+}).strict().superRefine((c, ctx) => typeRules(c, ctx));
 
 export type PropertyFacts = z.infer<typeof propertySchema>;
 export type Investment = z.infer<typeof investmentSchema>;

@@ -157,6 +157,106 @@ async function verifyMedia({ mediaBase, publicId: id, manifest }) {
 }
 
 /** WITHDRAW: take a published listing out of public marketing. See the header. Nothing private is read, written or printed here. */
+/** Everything after the engine has produced and checked the snapshot (shared by individual listings and portfolios): site tests, the production build with the snapshot, the sitemap and
+ *  privacy checks, then (real modes) the one-file pull request, required check, merge, deployment and the live proof. A dry run changes nothing. */
+async function proveAndPublish({ action, payload, checks, resumed, restoring, restoreRequested, mediaBase, dataDir }) {
+  if (resumed) {
+    // main already contains this snapshot and passed its checks to get there: go straight to proving the live site
+    await report('tests', 'ok', { checks: [{ name: 'site_tests', ok: true, note: 'Already merged: the required checks passed before the merge.' }] });
+    await report('build', 'ok', { checks: [{ name: 'build', ok: true, note: 'Already merged: the production build ran at deployment.' }] });
+    return publishReal({ snapshot: action.snapshot, checks, resumed: true, restoreRequested });
+  }
+  log('running the site test suite');
+  const tests = run('npm', ['run', 'test:listings']);
+  const testsOk = tests.status === 0;
+  checks.push({ name: 'site_tests', ok: testsOk, note: testsOk ? 'The listings test suite passes.' : tail(tests) });
+  await report('tests', testsOk ? 'ok' : 'failed', testsOk ? null : { checks });
+  if (!testsOk) throw Object.assign(new Error('the site test suite failed'), { code: 'tests_failed', reported: true });
+
+  // the snapshot is written only into this runner's workspace (never committed) so the real build can include it
+  const slug = action.snapshot.content.slug;
+  mkdirSync(join(dataDir, 'approved'), { recursive: true });
+  writeFileSync(join(dataDir, 'approved', `${slug}.json`), `${JSON.stringify(action.snapshot, null, 2)}\n`);
+  // the build mirrors the final state: no withdrawal marker, and no stale place in the display order, for a restored listing
+  if (restoring) {
+    rmSync(join(dataDir, 'withdrawn', `${publicId}.json`), { force: true });
+    const orderFile = join(dataDir, 'display-order.json');
+    if (existsSync(orderFile)) { const o = JSON.parse(readFileSync(orderFile, 'utf8')); if (Array.isArray(o.order) && o.order.includes(publicId)) writeFileSync(orderFile, orderText(o.order.filter((x) => x !== publicId))); }
+  }
+
+  log('building the site with the snapshot');
+  const build = run('npm', ['run', 'build'], { LISTINGS_MEDIA_BASE_URL: mediaBase });
+  const buildOk = build.status === 0;
+  const pagePath = join(repoRoot, '.vercel/output/static/opportunities', slug, 'index.html');
+  const pageBuilt = buildOk && existsSync(pagePath);
+  let inSitemap = false;
+  try { inSitemap = readdirSync(join(repoRoot, '.vercel/output/static')).filter((f) => /^sitemap.*\.xml$/.test(f)).some((f) => readFileSync(join(repoRoot, '.vercel/output/static', f), 'utf8').includes(`/opportunities/${slug}/`)); } catch { /* no sitemap */ }
+  checks.push({ name: 'build', ok: pageBuilt, note: pageBuilt ? 'The production build includes the listing page.' : (buildOk ? 'The build finished but has no page for this listing.' : tail(build)) });
+  checks.push({ name: 'sitemap', ok: inSitemap, note: inSitemap ? 'The sitemap lists the new page.' : 'The sitemap does not list the new page.' });
+  const privacy = run('npm', ['run', 'check:privacy']);
+  const privacyOk = privacy.status === 0;
+  checks.push({ name: 'privacy_scan', ok: privacyOk, note: privacyOk ? 'The privacy scan of the build output is clean.' : tail(privacy) });
+  await report('build', pageBuilt && inSitemap && privacyOk ? 'ok' : 'failed', { checks });
+  if (!pageBuilt || !inSitemap || !privacyOk) throw Object.assign(new Error('the build or the privacy scan failed'), { code: 'build_failed', reported: true });
+
+  if (REAL) return publishReal({ snapshot: action.snapshot, checks, resumed: false, restore: restoring ? { listingId: publicId } : null, restoreRequested });
+  const result = { dryRun: true, slug, kind: action.kind, version: action.snapshot.version, contentHash: action.snapshot.contentHash, photos: payload.manifest.photos.length, checks, wouldBlock: checks.filter((c) => !c.ok).map((c) => c.name) };
+  await report('finished', 'succeeded', result);
+  log('dry run finished: nothing was changed');
+}
+
+/**
+ * PORTFOLIO. A property portfolio is ONE listing for several properties. It has no Notion row of its own (it is not a CRM property), so nothing is read from Notion: the signed request
+ * carries the public-ready content, the declaration and the reviewed photographs, and the engine rules that do not depend on a CRM row run here exactly as for an individual listing:
+ * the declaration, the strict public schema, the safety scans, the Victorian pricing clearance, the site tests, the build, the privacy scan and the same one-file pull request. Withdrawal and
+ * restoration are the same file-level operations as for any listing. Member addresses and identifiers are never in the request, so they cannot reach this repository.
+ */
+async function portfolioPublication(payload) {
+  const declarationProblems = verifyDeclaration(payload, mode);
+  if (declarationProblems.length) { await report('payload', 'failed', { issues: declarationProblems }); throw Object.assign(new Error(declarationProblems[0]), { code: 'declaration_invalid', reported: true }); }
+  await report('payload', 'ok', { photos: payload.manifest.photos.length });
+  const mediaBase = process.env.LISTINGS_MEDIA_BASE_URL;
+  if (!mediaBase) throw Object.assign(new Error('LISTINGS_MEDIA_BASE_URL is not set'), { code: 'not_configured' });
+  const L = await loadTs();
+  const manifestProblems = checkManifest(payload.manifest);
+  if (manifestProblems.length) throw Object.assign(new Error(manifestProblems[0]), { code: 'manifest_invalid', problems: manifestProblems });
+  const reviewedPhotos = L.manifestToPhotos(payload.manifest, L.manifestUrlFor(publicId, mediaBase), mediaBase);
+  if (reviewedPhotos.issues.length) throw Object.assign(new Error('the reviewed photographs are invalid'), { code: 'manifest_invalid', problems: reviewedPhotos.issues });
+  await report('notion_read', 'ok', { note: 'A portfolio has no CRM row: nothing is read from Notion.' });
+
+  const dataDir = join(repoRoot, 'src/data/listings');
+  const jsonDir = (d) => (existsSync(join(dataDir, d)) ? readdirSync(join(dataDir, d)).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(readFileSync(join(dataDir, d, f), 'utf8'))) : []);
+  const compliance = JSON.parse(readFileSync(join(dataDir, 'compliance.json'), 'utf8'));
+  const previousSnap = jsonDir('approved').find((x) => x.listingId === publicId) ?? null;
+  const restoreRequested = payload.restore === true;
+  const isWithdrawn = jsonDir('withdrawn').some((w) => w.listingId === publicId);
+  const restoring = restoreRequested && isWithdrawn;
+  const checks = [{ name: 'approved_in_listings_manager', ok: payload.authority === 'listings_manager', note: 'Approved in the Listings Manager by a Publisher (signed request).' }];
+  const refuse = async (kind, why) => { await report('engine', 'failed', { kind, issues: [why], checks }); throw Object.assign(new Error(why), { code: kind === 'unchanged' ? 'engine_refused' : 'wrong_mode', reported: true }); };
+  if (isWithdrawn && !restoring) await refuse('withdrawn', 'This listing is withdrawn.');
+  if (REAL && mode === 'publish' && previousSnap) await refuse('wrong_mode', 'This listing is already published: use an update.');
+  if (REAL && mode === 'update' && !previousSnap) await refuse('wrong_mode', 'This listing has not been published yet: use a first publication.');
+  const status = effectiveStatus(payload, previousSnap);
+  const built = L.buildPortfolioContent({
+    publicId, request: payload.content, photos: reviewedPhotos.photos, previous: previousSnap, status, compliance,
+    otherSlugs: new Set(jsonDir('approved').filter((x) => x.listingId !== publicId).map((x) => x.content.slug)),
+    ctx: { allowDemo: false, mediaBaseUrl: mediaBase, compliance, authorisedApproverIds: [] },
+  });
+  if (!built.content) { await report('engine', 'failed', { kind: 'refused', issues: built.issues, checks }); throw Object.assign(new Error(`the engine would not publish this portfolio (${built.issues.length} issue(s))`), { code: 'engine_refused', reported: true }); }
+  const featured = payload.content?.featured === true;
+  const sameContent = !!previousSnap && previousSnap.contentHash === L.contentHash(built.content) && previousSnap.commercialStatus === status && (previousSnap.featured === true) === featured;
+  let action;
+  if (sameContent && restoring) action = { kind: 'restored_unchanged', id: publicId, snapshot: previousSnap, issues: [] };
+  else if (sameContent) {
+    if (REAL) action = { kind: 'already_published', id: publicId, snapshot: previousSnap, issues: [] };
+    else { await report('engine', 'failed', { kind: 'unchanged', issues: [], checks }); throw Object.assign(new Error('there is nothing new to publish'), { code: 'engine_refused', reported: true }); }
+  } else action = { kind: previousSnap ? 'version' : 'new', id: publicId, issues: [], snapshot: L.nextPortfolioSnapshot(publicId, built.content, previousSnap, { status, featured, at: new Date().toISOString() }) };
+  const resumed = action.kind === 'already_published';
+  checks.push({ name: 'engine_accepts', ok: true, note: resumed ? 'This exact content is already on the main branch.' : `Proposed ${action.kind} v${action.snapshot.version}.` });
+  await report('engine', 'ok', { kind: action.kind, version: action.snapshot.version, slug: action.snapshot.content.slug, contentHash: action.snapshot.contentHash, checks });
+  return proveAndPublish({ action, payload, checks, resumed, restoring, restoreRequested, mediaBase, dataDir });
+}
+
 async function withdraw(payload) {
   if (payload.action !== 'withdraw' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/.test(payload.at ?? '')) throw Object.assign(new Error('the withdrawal request is not valid'), { code: 'payload_mismatch' });
   await report('payload', 'ok');
@@ -325,6 +425,7 @@ async function main() {
   if (payload.publicId !== publicId || payload.mode !== mode || ![1, 2].includes(payload.version)) throw Object.assign(new Error('the payload does not match the job'), { code: 'payload_mismatch' });
   if (mode === 'withdraw') return withdraw(payload);
   if (mode === 'reorder') return reorder(payload);
+  if (payload.listingType === 'portfolio') return portfolioPublication(payload);
   // A real publication needs the Publisher's recorded declaration, checked against the content it was recorded for. Version 1 (legacy) can never publish.
   const declarationProblems = verifyDeclaration(payload, mode);
   if (declarationProblems.length) { await report('payload', 'failed', { issues: declarationProblems }); throw Object.assign(new Error(declarationProblems[0]), { code: 'declaration_invalid', reported: true }); }
@@ -424,49 +525,7 @@ async function main() {
   }
   await report('engine', 'ok', { kind: action.kind, version: action.snapshot.version, slug: action.snapshot.content.slug, contentHash: action.snapshot.contentHash, checks });
 
-  if (resumed) {
-    // main already contains this snapshot and passed its checks to get there: go straight to proving the live site
-    await report('tests', 'ok', { checks: [{ name: 'site_tests', ok: true, note: 'Already merged: the required checks passed before the merge.' }] });
-    await report('build', 'ok', { checks: [{ name: 'build', ok: true, note: 'Already merged: the production build ran at deployment.' }] });
-    return publishReal({ snapshot: action.snapshot, checks, resumed: true, restoreRequested });
-  }
-  log('running the site test suite');
-  const tests = run('npm', ['run', 'test:listings']);
-  const testsOk = tests.status === 0;
-  checks.push({ name: 'site_tests', ok: testsOk, note: testsOk ? 'The listings test suite passes.' : tail(tests) });
-  await report('tests', testsOk ? 'ok' : 'failed', testsOk ? null : { checks });
-  if (!testsOk) throw Object.assign(new Error('the site test suite failed'), { code: 'tests_failed', reported: true });
-
-  // the snapshot is written only into this runner's workspace (never committed) so the real build can include it
-  const slug = action.snapshot.content.slug;
-  mkdirSync(join(dataDir, 'approved'), { recursive: true });
-  writeFileSync(join(dataDir, 'approved', `${slug}.json`), `${JSON.stringify(action.snapshot, null, 2)}\n`);
-  // the build mirrors the final state: no withdrawal marker, and no stale place in the display order, for a restored listing
-  if (restoring) {
-    rmSync(join(dataDir, 'withdrawn', `${publicId}.json`), { force: true });
-    const orderFile = join(dataDir, 'display-order.json');
-    if (existsSync(orderFile)) { const o = JSON.parse(readFileSync(orderFile, 'utf8')); if (Array.isArray(o.order) && o.order.includes(publicId)) writeFileSync(orderFile, orderText(o.order.filter((x) => x !== publicId))); }
-  }
-
-  log('building the site with the snapshot');
-  const build = run('npm', ['run', 'build'], { LISTINGS_MEDIA_BASE_URL: mediaBase });
-  const buildOk = build.status === 0;
-  const pagePath = join(repoRoot, '.vercel/output/static/opportunities', slug, 'index.html');
-  const pageBuilt = buildOk && existsSync(pagePath);
-  let inSitemap = false;
-  try { inSitemap = readdirSync(join(repoRoot, '.vercel/output/static')).filter((f) => /^sitemap.*\.xml$/.test(f)).some((f) => readFileSync(join(repoRoot, '.vercel/output/static', f), 'utf8').includes(`/opportunities/${slug}/`)); } catch { /* no sitemap */ }
-  checks.push({ name: 'build', ok: pageBuilt, note: pageBuilt ? 'The production build includes the listing page.' : (buildOk ? 'The build finished but has no page for this listing.' : tail(build)) });
-  checks.push({ name: 'sitemap', ok: inSitemap, note: inSitemap ? 'The sitemap lists the new page.' : 'The sitemap does not list the new page.' });
-  const privacy = run('npm', ['run', 'check:privacy']);
-  const privacyOk = privacy.status === 0;
-  checks.push({ name: 'privacy_scan', ok: privacyOk, note: privacyOk ? 'The privacy scan of the build output is clean.' : tail(privacy) });
-  await report('build', pageBuilt && inSitemap && privacyOk ? 'ok' : 'failed', { checks });
-  if (!pageBuilt || !inSitemap || !privacyOk) throw Object.assign(new Error('the build or the privacy scan failed'), { code: 'build_failed', reported: true });
-
-  if (REAL) return publishReal({ snapshot: action.snapshot, checks, resumed: false, restore: restoring ? { listingId: publicId } : null, restoreRequested });
-  const result = { dryRun: true, slug, kind: action.kind, version: action.snapshot.version, contentHash: action.snapshot.contentHash, photos: payload.manifest.photos.length, checks, wouldBlock: checks.filter((c) => !c.ok).map((c) => c.name) };
-  await report('finished', 'succeeded', result);
-  log('dry run finished: nothing was changed');
+  return proveAndPublish({ action, payload, checks, resumed, restoring, restoreRequested, mediaBase, dataDir });
 }
 
 main().catch(async (e) => {

@@ -18,3 +18,5 @@ export { FIXTURE_RECORDS, FIXTURE_SNAPSHOTS } from './fixtures';
 export * from '../../lib/enquiries';
 export * from './propose';
 export * from './description';
+export * from './portfolio';
+export * from './portfolio-publish';

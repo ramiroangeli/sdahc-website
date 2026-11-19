@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { checkPublicSafety, type SafetyContext } from './guards';
+import { touchesVictoria } from './portfolio';
 import {
   LIVE_STATUSES,
   STATUS_TO_COMMERCIAL,
@@ -127,7 +128,7 @@ export const validateForPublication = (r: ListingRecord, ctx: SafetyContext, now
   if (!r.isFixture) {
     // Victoria: the price display and listing rules took effect on 1 October 2026 and their application to SDA
     // sales is not yet classified. Each pricing mode needs a recorded clearance (compliance.json).
-    if (c.address.state === 'VIC') {
+    if (touchesVictoria(c)) {
       const clearance = victorianClearance(ctx.compliance, r.id, c.pricing.mode);
       if (!clearance.cleared) issues.push(`Victorian pricing compliance is not cleared for "${c.pricing.mode}" (docs/victorian-pricing-compliance.md)`);
       else issues.push(...victorianConditionIssues(clearance.conditions ?? [], c));

@@ -24,7 +24,7 @@ const { items } = Astro.props;
           <div class="rl-body">
             <ListingStatusBadge status={l.commercialStatus} />
             <h3 class="rl-title"><a href={listingPath(l)}>{l.title}</a></h3>
-            <p class="rl-meta">{localityLine(l.address)}{designText(l) ? ` · ${designText(l)}` : ''}</p>
+            <p class="rl-meta">{l.address ? localityLine(l.address) : l.portfolio ? `${l.portfolio.coverage} · ${l.portfolio.propertyCount} properties` : ''}{designText(l) ? ` · ${designText(l)}` : ''}</p>
           </div>
         </li>
       ))}

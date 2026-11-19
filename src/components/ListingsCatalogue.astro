@@ -3,6 +3,7 @@ import ListingCard from './ListingCard.astro';
 import ConfidentialAccessPanel from './ConfidentialAccessPanel.astro';
 import { getPublicListings } from '../data/listings';
 import { DESIGN_LABEL, STATUS_LABEL, STATES, TYPE_LABEL } from '../data/listings/schema';
+import { listingStates } from '../data/listings/portfolio';
 
 /*
   The property catalogue: searchable, filterable, sortable list of published listings, with the Confidential Access panel beside it on desktop and below it on mobile.
@@ -14,7 +15,7 @@ const listings = getPublicListings();
 // how many matching properties show at first; "Load more properties" adds this many each time
 const PAGE = 10;
 const uniq = <T,>(v: T[]) => [...new Set(v)];
-const states = STATES.filter((s) => listings.some((l) => l.address.state === s));
+const states = STATES.filter((s) => listings.some((l) => listingStates(l).includes(s)));
 const types = uniq(listings.map((l) => l.type));
 const statuses = uniq(listings.map((l) => l.commercialStatus));
 const designs = uniq(listings.flatMap((l) => l.sda.designCategories ?? []));
@@ -148,7 +149,7 @@ const showDesign = designs.length > 0;
       // filter and sort across the whole inventory first, then show only the first `limit` matches
       const matched = cards.filter((card) =>
         (!q || (card.dataset.search ?? '').includes(q)) &&
-        (!f.state || card.dataset.state === f.state) &&
+        (!f.state || (card.dataset.state ?? '').split(' ').includes(f.state)) &&
         (!f.type || card.dataset.type === f.type) &&
         (!f.status || card.dataset.status === f.status) &&
         (!f.design || (card.dataset.design ?? '').split(' ').includes(f.design)));
