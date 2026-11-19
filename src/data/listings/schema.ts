@@ -92,6 +92,16 @@ export const publicAddressSchema = z.object({
   postcode: z.string().regex(/^\d{4}$/),
 }).strict();
 
+/**
+ * A public LOCATION: a region, commercial area or suburb as the team wants buyers to see it ("Greater Darwin", "Berrimah"). It is NOT an address: it has no street, no postcode field and no
+ * digits (a house, unit or lot number can never ride along). The state is its own structured value, taken from the CRM, never read from the text. Nothing here claims an official
+ * statistical area: the label is the team's own words.
+ */
+export const publicLocationSchema = z.object({
+  label: z.string().min(2).max(80).regex(/^[^\d<>@\/\\]+$/, 'a public location has no digits, links or contact details'),
+  state: z.enum(STATES),
+}).strict();
+
 export const pricingSchema = z.object({
   mode: z.enum(PRICING_MODES),
   /** Human-approved public amount in AUD. Required for asking_price and price_guide, forbidden otherwise. */
@@ -261,8 +271,9 @@ const publicContentBase = z.object({
   title: z.string().min(5).max(90),
   // technical limits only: long commercial descriptions are normal. A block may hold a whole bullet list.
   description: z.array(z.string().min(1).max(6000)).min(1).max(120).refine((d) => d.reduce((n, b) => n + b.length, 0) <= 30000, 'the description is longer than 30,000 characters'),
-  /** An individual property has one public address. A portfolio has none (see `portfolio`). */
+  /** An individual property has EITHER a public street address (as published so far) OR a public location (a region or suburb, no street). A portfolio has neither (see `portfolio`). */
   address: publicAddressSchema.optional(),
+  location: publicLocationSchema.optional(),
   pricing: pricingSchema,
   sda: sdaSchema,
   photos: z.array(photoSchema).max(24),
@@ -278,10 +289,11 @@ const publicContentBase = z.object({
 const typeRules = (c: z.infer<typeof publicContentBase>, ctx: z.RefinementCtx) => {
 
   if (c.type === 'property') {
-    if (!c.address) ctx.addIssue({ code: 'custom', path: ['address'], message: 'an individual property needs its public address' });
+    if (!c.address && !c.location) ctx.addIssue({ code: 'custom', path: ['address'], message: 'an individual property needs its public address or its public location' });
+    if (c.address && c.location) ctx.addIssue({ code: 'custom', path: ['location'], message: 'an individual property has an address or a location, not both' });
     if (c.portfolio) ctx.addIssue({ code: 'custom', path: ['portfolio'], message: 'an individual property carries no portfolio block' });
   } else {
-    if (c.address) ctx.addIssue({ code: 'custom', path: ['address'], message: 'a portfolio has no street address' });
+    if (c.address || c.location) ctx.addIssue({ code: 'custom', path: ['address'], message: 'a portfolio has no street address or single location: its coverage is in the portfolio block' });
     if (!c.portfolio) ctx.addIssue({ code: 'custom', path: ['portfolio'], message: 'a portfolio needs its portfolio block' });
     if (c.investment || c.property || c.marketing) ctx.addIssue({ code: 'custom', message: 'a portfolio carries no individual property groups' });
   }
@@ -305,6 +317,7 @@ export const publicListingSchema = publicContentBase.extend({
 export type PropertyFacts = z.infer<typeof propertySchema>;
 export type Investment = z.infer<typeof investmentSchema>;
 export type PublicAddress = z.infer<typeof publicAddressSchema>;
+export type PublicLocation = z.infer<typeof publicLocationSchema>;
 export type Pricing = z.infer<typeof pricingSchema>;
 export type Photo = z.infer<typeof photoSchema>;
 export type PublicContent = z.infer<typeof publicContentSchema>;

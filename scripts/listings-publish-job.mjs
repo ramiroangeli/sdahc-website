@@ -476,7 +476,10 @@ async function main() {
   let extras = new Map();
   let effectiveOptional = payload.content?.optional;
   if (payload.version === 2) {
-    const state = L.parsePublicAddress(payload.content?.publicAddress ?? '').state;
+    // the state comes from the CRM row for a location (a street address carries its own); the same resolver the engine uses
+    const crmState = L.toStateCode(L.readText(page.properties?.[L.NOTION.state]));
+    const placed = L.resolvePublicLocation(payload.content?.publicAddress ?? '', crmState);
+    const state = placed.address ? placed.address.state : placed.location.state;
     effectiveOptional = L.declareOptionalGroups(payload.content?.optional, { description: L.descriptionBlocks(payload.content?.description), state, status: effectiveStatus(payload, previousSnap) });
   }
   if (effectiveOptional !== undefined && effectiveOptional !== null) {

@@ -1103,6 +1103,7 @@ await (await import('./test-catalogue.mjs')).default({ t, section });
 await (await import('./test-offmarket.mjs')).default({ t, section });
 await (await import('./test-display-order.mjs')).default({ t, section });
 await (await import('./test-portfolio.mjs')).default({ t, section });
+await (await import('./test-location.mjs')).default({ t, section });
 
 section('publication engine: an exact commercial description approved by a Publisher');
 {

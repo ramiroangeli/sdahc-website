@@ -111,7 +111,7 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   }
 
   // 4. personal data (participants, staff, owners)
-  const publicProse = JSON.stringify({ t: c.title, d: c.description, p: c.photos.map((p) => p.alt), i: investmentText, o: c.sda.ooa, m: c.property?.municipality, k: c.property?.parking });
+  const publicProse = JSON.stringify({ t: c.title, l: c.location?.label, d: c.description, p: c.photos.map((p) => p.alt), i: investmentText, o: c.sda.ooa, m: c.property?.municipality, k: c.property?.parking });
   const prose = norm(publicProse);
   if (EMAIL.test(prose)) issues.push('an email address appears in public text');
   if (PHONE.test(prose)) issues.push('a phone number appears in public text');
@@ -123,7 +123,7 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
   // never carry income or yield (conservative restriction pending the OIEC or legal advice; not a legal determination).
   if (investment) {
     if (!investmentApprovalValid(investment)) issues.push('the investment details are not approved for public display, or were changed after they were approved');
-    if (c.address?.state === 'VIC' && hasFinancialFigures(investment) && investment.approval.victorian !== true) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
+    if (touchesVictoria(c) && hasFinancialFigures(investment) && investment.approval.victorian !== true) issues.push(VICTORIAN_FINANCIAL_RESTRICTION);
   }
   if (portfolio) {
     const claims = hasPortfolioFigures(portfolio) || !!portfolio.leaseStatus || !!portfolio.occupancyStatus;

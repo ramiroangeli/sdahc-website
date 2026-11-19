@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { LEASE_LABEL, OCCUPANCY_LABEL, type CommercialStatus, type Investment, type OptionalGroups, type PublicAddress } from './schema';
+import { LEASE_LABEL, OCCUPANCY_LABEL, type CommercialStatus, type Investment, type OptionalGroups, type PublicAddress, type PublicLocation } from './schema';
 
 /*
   The optional commercial block, and the ONE place that decides what of it a visitor may see.
@@ -56,10 +56,10 @@ export interface InvestmentView {
 export const formatYield = (pct: number): string => `${pct.toFixed(1)}%`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export const publicInvestment = (l: { address: Pick<PublicAddress, 'state'>; commercialStatus: CommercialStatus; investment?: Investment }): InvestmentView | null => {
+export const publicInvestment = (l: { address?: Pick<PublicAddress, 'state'>; location?: Pick<PublicLocation, 'state'>; commercialStatus: CommercialStatus; investment?: Investment }): InvestmentView | null => {
   const inv = l.investment;
   if (!inv || l.commercialStatus === 'sold' || !investmentApprovalValid(inv)) return null;
-  const vic = l.address.state === 'VIC';
+  const vic = (l.address?.state ?? l.location?.state) === 'VIC';
   const basis = inv.basis ? cap(inv.basis) as 'Actual' | 'Projected' : undefined;
   const view: InvestmentView = {};
   if (inv.leaseStatus) view.lease = { key: inv.leaseStatus, label: LEASE_LABEL[inv.leaseStatus] };

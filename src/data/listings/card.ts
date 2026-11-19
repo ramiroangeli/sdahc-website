@@ -37,6 +37,7 @@ export const cardFacts = (l: PublicListing): CardFacts => {
 /** The public location line under the title, only when the title does not already say where the property is. Public address fields only. */
 export const cardLocation = (l: PublicListing): string | undefined => {
   if (l.portfolio) return l.title.toLowerCase().includes(l.portfolio.coverage.toLowerCase()) ? undefined : l.portfolio.coverage;
+  if (l.location) return l.title.toLowerCase().includes(l.location.label.toLowerCase()) ? undefined : l.location.label;
   const a = l.address!;
   return l.title.toLowerCase().includes(a.suburb.toLowerCase()) ? undefined : `${a.suburb} ${a.state} ${a.postcode}`;
 };
