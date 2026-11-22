@@ -1,36 +1,41 @@
 {
   "listingId": "lst_75fad5b1d4",
-  "version": 2,
+  "version": 3,
   "approvedBy": "SDA Home Choices",
   "approvedById": "listings-manager",
-  "approvedAt": "2026-11-19T10:33:29.387Z",
+  "approvedAt": "2026-11-22T23:41:35.834Z",
   "firstPublishedAt": "2026-11-11T15:45:44.676Z",
   "commercialStatus": "available",
   "featured": false,
   "sourceEditedAt": "2026-10-28T04:22:00.000Z",
-  "contentHash": "b1552aa61ec98efb57bfeaf87796a6deea56b047c74b5723344774e41c7f423e",
+  "contentHash": "6f8000eca43a4aa9f7497c999531f0d7f394ea9f67835993e122940a1222967c",
   "content": {
     "slug": "whipray-circuit-berrimah-nt",
     "type": "property",
-    "title": "Whipray Circuit, Berrimah NT 0832",
+    "title": "GREATER DARWIN",
     "description": [
-      "An outstanding opportunity to acquire a purpose-built Specialist Disability Accommodation (SDA) property in the suburb of Berrimah.\nDesigned to deliver long-term, high-yielding returns, this asset is positioned within the NDIS housing sector.",
-      "Key Property & Investment Highlights:\n• Purpose-Built Asset: Constructed specifically for SDA.\n• Tenanted Investment: Provides immediate income continuity without vacant possession.\n• Turnkey Opportunity: Ideal for investors seeking a compliant, specialised residential asset with an established provider in place.",
-      "For further information, financial details, or to arrange a private discussion, please contact SDA Home Choices."
+      "ESTABLISHED ROBUST SDA INVESTMENT - 9.5% NET YIELD",
+      "- Net yield: 9.5%\n- Gross income: approx. $113,894 p.a.\n- Robust SDA design category\n- 2-participant SDA dwelling\n- Established SDA provider and management arrangement\n- Completed, income-producing investment",
+      "An opportunity to acquire an established Specialist Disability Accommodation (SDA) investment in Greater Darwin.",
+      "Compromises a completed Robust-design SDA dwelling configured for two participants, with an established SDA provider and existing management arrangement in place.",
+      "Income figures are vendor-reported and subject to purchaser due diligence. Occupancy, management arrangements and property details should be independently verified.",
+      "Confidentiality conditions apply. Interested parties will be required to enter into a Non-Disclosure Agreement (NDA) before receiving further information."
     ],
-    "address": {
-      "street": "Whipray Circuit",
-      "suburb": "Berrimah",
-      "state": "NT",
-      "postcode": "0832"
+    "location": {
+      "label": "Greater Darwin NT",
+      "state": "NT"
     },
     "pricing": {
-      "mode": "contact_agent"
+      "mode": "asking_price",
+      "display": "$960,000"
     },
     "sda": {
       "designCategories": [
         "Robust"
-      ]
+      ],
+      "bedrooms": 2,
+      "residentPlaces": 2,
+      "ooa": "OOA"
     },
     "photos": [
       {
@@ -100,6 +105,34 @@
         ],
         "privacyReviewed": true
       }
-    ]
+    ],
+    "property": {
+      "bathrooms": 2,
+      "carSpaces": 1,
+      "floorAreaM2": 175,
+      "landAreaM2": 440,
+      "parking": "Single Garage"
+    },
+    "investment": {
+      "leaseStatus": "partially_leased",
+      "occupancyStatus": "partially_occupied",
+      "tenure": "One out of two places occupied",
+      "annualIncomeAud": 113894,
+      "incomeType": "gross",
+      "yieldPct": 9.5,
+      "yieldType": "net",
+      "basis": "actual",
+      "providerArrangement": "Experienced SDA provider arrangement",
+      "approval": {
+        "valuesHash": "6ff8dec42e359f51395466b94bd2e5e056c7eb78d0072c4b20fe5c1a87ad919d",
+        "provider": true
+      }
+    },
+    "marketing": {
+      "agency": "sdahc"
+    },
+    "descriptionApproval": {
+      "textHash": "b05b1075fbac6759485dbaf391a5231131d6ad41b8847015a68aec5c25bc8be0"
+    }
   }
 }
