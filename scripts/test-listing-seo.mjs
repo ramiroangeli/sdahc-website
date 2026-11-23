@@ -7,7 +7,7 @@ import { loadTs, repoRoot } from './lib/bundle-ts.mjs';
 export default async function run({ t, section }) {
   const L = await loadTs();
   const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
-  const NT = JSON.parse(rd('src/data/listings/approved/whipray-circuit-berrimah-nt.json'));
+  const NT = JSON.parse(rd('scripts/fixtures/base-whipray.json'));
   const ap = (inv) => ({ ...inv, approval: { valuesHash: L.investmentValuesHash({ ...inv, approval: { valuesHash: '0'.repeat(64) } }) } });
   const FULL = { leaseStatus: 'fully_leased', occupancyStatus: 'partially_occupied', annualIncomeAud: 132704, incomeType: 'net', yieldPct: 11.1, yieldType: 'net', basis: 'projected', tenure: 'Long-term lease to a registered SDA provider' };
   let n = 0;

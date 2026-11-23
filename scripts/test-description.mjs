@@ -7,7 +7,7 @@ import { overlayPage, paragraphs as jobParagraphs } from './lib/publish-job.mjs'
 export default async function run({ t, section }) {
   const L = await loadTs();
   const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
-  const NT = JSON.parse(rd('src/data/listings/approved/whipray-circuit-berrimah-nt.json'));
+  const NT = JSON.parse(rd('scripts/fixtures/base-whipray.json'));
   const content = (description, mod) => { const c = structuredClone(NT.content); c.description = description; for (const photo of c.photos) for (const variant of photo.variants) variant.src = `/images/listings/${variant.src.split('/').pop()}`; if (mod) mod(c); return c; };
   // Use a local synthetic media origin so this description test does not depend on CI configuration.
   const ctx = { allowDemo: false };

@@ -7,7 +7,7 @@ import { parity } from './lib/publish-job.mjs';
 export default async function run({ t, section }) {
   const L = await loadTs();
   const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
-  const NT = JSON.parse(rd('src/data/listings/approved/whipray-circuit-berrimah-nt.json'));
+  const NT = JSON.parse(rd('scripts/fixtures/base-whipray.json'));
   const N = L.NOTION;
   const refuses = (text, state = 'NT') => { try { L.resolvePublicLocation(text, state); return false; } catch (e) { return e instanceof L.LocationError || e instanceof L.AddressError; } };
 

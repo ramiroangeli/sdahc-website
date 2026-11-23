@@ -30,7 +30,7 @@ export default async function run({ t, section }) {
   t('robots.txt is unchanged (no new disallow, no crawler policy change)', rd('public/robots.txt') === 'User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://sdahomechoices.com.au/sitemap-index.xml\n');
 
   section('off-market page: a listing can never take its address');
-  const base = JSON.parse(rd('src/data/listings/approved/whipray-circuit-berrimah-nt.json')).content;
+  const base = JSON.parse(rd('scripts/fixtures/base-whipray.json')).content;
   t('a listing slug of "off-market" is refused; a normal slug is unchanged', !L.publicContentSchema.safeParse({ ...base, slug: 'off-market' }).success && L.publicContentSchema.safeParse(base).success && L.RESERVED_SLUGS.includes('off-market'));
 
   section('navigation: Listings dropdown');

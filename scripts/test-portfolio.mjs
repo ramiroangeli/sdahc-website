@@ -7,7 +7,7 @@ export default async function run({ t, section }) {
   const L = await loadTs();
   const rd = (f) => readFileSync(join(repoRoot, f), 'utf8');
   const MEDIA = 'https://leojshpooxhtztim.public.blob.vercel-storage.com';
-  const NT = JSON.parse(rd('src/data/listings/approved/whipray-circuit-berrimah-nt.json'));
+  const NT = JSON.parse(rd('scripts/fixtures/base-whipray.json'));
   const photos = structuredClone(NT.content.photos);
   const compliance = JSON.parse(rd('src/data/listings/compliance.json'));
   const ctx = { allowDemo: false, mediaBaseUrl: MEDIA, compliance, authorisedApproverIds: [] };
