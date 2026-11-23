@@ -166,14 +166,7 @@ async function proveAndPublish({ action, payload, checks, resumed, restoring, re
     await report('build', 'ok', { checks: [{ name: 'build', ok: true, note: 'Already merged: the production build ran at deployment.' }] });
     return publishReal({ snapshot: action.snapshot, checks, resumed: true, restoreRequested });
   }
-  log('running the site test suite');
-  const tests = run('npm', ['run', 'test:listings']);
-  const testsOk = tests.status === 0;
-  checks.push({ name: 'site_tests', ok: testsOk, note: testsOk ? 'The listings test suite passes.' : tail(tests) });
-  await report('tests', testsOk ? 'ok' : 'failed', testsOk ? null : { checks });
-  if (!testsOk) throw Object.assign(new Error('the site test suite failed'), { code: 'tests_failed', reported: true });
-
-  // the snapshot is written only into this runner's workspace (never committed) so the real build can include it
+  // the snapshot is written only into this runner's workspace (never committed). It goes in BEFORE the tests so the suite that runs here is exactly the suite the required check runs on the pull request: a failure it would cause is found now, with nothing opened
   const slug = action.snapshot.content.slug;
   mkdirSync(join(dataDir, 'approved'), { recursive: true });
   writeFileSync(join(dataDir, 'approved', `${slug}.json`), `${JSON.stringify(action.snapshot, null, 2)}\n`);
@@ -183,6 +176,13 @@ async function proveAndPublish({ action, payload, checks, resumed, restoring, re
     const orderFile = join(dataDir, 'display-order.json');
     if (existsSync(orderFile)) { const o = JSON.parse(readFileSync(orderFile, 'utf8')); if (Array.isArray(o.order) && o.order.includes(publicId)) writeFileSync(orderFile, orderText(o.order.filter((x) => x !== publicId))); }
   }
+
+  log('running the site test suite');
+  const tests = run('npm', ['run', 'test:listings']);
+  const testsOk = tests.status === 0;
+  checks.push({ name: 'site_tests', ok: testsOk, note: testsOk ? 'The listings test suite passes.' : tail(tests) });
+  await report('tests', testsOk ? 'ok' : 'failed', testsOk ? null : { checks });
+  if (!testsOk) throw Object.assign(new Error('the site test suite failed'), { code: 'tests_failed', reported: true });
 
   log('building the site with the snapshot');
   const build = run('npm', ['run', 'build'], { LISTINGS_MEDIA_BASE_URL: mediaBase });

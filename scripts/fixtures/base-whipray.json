@@ -1,0 +1,105 @@
+{
+  "listingId": "lst_75fad5b1d4",
+  "version": 2,
+  "approvedBy": "SDA Home Choices",
+  "approvedById": "listings-manager",
+  "approvedAt": "2026-11-19T10:33:29.387Z",
+  "firstPublishedAt": "2026-11-11T15:45:44.676Z",
+  "commercialStatus": "available",
+  "featured": false,
+  "sourceEditedAt": "2026-10-28T04:22:00.000Z",
+  "contentHash": "b1552aa61ec98efb57bfeaf87796a6deea56b047c74b5723344774e41c7f423e",
+  "content": {
+    "slug": "whipray-circuit-berrimah-nt",
+    "type": "property",
+    "title": "Whipray Circuit, Berrimah NT 0832",
+    "description": [
+      "An outstanding opportunity to acquire a purpose-built Specialist Disability Accommodation (SDA) property in the suburb of Berrimah.\nDesigned to deliver long-term, high-yielding returns, this asset is positioned within the NDIS housing sector.",
+      "Key Property & Investment Highlights:\n• Purpose-Built Asset: Constructed specifically for SDA.\n• Tenanted Investment: Provides immediate income continuity without vacant possession.\n• Turnkey Opportunity: Ideal for investors seeking a compliant, specialised residential asset with an established provider in place.",
+      "For further information, financial details, or to arrange a private discussion, please contact SDA Home Choices."
+    ],
+    "address": {
+      "street": "Whipray Circuit",
+      "suburb": "Berrimah",
+      "state": "NT",
+      "postcode": "0832"
+    },
+    "pricing": {
+      "mode": "contact_agent"
+    },
+    "sda": {
+      "designCategories": [
+        "Robust"
+      ]
+    },
+    "photos": [
+      {
+        "id": "381e4fe1b95e",
+        "alt": "Front",
+        "width": 4000,
+        "height": 2695,
+        "accent": "teal",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/381e4fe1b95e-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/381e4fe1b95e-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/381e4fe1b95e-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "7851eca53323",
+        "alt": "Parkside Estate Park",
+        "width": 2800,
+        "height": 2100,
+        "accent": "teal",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/7851eca53323-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/7851eca53323-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/7851eca53323-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "090976b8b92a",
+        "alt": "Floorplan",
+        "width": 1772,
+        "height": 2362,
+        "accent": "slate",
+        "kind": "floorplan",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/090976b8b92a-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/090976b8b92a-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_75fad5b1d4/090976b8b92a-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      }
+    ]
+  }
+}

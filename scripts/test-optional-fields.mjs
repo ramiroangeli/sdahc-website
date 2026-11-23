@@ -10,7 +10,8 @@ export default async function run({ t, section }) {
   const MEDIA = 'https://leojshpooxhtztim.public.blob.vercel-storage.com';
   const now = new Date('2026-11-12T00:00:00Z');
   const REAL = ['rutherford-grove-armstrong-creek-vic', 'sheppard-street-shepparton-vic', 'whipray-circuit-berrimah-nt'].map((s) => JSON.parse(rd(`src/data/listings/approved/${s}.json`)));
-  const NT = REAL[2];
+  // synthetic listings are built from a FROZEN public base, never from live published content: a real listing's approved wording must not be able to break the test suite
+  const NT = JSON.parse(rd('scripts/fixtures/base-whipray.json'));
   let n = 0;
   const withHash = (inv, extra = {}) => ({ ...inv, approval: { valuesHash: L.investmentValuesHash({ ...inv, approval: { valuesHash: '0'.repeat(64) } }), ...extra } });
   /** one synthetic listing: { snapshot, record }. `state` overrides the address state; `mod` edits the content. */
