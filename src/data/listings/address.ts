@@ -67,7 +67,9 @@ const letterSuffix = (seed: string, extra = 0) => {
 
 /** Slug from a public location: letters and hyphens only, with the same stable letter suffix when two listings would share it. */
 export const makeLocationSlug = (l: PublicLocation, taken: ReadonlySet<string>, seed: string): string => {
-  const base = slugWords(`${l.label} ${l.state}`).replace(/^-+/, '') || 'sda-property';
+  // the state is added once: a label that already ends with it ("Greater Darwin NT") must not read "...-nt-nt"
+  const named = new RegExp(`\\b${l.state}$`, 'i').test(l.label.trim());
+  const base = slugWords(named ? l.label : `${l.label} ${l.state}`).replace(/^-+/, '') || 'sda-property';
   const root = base.length >= 3 ? base : `sda-property-${base}`;
   if (!taken.has(root)) return root;
   for (let i = 0; i < 50; i += 1) { const candidate = `${root}-${letterSuffix(seed, i)}`; if (!taken.has(candidate)) return candidate; }
