@@ -2,6 +2,8 @@ import type { ComplianceConfig, PublicContent } from './schema';
 import { isDemoPhoto } from './schema';
 import { descriptionApprovalHash, hasFinancialFigures, investmentApprovalValid, VICTORIAN_FINANCIAL_RESTRICTION } from './investment';
 import { isApprovedAgency } from './agencies';
+import { findNamedParticipant } from './privacy';
+export { findNamedParticipant, findPersonalNames } from './privacy';
 import { hasPortfolioFigures, portfolioApprovalValid, touchesVictoria } from './portfolio';
 
 /*
@@ -52,16 +54,6 @@ const parseInternal = (addr: string) => {
 };
 
 /** Returns a list of problems. Empty means the content is safe to publish. */
-/*
-  Participant names are never published. The rule looks for the words participant, resident or tenant followed by a name ("participant named Ann", "resident Mary Jones"). Two capitalised words
-  after the keyword are read as a name, EXCEPT ordinary SDA and property wording that is capitalised in advertisements: "2-participant High Physical Support dwelling", "resident Fully Accessible",
-  "tenant Improved Liveability". Those words are never a person's first name, so they are skipped; everything else still counts as a name.
-*/
-const NOT_A_NAME = '(?:High|Improved|Fully|Robust|Basic|Physical|Onsite|Overnight|Living|Livability|Liveability|Specialist|Disability|Accommodation|Accessible|Support|Supported|Places?|Capacity|Dwellings?|Housing|Homes?|House|Rooms?|Bedrooms?|Services?|Provider|Providers|Funding|Funded|Plan|Ready|Friendly|Care|Tenancy|Income|Occupancy|Occupied|Property|Properties|Investment|Opportunity|Details?|Facilities|Features?|Design|Category|Categories|Group|Groups)';
-const NAMED_PARTICIPANT = new RegExp(`\\b(?:[Pp]articipant|[Rr]esident|[Tt]enant)\\s+(?:(?:named|called)\\s+[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?|(?!${NOT_A_NAME}\\b)[A-Z][a-z]+\\s+[A-Z][a-z]+)\\b`);
-/** The fragment of the text that reads as a participant's name, or null. Used by the safety scan and by the Listings Manager to show the person exactly which words to change. */
-export const findNamedParticipant = (text: string): string | null => NAMED_PARTICIPANT.exec(text)?.[0] ?? null;
-
 export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): string[] => {
   const issues: string[] = [];
   // A description block can hold several lines (a bullet list). The scans below look at the serialised content, where a line break would become the
@@ -122,11 +114,13 @@ export const checkPublicSafety = (content: PublicContent, ctx: SafetyContext): s
 
   // 4. personal data (participants, staff, owners)
   const publicProse = JSON.stringify({ t: c.title, l: c.location?.label, d: c.description, p: c.photos.map((p) => p.alt), i: investmentText, o: c.sda.ooa, m: c.property?.municipality, k: c.property?.parking });
+  // names are looked for in the text WITH its line structure (a line break ends a run); the scans above look at the serialised form
+  const nameScan = [c.title, c.location?.label, ...c.description, ...c.photos.map((p) => ('alt' in p ? p.alt : '')), investmentText?.tenure, investmentText?.providerArrangement, c.sda.ooa, c.property?.municipality, c.property?.parking].filter((x): x is string => typeof x === 'string' && x.length > 0).join('\n');
   const prose = norm(publicProse);
   if (EMAIL.test(prose)) issues.push('an email address appears in public text');
   if (PHONE.test(prose)) issues.push('a phone number appears in public text');
   // Detect explicit names associated with participants; this assists, but never replaces, the Publisher's privacy review.
-  if (findNamedParticipant(publicProse)) issues.push('an identifiable participant appears in public text');
+  if (findNamedParticipant(nameScan)) issues.push('an identifiable participant appears in public text');
 
   // 4a. optional commercial block: private by default. It is valid only if it still matches the values a Publisher approved, and Victorian listings
   // never carry income or yield (conservative restriction pending the OIEC or legal advice; not a legal determination).
