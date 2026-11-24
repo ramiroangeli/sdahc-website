@@ -1,0 +1,269 @@
+{
+  "listingId": "lst_b268993296",
+  "version": 1,
+  "approvedBy": "SDA Home Choices",
+  "approvedById": "listings-manager",
+  "approvedAt": "2026-11-24T04:13:23.595Z",
+  "firstPublishedAt": "2026-11-24T04:13:23.595Z",
+  "commercialStatus": "available",
+  "featured": false,
+  "sourceEditedAt": "2026-10-23T01:36:00.000Z",
+  "contentHash": "48d665436bd14421e4cd1bd285c24e9755edb902e1a82c0e35a2f84ab20f067f",
+  "content": {
+    "slug": "shepparton-vic-vic",
+    "type": "property",
+    "title": "Shepparton VIC 3630",
+    "description": [
+      "A High Physical Support (HPS) Specialist Disability Accommodation investment opportunity in Shepparton, Victoria, fully occupied and under full management, offering an indicative net yield of approximately 10% based on current annualised income and estimated operating expenses.",
+      "Investment summary:",
+      "- Indicative net yield: 10.0%\n- Current annualised gross income: $131,676 per annum\n- Estimated net operating income: $101,073 per annum\n- Fully occupied (2 of 2 participant places)\n- Established SDA provider and management arrangement\n- Freehold investment under a flow-through SDA head lease",
+      "Property summary:\n- High Physical Support (HPS) SDA design category\n- House configured for two SDA participants\n- Onsite Overnight Assistance (OOA)\n- Enrolled with the NDIS since April 2025\n- Open-plan kitchen, dining and living areas\n- Covered outdoor alfresco area\n- Single vehicle garage",
+      "Located in Shepparton, Victoria, the property provides an opportunity to acquire a completed, fully occupied SDA investment with existing participant income and established management arrangements, without development or construction risk.",
+      "Income and estimated net returns are based on vendor-supplied information and are subject to purchaser due diligence.",
+      "Contact SDA Home Choices for further information, pricing and supporting investment documentation.",
+      "Confidentiality conditions apply. Interested parties will be required to enter into a Non-Disclosure Agreement (NDA) before receiving further information."
+    ],
+    "location": {
+      "label": "Shepparton VIC",
+      "state": "VIC"
+    },
+    "pricing": {
+      "mode": "contact_agent"
+    },
+    "sda": {
+      "designCategories": [
+        "HPS"
+      ],
+      "buildingType": "House",
+      "bedrooms": 2,
+      "residentPlaces": 2,
+      "ooa": "OOA"
+    },
+    "photos": [
+      {
+        "id": "fb0bfedacdfa",
+        "alt": "Photograph 1 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/fb0bfedacdfa-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/fb0bfedacdfa-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/fb0bfedacdfa-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "2b6e3b0d54da",
+        "alt": "Photograph 2 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2b6e3b0d54da-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2b6e3b0d54da-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2b6e3b0d54da-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "1f00b958996e",
+        "alt": "Photograph 3 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/1f00b958996e-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/1f00b958996e-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/1f00b958996e-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "295e3de48a81",
+        "alt": "Photograph 4 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/295e3de48a81-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/295e3de48a81-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/295e3de48a81-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "4c5ae44df845",
+        "alt": "Photograph 5 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/4c5ae44df845-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/4c5ae44df845-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/4c5ae44df845-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "2d73b2af53f1",
+        "alt": "Photograph 6 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2d73b2af53f1-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2d73b2af53f1-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2d73b2af53f1-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "faf885751215",
+        "alt": "Photograph 7 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/faf885751215-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/faf885751215-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/faf885751215-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "fb7c9a8ada17",
+        "alt": "Photograph 8 of 9 of the property",
+        "width": 2800,
+        "height": 1867,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/fb7c9a8ada17-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/fb7c9a8ada17-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/fb7c9a8ada17-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "2e42ef4463a3",
+        "alt": "Photograph 9 of 9 of the property",
+        "width": 2000,
+        "height": 1333,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2e42ef4463a3-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2e42ef4463a3-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_b268993296/2e42ef4463a3-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      }
+    ],
+    "property": {
+      "bathrooms": 2,
+      "carSpaces": 1,
+      "floorAreaM2": 175,
+      "landAreaM2": 440,
+      "parking": "Single Garage"
+    },
+    "investment": {
+      "leaseStatus": "fully_leased",
+      "occupancyStatus": "fully_occupied",
+      "annualIncomeAud": 131676,
+      "incomeType": "gross",
+      "yieldPct": 10,
+      "yieldType": "net",
+      "basis": "actual",
+      "providerArrangement": "Experienced SDA provider arrangement",
+      "approval": {
+        "valuesHash": "6ac1d8fb46d33c1ce1e70dff8a60e30b5bf2421b55536900bc7583e3aee9b02c",
+        "provider": true,
+        "victorian": true
+      }
+    },
+    "descriptionApproval": {
+      "textHash": "1afd37973d90866bc258ad818adf26be5ad21bfb373bcc5d56a74f0ea73289d2",
+      "victorian": true
+    }
+  }
+}
