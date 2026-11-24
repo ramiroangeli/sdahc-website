@@ -1,18 +1,18 @@
 {
   "listingId": "lst_cd4013527e",
-  "version": 1,
+  "version": 2,
   "approvedBy": "SDA Home Choices",
   "approvedById": "listings-manager",
-  "approvedAt": "2026-11-19T23:50:54.877Z",
+  "approvedAt": "2026-11-24T04:49:52.800Z",
   "firstPublishedAt": "2026-11-19T23:50:54.877Z",
   "commercialStatus": "available",
   "featured": false,
   "sourceEditedAt": "2026-10-28T03:29:00.000Z",
-  "contentHash": "5adb9dc2662a41862b174c1decc71ee1021a76a269410c7a0296e173f0027a0f",
+  "contentHash": "788fdbfb023e24465df950ece9bc69b83c30b70a9b193c87443ebfb9e9b05e95",
   "content": {
     "slug": "greater-darwin-nt-nt",
     "type": "property",
-    "title": "GREATER DARWIN",
+    "title": "Greater Darwin NT",
     "description": [
       "FREEHOLD PASSIVE INVESTMENT UNDER FULL MANAGEMENT",
       "- Net yield: 9.5%\n- Gross approx. income: $111,154 p.a.\n- Net approx. income: $88,923 p.a\n- 2-participant Robust SDA dwelling with OOA\n- Established SDA provider and management arrangement",
@@ -22,7 +22,7 @@
       "Confidentiality conditions apply. Interested parties will be required to enter into a Non-Disclosure Agreement (NDA) before receiving further information."
     ],
     "location": {
-      "label": "Greater Darwin, NT",
+      "label": "Greater Darwin NT",
       "state": "NT"
     },
     "pricing": {
@@ -144,15 +144,15 @@
       "incomeType": "gross",
       "yieldPct": 9.5,
       "yieldType": "net",
-      "basis": "actual",
+      "basis": "projected",
       "providerArrangement": "Experienced SDA provider arrangement",
       "approval": {
-        "valuesHash": "37ff16199323d015d2c1167d7e10e2572480021e72ed01453e5b3146e3a150f9",
+        "valuesHash": "1b16606b6a2af495b66cbab689de2f219d2f70ba75d70b3e6189045b271bfd8b",
         "provider": true
       }
     },
     "descriptionApproval": {
-      "textHash": "a76a41aafea0abfa395ef47409137da64c23e2c0ae475ccde6f45b8f5fb60b42"
+      "textHash": "4952d81481c8fe87cfc8d6ee49ba5fa6d930a21dc7226f46fae9ab6c324932e8"
     }
   }
 }
