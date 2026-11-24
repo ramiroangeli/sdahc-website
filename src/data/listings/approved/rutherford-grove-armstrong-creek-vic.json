@@ -1,14 +1,14 @@
 {
   "listingId": "lst_454f05d21f",
-  "version": 6,
+  "version": 7,
   "approvedBy": "SDA Home Choices",
   "approvedById": "listings-manager",
-  "approvedAt": "2026-11-17T00:31:47.256Z",
+  "approvedAt": "2026-11-24T04:22:41.897Z",
   "firstPublishedAt": "2026-11-05T12:29:09.094Z",
   "commercialStatus": "available",
   "featured": true,
   "sourceEditedAt": "2026-11-08T04:37:00.000Z",
-  "contentHash": "697e85ecf799e785abf2afcac3aeeba67ed7816fb1982044111a0c171ccfebcb",
+  "contentHash": "a9126fbeef8a4f6f3d705c97fb70d52e2697c3ddba6bb4ed2411263b303481ce",
   "content": {
     "slug": "rutherford-grove-armstrong-creek-vic",
     "type": "property",
@@ -21,11 +21,9 @@
       "Property summary:\n- Purpose-built Specialist Disability Accommodation\n- Improved Liveability (IL) design category\n- 3 participant places plus OOA\n- Designed to support participants with disability\n- Established SDA enrolment and operating arrangements\n- Located within the Armstrong Creek residential growth corridor",
       "Positioned in one of Geelong's major residential growth areas, the property benefits from access to local shopping, healthcare, community facilities and disability support services. Armstrong Creek is strategically located between central Geelong and the Surf Coast, with convenient connections to the broader Geelong region. The established residential catchment and access to essential services provide a practical setting for long-term specialist disability accommodation."
     ],
-    "address": {
-      "street": "Rutherford Grove",
-      "suburb": "Armstrong Creek",
-      "state": "VIC",
-      "postcode": "3217"
+    "location": {
+      "label": "Armstrong Creek VIC",
+      "state": "VIC"
     },
     "pricing": {
       "mode": "contact_agent"
@@ -151,6 +149,7 @@
       }
     ],
     "property": {
+      "bathrooms": 2,
       "carSpaces": 2,
       "floorAreaM2": 262,
       "landAreaM2": 448,
@@ -166,8 +165,10 @@
       "yieldPct": 11.1,
       "yieldType": "net",
       "basis": "actual",
+      "providerArrangement": "Experienced SDA provider arrangement",
       "approval": {
-        "valuesHash": "36adc34c5f28a43643417dfdb6758e722806ad0dc3b391d202019f2f485d6e48",
+        "valuesHash": "84e5198e588e9ec66d38b170b83e7b08702ab8acb14b244a01271ffdd7bbfee4",
+        "provider": true,
         "victorian": true
       }
     },
