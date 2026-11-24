@@ -19,4 +19,5 @@ export * from '../../lib/enquiries';
 export * from './propose';
 export * from './description';
 export * from './portfolio';
+export * from './privacy';
 export * from './portfolio-publish';
