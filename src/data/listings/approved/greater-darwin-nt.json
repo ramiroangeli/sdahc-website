@@ -1,0 +1,222 @@
+{
+  "listingId": "lst_d5641bd1d1",
+  "version": 1,
+  "approvedBy": "SDA Home Choices",
+  "approvedById": "listings-manager",
+  "approvedAt": "2026-11-24T17:42:23.429Z",
+  "firstPublishedAt": "2026-11-24T17:42:23.429Z",
+  "commercialStatus": "available",
+  "featured": false,
+  "sourceEditedAt": "2026-10-28T03:31:00.000Z",
+  "contentHash": "e9c4aa41fbde0f23f001dc05b1c566e58310a7f640bf0fca8fbbf7f2cd06bf4d",
+  "content": {
+    "slug": "greater-darwin-nt",
+    "type": "property",
+    "title": "Greater Darwin NT",
+    "description": [
+      "- Net yield: 9.5%\n- Gross income: $111,818 p.a.\n- Net income: $89,454 p.a\n- 2-participant High Physical Support SDA dwelling with OOA\n- Established SDA provider and management arrangement",
+      "An opportunity to acquire an established Specialist Disability Accommodation (SDA) investment in Greater Darwin. The property offers a completed High Physical Support (HPS) dwelling configured for two participants with dedicated Onsite Overnight Assistance (OOA), an experienced SDA provider and demonstrated income.",
+      "This is an opportunity to acquire an established SDA investment under full management, offering demonstrated income and a 9.5% net yield, suitable for investors seeking completed and operational disability accommodation assets.",
+      "Income and yield figures are vendor-reported and subject to purchaser due diligence. Occupancy, management arrangements and property details should be independently verified.",
+      "Confidentiality conditions apply. Interested parties will be required to enter into a Non-Disclosure Agreement (NDA) before receiving further information."
+    ],
+    "location": {
+      "label": "Greater Darwin NT",
+      "state": "NT"
+    },
+    "pricing": {
+      "mode": "asking_price",
+      "display": "$940,000"
+    },
+    "sda": {
+      "designCategories": [
+        "HPS"
+      ],
+      "bedrooms": 2,
+      "residentPlaces": 2,
+      "ooa": "Onsite Overnight Assistance (OOA) available"
+    },
+    "photos": [
+      {
+        "id": "71f9f636ccdf",
+        "alt": "Photograph 1 of 6 of the property",
+        "width": 1600,
+        "height": 1200,
+        "accent": "teal",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/71f9f636ccdf-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/71f9f636ccdf-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/71f9f636ccdf-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "bcc4857cb8ac",
+        "alt": "Photograph 2 of 6 of the property",
+        "width": 1600,
+        "height": 1200,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/bcc4857cb8ac-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/bcc4857cb8ac-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/bcc4857cb8ac-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "1c371570e62b",
+        "alt": "Photograph 3 of 6 of the property",
+        "width": 1600,
+        "height": 1200,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/1c371570e62b-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/1c371570e62b-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/1c371570e62b-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "dd2d6d51d2ff",
+        "alt": "Photograph 4 of 6 of the property",
+        "width": 1600,
+        "height": 1200,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/dd2d6d51d2ff-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/dd2d6d51d2ff-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/dd2d6d51d2ff-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "b688e3333109",
+        "alt": "Photograph 5 of 6 of the property",
+        "width": 1600,
+        "height": 1200,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/b688e3333109-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/b688e3333109-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/b688e3333109-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "8e0702c7b2cd",
+        "alt": "Photograph 6 of 6 of the property",
+        "width": 1200,
+        "height": 1600,
+        "accent": "slate",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/8e0702c7b2cd-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/8e0702c7b2cd-960.webp"
+          },
+          {
+            "w": 1200,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/8e0702c7b2cd-1200.webp"
+          }
+        ],
+        "privacyReviewed": true
+      },
+      {
+        "id": "640054c7e5c3",
+        "alt": "Floorplan of the property",
+        "width": 2800,
+        "height": 1978,
+        "accent": "slate",
+        "kind": "floorplan",
+        "variants": [
+          {
+            "w": 480,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/640054c7e5c3-480.webp"
+          },
+          {
+            "w": 960,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/640054c7e5c3-960.webp"
+          },
+          {
+            "w": 1600,
+            "src": "https://leojshpooxhtztim.public.blob.vercel-storage.com/lst_d5641bd1d1/640054c7e5c3-1600.webp"
+          }
+        ],
+        "privacyReviewed": true
+      }
+    ],
+    "property": {
+      "bathrooms": 2,
+      "carSpaces": 2,
+      "floorAreaM2": 200,
+      "landAreaM2": 432,
+      "parking": "Double Garage"
+    },
+    "investment": {
+      "leaseStatus": "partially_leased",
+      "occupancyStatus": "partially_occupied",
+      "tenure": "Partly occupied",
+      "annualIncomeAud": 111818,
+      "incomeType": "gross",
+      "yieldPct": 9.5,
+      "yieldType": "net",
+      "basis": "projected",
+      "providerArrangement": "Experienced SDA provider arrangement",
+      "approval": {
+        "valuesHash": "4d7b5f7cd1be32b9b78db9e2fa694be951110960a568dfcf09435c58b2fced63",
+        "provider": true
+      }
+    },
+    "descriptionApproval": {
+      "textHash": "d1a4309fc469221ce3c50eb78f13f05c22af4217921db75b4e0aa2a021b87d63"
+    }
+  }
+}
