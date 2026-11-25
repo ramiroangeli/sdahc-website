@@ -1,14 +1,14 @@
 {
   "listingId": "lst_cd4013527e",
-  "version": 2,
+  "version": 3,
   "approvedBy": "SDA Home Choices",
   "approvedById": "listings-manager",
-  "approvedAt": "2026-11-24T04:49:52.800Z",
+  "approvedAt": "2026-11-25T04:57:25.256Z",
   "firstPublishedAt": "2026-11-19T23:50:54.877Z",
   "commercialStatus": "available",
   "featured": false,
   "sourceEditedAt": "2026-10-28T03:29:00.000Z",
-  "contentHash": "788fdbfb023e24465df950ece9bc69b83c30b70a9b193c87443ebfb9e9b05e95",
+  "contentHash": "f1a5ae809910292749f5ad11996ada717b511edc2b001d62329276ab6af3607d",
   "content": {
     "slug": "greater-darwin-nt-nt",
     "type": "property",
@@ -26,8 +26,7 @@
       "state": "NT"
     },
     "pricing": {
-      "mode": "asking_price",
-      "display": "$935,000"
+      "mode": "contact_agent"
     },
     "sda": {
       "designCategories": [
