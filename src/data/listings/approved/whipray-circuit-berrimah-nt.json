@@ -1,14 +1,14 @@
 {
   "listingId": "lst_75fad5b1d4",
-  "version": 4,
+  "version": 5,
   "approvedBy": "SDA Home Choices",
   "approvedById": "listings-manager",
-  "approvedAt": "2026-11-24T04:17:09.737Z",
+  "approvedAt": "2026-11-25T04:52:16.200Z",
   "firstPublishedAt": "2026-11-11T15:45:44.676Z",
   "commercialStatus": "available",
   "featured": false,
   "sourceEditedAt": "2026-10-28T04:22:00.000Z",
-  "contentHash": "a04915fd1bd78c4431e753f78c485de39b52bf99b66f5179d9b98d715532ee62",
+  "contentHash": "b0cbb162934e80ea975c8c71b09ba8e20057cd49a0255e973a6ec7a4f840917a",
   "content": {
     "slug": "whipray-circuit-berrimah-nt",
     "type": "property",
@@ -26,8 +26,7 @@
       "state": "NT"
     },
     "pricing": {
-      "mode": "asking_price",
-      "display": "$960,000"
+      "mode": "contact_agent"
     },
     "sda": {
       "designCategories": [
