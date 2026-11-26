@@ -1,73 +1,115 @@
 ---
-// Hero of the Company Brain guide. The H1 is real text and paints first. The 3D brain is decorative: it loads when the browser is idle
-// (never before the H1 is painted), is hidden from assistive technology, and is replaced by a static image of the same render for
-// people who prefer reduced motion or whose browser has no WebGL.
+// Hero of the Company Brain guide. The H1 is real text and paints first. Everything else is decorative and aria-hidden: a 2D neural background
+// (started when the browser is idle after load) and a 3D point-cloud brain (started on first interaction, or five seconds after load).
+// With prefers-reduced-motion or no WebGL, the brain is a static image of the same render and the background is still.
+// ?hero=a (default, SDAHC blue) or ?hero=b (light blue) chooses the BRAIN colour, for comparing the two.
 ---
-<section class="hero" aria-labelledby="hero-title">
-  <div class="wrap hero-inner">
-    <p class="kicker">The Company Brain Guide <span aria-hidden="true">·</span> 8 min read</p>
-    <h1 id="hero-title" class="hero-title"><span class="l1">Give your business a</span> <span class="l2">brain<span class="brain" data-brain aria-hidden="true"><canvas></canvas></span></span></h1>
-    <p class="sub">A Company Brain connects the knowledge your business already holds into a clear, living map. See how work happens, who is responsible and where information comes from, so your team can act with greater confidence.</p>
-    <div class="actions">
-      <a class="btn b1" href="/contact-us/">Talk to us</a>
-      <a class="btn b2" href="#s01">Read the guide</a>
+<link rel="preload" href="/fonts/space-grotesk-700.woff2" as="font" type="font/woff2" crossorigin />
+<section class="hero" data-hero-root aria-labelledby="hero-title">
+  <script is:inline>
+    (function () { var s = document.currentScript; if (new URLSearchParams(location.search).get('hero') === 'b') s.parentElement.setAttribute('data-variant', 'b'); })();
+  </script>
+  <canvas class="bg" data-bg aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker">The Company Brain Guide <span aria-hidden="true">·</span> 8 min read</p>
+      <h1 id="hero-title" class="hero-title"><span class="l1">Give your business a</span> <span class="l2">brain</span></h1>
+      <p class="sub">A Company Brain connects the knowledge your business already holds into a clear, living map. See how work happens, who is responsible and where information comes from, so your team can act with greater confidence.</p>
+      <div class="actions">
+        <a class="btn b1" href="/contact-us/">Talk to us</a>
+        <a class="btn b2" href="#s01">Read the guide</a>
+      </div>
     </div>
-    <noscript><img class="brain-static" src="/images/company-brain/brain-static.webp" width="900" height="900" alt="" /></noscript>
+    <div class="hero-brain" data-brain aria-hidden="true">
+      <canvas></canvas>
+      <svg class="lines" focusable="false"><line data-line /><line data-line /><line data-line /><line data-line /></svg>
+      <span class="lbl" data-lbl>Processes</span><span class="lbl" data-lbl>Systems</span><span class="lbl" data-lbl>Relationships</span><span class="lbl" data-lbl>Roles</span>
+    </div>
   </div>
+  <noscript><img class="brain-static" src="/images/company-brain/brain-static.webp" width="1000" height="1000" alt="" /></noscript>
 </section>
 
 <script>
+  const hero = document.querySelector<HTMLElement>('[data-hero-root]');
   const host = document.querySelector<HTMLElement>('[data-brain]');
+  const bgCanvas = document.querySelector<HTMLCanvasElement>('[data-bg]');
   const STATIC = '/images/company-brain/brain-static.webp';
+  const css = getComputedStyle(document.documentElement);
+  const v = (n: string) => css.getPropertyValue(n).trim();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const webgl = (() => { try { const c = document.createElement('canvas'); const g = (c.getContext('webgl2') || c.getContext('webgl')) as WebGLRenderingContext | null; g?.getExtension('WEBGL_lose_context')?.loseContext(); return !!g; } catch { return false; } })();
+  const animate = !reduce && webgl;
+  const idle = (fn: () => void) => ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500));
+  const afterLoad = (fn: () => void) => (document.readyState === 'complete' ? fn() : addEventListener('load', fn, { once: true }));
+  const visibleOnly = (el: Element, on: () => void, off: () => void) => {
+    let seen = true; const sync = () => (seen && !document.hidden ? on() : off());
+    new IntersectionObserver(([e]) => { seen = e.isIntersecting; sync(); }).observe(el); document.addEventListener('visibilitychange', sync); sync();
+  };
+
   const showStatic = () => {
     if (!host || host.querySelector('img')) return;
-    host.querySelector('canvas')?.remove();
-    const img = new Image(); img.src = STATIC; img.alt = ''; img.width = 900; img.height = 900; img.decoding = 'async'; host.appendChild(img);
+    host.replaceChildren(); host.classList.add('is-static');
+    const img = new Image(); img.src = STATIC; img.alt = ''; img.width = 1000; img.height = 1000; img.decoding = 'async'; host.appendChild(img);
   };
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const idle = (fn: () => void) => ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500));
-  const start = async () => {
+
+  // neural background: starts in an idle moment after load
+  const startBg = async () => {
+    if (!hero || !bgCanvas) return;
+    const { createNeuralBg } = await import('../scripts/neural-bg');
+    const bg = createNeuralBg(bgCanvas, hero, { blue: v('--blue'), cyan: v('--cyan'), white: v('--white'), amber: v('--amber') }, animate);
+    new ResizeObserver(([e]) => bg.resize(Math.round(e.contentRect.width), Math.round(e.contentRect.height))).observe(hero);
+    visibleOnly(hero, () => bg.start(), () => bg.stop());
+  };
+  afterLoad(() => idle(startBg));
+
+  // 3D brain: first interaction, or five seconds after load
+  const startBrain = async () => {
     const canvas = host?.querySelector('canvas');
     if (!host || !canvas) return;
-    const probe = document.createElement('canvas');
-    if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) return showStatic();
-    const css = getComputedStyle(document.documentElement);
-    const v = (n: string) => css.getPropertyValue(n).trim();
     try {
-      const { createBrainScene } = await import('../scripts/brain-scene');
-      const scene = createBrainScene(canvas, { core: v('--white'), teal: v('--teal'), violet: v('--brain-violet'), orange: v('--brain-orange'), steel: v('--brain-steel'), edge: v('--pale'), pulse: v('--white') });
-      new ResizeObserver(([e]) => scene.resize(Math.round(e.contentRect.width), Math.round(e.contentRect.height))).observe(host);
-      let onScreen = true;
-      const sync = () => (onScreen && !document.hidden ? scene.start() : scene.stop());
-      new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; sync(); }).observe(host);
-      document.addEventListener('visibilitychange', sync);
-      window.addEventListener('pointermove', (e) => scene.look((e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1), { passive: true });
+      const { createBrainPoints } = await import('../scripts/brain-points');
+      const brain = createBrainPoints(canvas, host, { blue: v('--blue'), sky: v('--sky'), white: v('--white'), amber: v('--amber'), teal: v('--teal'), violet: v('--brain-violet'), orange: v('--brain-orange') });
+      new ResizeObserver(([e]) => brain.resize(Math.round(e.contentRect.width), Math.round(e.contentRect.height))).observe(host);
+      visibleOnly(host, () => brain.start(), () => brain.stop());
       host.classList.add('live');
-      sync();
     } catch { showStatic(); }
   };
-  // Decorative, so it never competes with the page: it starts when the visitor first interacts, or five seconds after the page has loaded.
-  let started = false;
-  const go = () => { if (started) return; started = true; idle(start); };
-  if (reduce) showStatic();
+  if (!animate) showStatic();
   else {
+    let started = false;
+    const go = () => { if (started) return; started = true; idle(startBrain); };
     (['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart'] as const).forEach((ev) => addEventListener(ev, go, { once: true, passive: true }));
-    const later = () => setTimeout(go, 5000);
-    if (document.readyState === 'complete') later(); else addEventListener('load', later, { once: true });
+    afterLoad(() => setTimeout(go, 5000));
   }
 </script>
 
 <style>
-.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;background:radial-gradient(1000px 640px at 50% 38%,rgba(4,118,217,.14),transparent 62%),var(--navy);padding:calc(var(--nav-clearance) + 8px) 0 56px;overflow:hidden}
-.hero-inner{text-align:center;display:flex;flex-direction:column;align-items:center}
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;background:var(--navy);padding:calc(var(--nav-clearance) + 8px) 0 48px;overflow:hidden}
+.bg{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:55fr 45fr;gap:24px;align-items:center;width:100%}
+.hero-copy{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0}
 .kicker{font-family:var(--geo);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--pale);margin:0 0 18px}
-.hero-title{margin:0;display:flex;flex-direction:column;align-items:center;font-weight:inherit}
-.l1{font-family:var(--cond);font-weight:700;text-transform:uppercase;color:var(--paper);font-size:clamp(40px,7vw,120px);line-height:.95;letter-spacing:.01em}
-.l2{position:relative;display:block;font-family:var(--serif);font-weight:900;font-style:italic;text-transform:uppercase;color:var(--amber);font-size:clamp(120px,24vw,400px);line-height:.88;letter-spacing:-.01em;text-shadow:0 0 48px rgba(201,122,10,.42),0 0 14px rgba(201,122,10,.25)}
-.brain{position:absolute;left:50%;top:50%;width:1.2em;height:1.2em;transform:translate(-50%,-50%);pointer-events:none;z-index:2}
-.brain canvas,.brain img{display:block;width:100%;height:100%;pointer-events:none}
-.brain-static{position:absolute;inset:0;margin:auto;max-width:90vw;height:auto;pointer-events:none}
-.sub{position:relative;z-index:3;font-family:var(--sans);font-size:20px;line-height:1.55;color:rgba(246,241,236,.8);max-width:58ch;margin:26px 0 0}
-.actions{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:30px}
-@media(max-width:700px){.l1{font-size:9vw}.l2{font-size:24vw}.sub{font-size:18px}.hero{padding-bottom:40px}}
+.hero-title{margin:0;display:flex;flex-direction:column;align-items:flex-start;font-weight:inherit}
+.l1{font-family:var(--cond);font-weight:700;text-transform:uppercase;color:var(--paper);font-size:clamp(34px,5.3vw,96px);line-height:1;letter-spacing:.01em;white-space:nowrap}
+.l2{display:block;white-space:nowrap;font-family:var(--grotesk-local);font-weight:700;text-transform:uppercase;color:var(--blue);font-size:clamp(110px,18vw,320px);letter-spacing:-.04em;line-height:.85;margin-top:-.085em}
+[data-variant="b"] .l2{color:var(--sky)}
+.sub{font-family:var(--sans);font-size:20px;line-height:1.55;color:rgba(246,241,236,.8);max-width:52ch;margin:26px 0 0}
+.actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+.hero-brain{position:relative;width:100%;max-height:80vh;aspect-ratio:1/1;justify-self:center;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.hero-brain.dragging{cursor:grabbing}
+.hero-brain canvas{display:block;width:100%;height:100%}
+:global(.hero-brain img){position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+.hero-brain.is-static{cursor:default}
+.lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.lines line{stroke:var(--pale);stroke-width:1;opacity:0}
+.lbl{position:absolute;left:0;top:0;font-family:var(--geo);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--pale);white-space:nowrap;pointer-events:none;opacity:0;will-change:transform,opacity;text-shadow:0 0 6px var(--navy),0 0 2px var(--navy)}
+.brain-static{position:absolute;right:0;top:50%;width:min(45vw,520px);height:auto;transform:translateY(-50%);pointer-events:none}
+@media(max-width:899px){
+  .hero{align-items:flex-start;padding-top:calc(var(--nav-clearance) + 4px)}
+  .hero-grid{grid-template-columns:1fr;gap:12px}
+  .hero-brain{order:-1;height:45vh;max-height:none;aspect-ratio:auto}
+  .l1{font-size:9vw}
+  .sub{font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){.hero-brain{cursor:default}}
 </style>
