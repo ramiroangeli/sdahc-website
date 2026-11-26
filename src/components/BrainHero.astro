@@ -1,0 +1,73 @@
+---
+// Hero of the Company Brain guide. The H1 is real text and paints first. The 3D brain is decorative: it loads when the browser is idle
+// (never before the H1 is painted), is hidden from assistive technology, and is replaced by a static image of the same render for
+// people who prefer reduced motion or whose browser has no WebGL.
+---
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-inner">
+    <p class="kicker">The Company Brain Guide <span aria-hidden="true">·</span> 8 min read</p>
+    <h1 id="hero-title" class="hero-title"><span class="l1">Give your business a</span> <span class="l2">brain<span class="brain" data-brain aria-hidden="true"><canvas></canvas></span></span></h1>
+    <p class="sub">A Company Brain connects the knowledge your business already holds into a clear, living map. See how work happens, who is responsible and where information comes from, so your team can act with greater confidence.</p>
+    <div class="actions">
+      <a class="btn b1" href="/contact-us/">Talk to us</a>
+      <a class="btn b2" href="#s01">Read the guide</a>
+    </div>
+    <noscript><img class="brain-static" src="/images/company-brain/brain-static.webp" width="900" height="900" alt="" /></noscript>
+  </div>
+</section>
+
+<script>
+  const host = document.querySelector<HTMLElement>('[data-brain]');
+  const STATIC = '/images/company-brain/brain-static.webp';
+  const showStatic = () => {
+    if (!host || host.querySelector('img')) return;
+    host.querySelector('canvas')?.remove();
+    const img = new Image(); img.src = STATIC; img.alt = ''; img.width = 900; img.height = 900; img.decoding = 'async'; host.appendChild(img);
+  };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const idle = (fn: () => void) => ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500));
+  const start = async () => {
+    const canvas = host?.querySelector('canvas');
+    if (!host || !canvas) return;
+    const probe = document.createElement('canvas');
+    if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) return showStatic();
+    const css = getComputedStyle(document.documentElement);
+    const v = (n: string) => css.getPropertyValue(n).trim();
+    try {
+      const { createBrainScene } = await import('../scripts/brain-scene');
+      const scene = createBrainScene(canvas, { core: v('--white'), teal: v('--teal'), violet: v('--brain-violet'), orange: v('--brain-orange'), steel: v('--brain-steel'), edge: v('--pale'), pulse: v('--white') });
+      new ResizeObserver(([e]) => scene.resize(Math.round(e.contentRect.width), Math.round(e.contentRect.height))).observe(host);
+      let onScreen = true;
+      const sync = () => (onScreen && !document.hidden ? scene.start() : scene.stop());
+      new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; sync(); }).observe(host);
+      document.addEventListener('visibilitychange', sync);
+      window.addEventListener('pointermove', (e) => scene.look((e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1), { passive: true });
+      host.classList.add('live');
+      sync();
+    } catch { showStatic(); }
+  };
+  // Decorative, so it never competes with the page: it starts when the visitor first interacts, or five seconds after the page has loaded.
+  let started = false;
+  const go = () => { if (started) return; started = true; idle(start); };
+  if (reduce) showStatic();
+  else {
+    (['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart'] as const).forEach((ev) => addEventListener(ev, go, { once: true, passive: true }));
+    const later = () => setTimeout(go, 5000);
+    if (document.readyState === 'complete') later(); else addEventListener('load', later, { once: true });
+  }
+</script>
+
+<style>
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;background:radial-gradient(1000px 640px at 50% 38%,rgba(4,118,217,.14),transparent 62%),var(--navy);padding:calc(var(--nav-clearance) + 8px) 0 56px;overflow:hidden}
+.hero-inner{text-align:center;display:flex;flex-direction:column;align-items:center}
+.kicker{font-family:var(--geo);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--pale);margin:0 0 18px}
+.hero-title{margin:0;display:flex;flex-direction:column;align-items:center;font-weight:inherit}
+.l1{font-family:var(--cond);font-weight:700;text-transform:uppercase;color:var(--paper);font-size:clamp(40px,7vw,120px);line-height:.95;letter-spacing:.01em}
+.l2{position:relative;display:block;font-family:var(--serif);font-weight:900;font-style:italic;text-transform:uppercase;color:var(--amber);font-size:clamp(120px,24vw,400px);line-height:.88;letter-spacing:-.01em;text-shadow:0 0 48px rgba(201,122,10,.42),0 0 14px rgba(201,122,10,.25)}
+.brain{position:absolute;left:50%;top:50%;width:1.2em;height:1.2em;transform:translate(-50%,-50%);pointer-events:none;z-index:2}
+.brain canvas,.brain img{display:block;width:100%;height:100%;pointer-events:none}
+.brain-static{position:absolute;inset:0;margin:auto;max-width:90vw;height:auto;pointer-events:none}
+.sub{position:relative;z-index:3;font-family:var(--sans);font-size:20px;line-height:1.55;color:rgba(246,241,236,.8);max-width:58ch;margin:26px 0 0}
+.actions{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:30px}
+@media(max-width:700px){.l1{font-size:9vw}.l2{font-size:24vw}.sub{font-size:18px}.hero{padding-bottom:40px}}
+</style>
