@@ -1,6 +1,6 @@
 @import './tokens.css';
-/* Frick Condensed (Dennis Grauel, SIL Open Font License 1.1, see public/fonts/frick-OFL.txt), hosted here for the Company Brain wordmark. The Regular cut is 33px too wide for the text column at 1440px, so the Condensed cut is used. */
-@font-face{font-family:'Frick Local';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/frick-condensed.woff2') format('woff2')}
+/* Climate Crisis (Eino Korkala and Daniel Coull, SIL Open Font License 1.1, see public/fonts/climate-crisis-OFL.txt), hosted here for the Company Brain wordmark, fixed at its 1979 style (the most solid). */
+@font-face{font-family:'Climate Crisis Local';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/climate-crisis-1979.woff2') format('woff2')}
 *,*::before,*::after{box-sizing:border-box}
 :root{padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
 html{scroll-behavior:smooth;scroll-padding-top:var(--nav-clearance)}

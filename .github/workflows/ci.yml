@@ -29,7 +29,7 @@ jobs:
       - run: npm ci
       - name: Listings tests (privacy, pricing, compliance, snapshots)
         run: npm run test:listings
-      - name: Company Brain hero network (connected, no isolated nodes)
+      - name: Company Brain hero network (neurons connected)
         run: npm run test:hero
       - name: Production build
         run: npm run build

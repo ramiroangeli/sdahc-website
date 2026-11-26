@@ -158,13 +158,13 @@ export function createBrainPoints(canvas: HTMLCanvasElement, host: HTMLElement, 
 
   // ---- labels (their elements live in the markup) ----
   const hemiR = new Vector3(RX, RY, RZ);
-  const anchorAt = (c: Vector3, r: Vector3, d: [number, number, number]) => { const u = new Vector3(...d).normalize(); return { p: onEllipsoid(c, r, u), n: ellNormal(r, u) }; };
-  const anchors = [ // one zone per side of the head, so there are always two or three labels in view
-    anchorAt(new Vector3(HEMI_X, 0, 0), hemiR, [0.15, 0.3, 0.94]), // PROCESSES, frontal
-    anchorAt(new Vector3(-HEMI_X, 0, 0), hemiR, [-0.7, 0.65, -0.15]), // SYSTEMS, parietal
-    anchorAt(new Vector3(HEMI_X, 0, 0), hemiR, [0.98, -0.15, 0.05]), // RELATIONSHIPS, temporal
-    anchorAt(CB.c, CB.r, [0, -0.1, -1]), // ROLES, cerebellum
-  ];
+  // six zones spread around the head (frontal, right temporal, occipital, cerebellum, left temporal, parietal), so that at least three are always in view
+  const zone = (deg: number, elev: number, cerebellum = false) => {
+    const t = (deg * Math.PI) / 180, u = new Vector3(Math.sin(t), elev, Math.cos(t)).normalize();
+    if (cerebellum) return { p: onEllipsoid(CB.c, CB.r, u), n: ellNormal(CB.r, u) };
+    const c = new Vector3((u.x >= 0 ? 1 : -1) * HEMI_X, 0, 0); return { p: onEllipsoid(c, hemiR, u), n: ellNormal(hemiR, u) };
+  };
+  const anchors = [zone(0, 0.3), zone(60, -0.2), zone(120, 0.25), zone(180, -0.1, true), zone(240, -0.2), zone(300, 0.8)]; // PROCESSES, DEALS, CAPABILITIES, ROLES, RELATIONSHIPS, SYSTEMS
   const labels = [...host.querySelectorAll<HTMLElement>('[data-lbl]')];
   const lines = [...host.querySelectorAll<SVGLineElement>('[data-line]')];
   const tmpP = new Vector3(), tmpN = new Vector3(), tmpV = new Vector3();
@@ -175,7 +175,7 @@ export function createBrainPoints(canvas: HTMLCanvasElement, host: HTMLElement, 
   world.position.y = 0.08;
   const fit = () => {
     camera.aspect = w / h;
-    const R = 1.7, vHalf = MathUtils.degToRad(camera.fov / 2), hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
+    const R = 1.417, vHalf = MathUtils.degToRad(camera.fov / 2), hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
     camera.position.set(0, 0, R / Math.sin(Math.min(vHalf, hHalf))); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
   };
   const resize = (nw: number, nh: number) => { w = Math.max(1, nw); h = Math.max(1, nh); renderer.setSize(w, h, false); uniforms.uRes.value.set(w, h); fit(); };
@@ -184,7 +184,7 @@ export function createBrainPoints(canvas: HTMLCanvasElement, host: HTMLElement, 
     labels.forEach((el, i) => {
       const a = anchors[i]; if (!a) return;
       tmpP.copy(a.p).applyMatrix4(world.matrixWorld); tmpN.copy(a.n).transformDirection(world.matrixWorld); tmpV.copy(camera.position).sub(tmpP).normalize();
-      const facing = MathUtils.clamp((tmpN.dot(tmpV) + 0.02) / 0.45, 0, 1);
+      const facing = MathUtils.clamp((tmpN.dot(tmpV) + 0.35) / 0.6, 0, 1);
       const s = tmpP.clone().project(camera); const x = (s.x * 0.5 + 0.5) * w, y = (1 - (s.y * 0.5 + 0.5)) * h;
       let dx = x - w / 2, dy = y - h / 2; const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
       const off = Math.min(w, h) * 0.12, ew = el.offsetWidth || 90; let lx = x + dx * off; const ly = y + dy * off;

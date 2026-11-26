@@ -230,10 +230,9 @@ const schema = [
 
   <section class="cb-final" data-final>
     <div class="wrap cb-final-inner">
-      <h2>Want a brain for your business? Tell us how your company runs.</h2>
-      <p>Start with the questions your team struggles to answer, the handovers that take too long or the knowledge that depends on one person.</p>
+      <h2>Want a brain for your business?<br />Tell us how your company runs.</h2>
+      <p class="cb-lead">Start with the questions your team struggles to answer, the handovers that take too long or the knowledge that depends on one person.</p>
       <p><a class="btn b1" href="/contact-us/">Tell us about your business</a></p>
-      <p class="cb-note">Begin your message with <strong>Company Brain</strong>, then briefly describe your business and what you would like to make easier.</p>
     </div>
   </section>
 </BaseLayout>
@@ -341,10 +340,12 @@ const schema = [
 a[aria-current="location"]{font-weight:700}
 
 .cb-final{padding:80px 0 110px;text-align:center;background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
-.cb-final-inner h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(28px,4.2vw,46px);line-height:1.1;margin:0 auto;max-width:22ch}
-.cb-final-inner p{color:var(--pale);max-width:60ch;margin:20px auto 0;line-height:1.6}
+/* the closing title is exactly two lines (one phrase each) at every width; the lead is one line from 1280px up */
+.cb-final-inner h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(16px,5.2vw,46px);line-height:1.15;margin:0 auto;white-space:nowrap}
+.cb-final-inner p{color:var(--pale);margin:20px auto 0;line-height:1.6}
+.cb-final-inner .cb-lead{max-width:60ch;font-size:clamp(16px,1.25vw,20px)}
 .cb-final-inner .btn{margin-top:10px}
-.cb-final-inner .cb-note strong{color:#fff}
+@media(min-width:1280px){.cb-final-inner .cb-lead{white-space:nowrap;max-width:none;width:max-content;position:relative;left:50%;transform:translateX(-50%)}}
 
 @media(min-width:1100px){
   .guide{display:grid;grid-template-columns:200px minmax(0,820px);gap:0 60px;justify-content:center;padding:72px 30px 56px}
