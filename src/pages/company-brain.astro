@@ -1,0 +1,250 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { SITE, ORG_ID, WEBSITE_ID, faqPage } from '../data/seo';
+
+// The FAQ is rendered from this list and repeated in the FAQPage schema, so the two never drift.
+const faqs = [
+  { q: 'Do we need to replace our existing systems?', a: 'Usually, no. A company brain connects selected information from your CRM, document hub and other existing sources. Any proposed changes should solve a specific operational problem.' },
+  { q: 'Is a company brain the same as an AI assistant?', a: 'No. An AI assistant can help explain or retrieve information. The company brain provides the structured relationships and evidence that make those answers easier to check.' },
+  { q: 'Can everyone see all company information?', a: 'They should not. Access is designed around roles and approved sources. Confidential relationships and documents need appropriate restrictions, including when information appears in search or visual views.' },
+  { q: 'How does the information stay current?', a: 'Selected sources can synchronise nightly. The views should show when information was refreshed, flag unsuccessful updates and identify records that need a person to review them.' },
+  { q: 'What if our records are incomplete or inconsistent?', a: 'That is a useful starting finding. Missing ownership, conflicting records and unsupported connections should be visible. The map should distinguish confirmed information from gaps rather than silently filling them.' },
+  { q: 'What does an initial conversation cover?', a: 'We discuss how your company operates, where knowledge becomes difficult to find, and which process would benefit first. From there, we can define a practical scope and implementation approach.' },
+];
+
+const views = [
+  { h: 'How the company operates', p: 'Follow a process from the first enquiry through delivery and follow-up. See the steps, supporting documents and systems involved. This helps a new team member understand the whole workflow rather than learning isolated tasks.' },
+  { h: 'Who is responsible for what', p: 'See which role owns a process, who contributes and who approves the outcome. Separate responsibility from system access: being able to open a record does not necessarily mean being accountable for it.' },
+  { h: 'Where single points of failure sit', p: 'Identify work that depends on one person, one source or one system. A visible dependency gives management somewhere to start: document the process, clarify ownership or decide whether additional coverage is needed.' },
+  { h: 'Who knows whom', p: 'Explore recorded relationships between the business, clients, partners and projects. Understand where an introduction or previous interaction is documented. A connection should show evidence; it should not imply a relationship simply because two names appear together.' },
+  { h: 'Which system feeds which', p: 'Understand where information starts and where it is used. See which records feed another system or view, helping the team identify outdated information and understand the consequences of changing a source.' },
+];
+
+const steps = [
+  { h: 'Start with sources you already use', p: 'Identify the useful information in your CRM, database, document hub and approved operational records. Start with a defined scope rather than collecting everything. Agree which source is authoritative for each type of information.' },
+  { h: 'Synchronise selected information overnight', p: 'In this model, approved sources synchronise nightly. The process checks for changes and records whether the update succeeded. A scheduled refresh is not the same as live information, so its timing should remain visible.' },
+  { h: 'Organise the records in a database', p: 'Bring the selected information into a consistent structure. Keep its source reference and refresh date, and resolve duplicate or conflicting records carefully. The original systems continue to serve their agreed operational purposes.' },
+  { h: 'Build the relationship graph', p: 'Connect roles, processes, systems and other records using explicit relationships. Each connection has supporting evidence, such as a source record or approved process document. Unsupported connections stay unconfirmed, and conflicting evidence prompts review.' },
+  { h: 'Present useful views with access by role', p: 'Give authorised users visual views suited to their work, supported by single sign-on where appropriate. An AI assistant can help explain the information, while source links let people check it. Access restrictions must carry through to connected views.' },
+];
+
+const industries = [
+  { h: 'Property and SDA', p: 'Connect a property review to the responsible roles, information requests, supporting documents and sale preparation process. The team can see what is outstanding without exposing confidential property, investor or participant information in a general view.' },
+  { h: 'Professional services', p: 'Map an engagement from enquiry to proposal, delivery, review and invoicing. Link each stage to its owner and current templates. This helps teams hand work over and understand approval requirements without relying on an informal explanation.' },
+  { h: 'Construction', p: 'Connect projects, project roles, consultants, document sets and approval stages. Make it clearer which record supports a decision and who owns the next action. The map supports coordination while existing project controls remain in place.' },
+  { h: 'Health and disability providers', p: 'Map organisational responsibilities, service processes, systems and approved partner relationships. Focus on operational continuity and document ownership. Access to personal or sensitive information requires separate consideration; a company map does not justify broader access to it.' },
+];
+
+const help = [
+  { h: 'Discovery.', p: 'We start with how your company runs: recurring work, handovers, key dependencies and the questions people repeatedly ask. Together, we choose a useful starting scope.' },
+  { h: 'Operational map.', p: 'We identify roles, processes, systems and their relationships. We separate documented facts from assumptions and agree who will maintain the information.' },
+  { h: 'Build.', p: 'We connect the approved sources and develop the database, relationship graph and visual views around the agreed use cases. We test access, evidence and refresh behaviour alongside the people who will use them.' },
+  { h: 'Handover and training.', p: 'We explain how to use the views, check sources and correct information. Your team receives a clear account of ownership, maintenance and known limitations. Implementation detail is worked through in a conversation about your business.' },
+];
+
+// Text shown on screen in the video, in order, for the transcript.
+const transcript = [
+  'SDAHC Brain',
+  'We built a brain for our company.',
+  'Every company runs on knowledge that lives in people’s heads.',
+  'SDAHC Brain puts it in one place.',
+  'A living map of how SDA Home Choices runs: People, Roles, Processes, Systems, Deals, Investors.',
+  'Sources (CRM, Document hub, Operating Map) feed a nightly sync, then a database, a brain build and a 3D map.',
+  'Rebuilt every night. Every link carries its evidence.',
+  'Click a role. See everything it touches.',
+  'Zoom out. The whole company, in one view.',
+  'Questions the map answers: Who knows this investor? Who is accountable for this process? Where is a single point of failure? Which buyers have seen this deal?',
+  'Who in your team knows this investor best? The brain finds the warmest path.',
+  'Every process has an owner. Roles, not people.',
+  '11 roles, 39 processes, 28 systems, 29 capabilities, 900+ entities, 1,900+ connections.',
+  'Roles, not people. Single sign-on. Default-deny access.',
+  'Built for SDA property. Same shape, any industry: your company, clients, partners, projects, products, roles and processes.',
+  'Ask us what yours would look like.',
+  'A company anyone can operate.',
+  'Want to know how we built it? Comment BRAIN or send us a message.',
+];
+
+const PATH = '/company-brain/';
+const TITLE = 'Company Brain: A Living Map of Your Business | SDAHC';
+const DESC = 'See how a company brain connects roles, processes, systems and relationships to support clearer decisions, smoother handovers and business continuity.';
+const schema = [
+  { '@type': 'WebPage', '@id': `${SITE}${PATH}#page`, url: `${SITE}${PATH}`, name: TITLE, description: DESC, isPartOf: { '@id': WEBSITE_ID }, publisher: { '@id': ORG_ID } },
+  faqPage(faqs),
+];
+---
+<BaseLayout title={TITLE} description={DESC} ogImage="/images/og-company-brain.jpg" ogImageAlt="Illustrative company map linking roles, processes, systems and projects." breadcrumbs={[{ name: 'Company Brain', path: PATH }]} schema={schema}>
+  <PageHeader
+    eyebrow="Company Brain"
+    title="Give your business a memory beyond any one person"
+    standfirst="A Company Brain connects the knowledge your business already holds into a clear, living map. See how work happens, who is responsible and where information comes from, so your team can act with greater confidence."
+  />
+  <section class="cb-head-cta"><div class="wrap">
+    <a class="btn b1" href="/contact-us/">Discuss a Company Brain for your business</a>
+  </div></section>
+
+  <section class="cb-video"><div class="wrap">
+    <figure class="cb-video-frame">
+      <video controls preload="none" playsinline muted width="1920" height="1080" poster="/videos/company-brain-poster.jpg" aria-label="We built a brain for our company: a two and a half minute explainer">
+        <source src="/videos/company-brain.mp4" type="video/mp4" />
+        Your browser does not support embedded video. The explainer is available at <a href="/videos/company-brain.mp4">/videos/company-brain.mp4</a>.
+      </video>
+    </figure>
+    <details class="cb-transcript">
+      <summary>Read the video transcript</summary>
+      <p class="cb-transcript-note">The video has no voice-over. This is the text shown on screen, in order.</p>
+      <ol>
+        {transcript.map((line) => <li>{line}</li>)}
+      </ol>
+      <p class="cb-credit">Music: “Ethereal Relaxation” by Kevin MacLeod (<a href="https://incompetech.com" rel="noopener">incompetech.com</a>). Licensed under Creative Commons: By Attribution 4.0 License, <a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">creativecommons.org/licenses/by/4.0</a>.</p>
+    </details>
+  </div></section>
+
+  <section class="section cb-sec">
+    <div class="prose">
+      <h2>When the business depends on what someone remembers</h2>
+      <p>Every business develops knowledge that never quite makes it into a system.</p>
+      <p>Someone knows why a process changed. Someone else remembers which adviser helped with a similar project. A team member knows where the current document lives, while a new colleague finds an older version.</p>
+      <p>The information exists, but finding it depends on asking the right person.</p>
+      <p>That creates interruptions, slow handovers and uncertainty about who should act next. As the business grows, the same people become the answer to more questions. Leave, staff changes or a business sale can expose how much knowledge sits outside the formal records.</p>
+      <p>A Company Brain makes that knowledge easier to locate, understand and maintain.</p>
+    </div>
+  </section>
+
+  <section class="section cb-sec">
+    <div class="prose">
+      <h2>What is a Company Brain?</h2>
+      <p>A company brain is a living map of the relationships that explain a business: people organised by role, processes, systems, clients, partners and projects.</p>
+      <p>It connects those elements to the records that support them. A process links to its responsible role, the systems it uses and the documents that explain it. A project links to the people and relationships involved.</p>
+      <p>At SDAHC, developing this approach began with a practical question: how can a business explain the way it operates without relying on one person to describe every connection?</p>
+      <p>The purpose is continuity, clearer responsibility and more informed decisions.</p>
+    </div>
+    <div class="wrap">
+      <figure class="cb-fig"><img src="/images/company-brain/systems-3d-overview.webp" width="1456" height="819" loading="lazy" decoding="async" alt="Illustrative company map linking roles, processes, systems and projects." /></figure>
+    </div>
+  </section>
+
+  <section class="section cb-sec">
+    <div class="wrap">
+      <h2 class="cb-h2">Five views of the same business</h2>
+      <ol class="cb-grid cb-grid-5">
+        {views.map((v, i) => (
+          <li class="cb-card">
+            <h3>{i + 1}. {v.h}</h3>
+            <p>{v.p}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section cb-sec">
+    <div class="wrap">
+      <h2 class="cb-h2">How it works, at a high level</h2>
+      <ol class="cb-grid cb-grid-5">
+        {steps.map((s, i) => (
+          <li class="cb-card">
+            <h3>Step {i + 1}: {s.h}</h3>
+            <p>{s.p}</p>
+          </li>
+        ))}
+      </ol>
+      <figure class="cb-fig"><img src="/images/company-brain/role-focus-connections.webp" width="1600" height="900" loading="lazy" decoding="async" alt="Five stages connecting approved business sources to visual views." /></figure>
+    </div>
+  </section>
+
+  <section class="section cb-sec">
+    <div class="prose">
+      <h2>It does not replace your CRM</h2>
+      <p>Your CRM continues to manage customer records and activity. Your document hub continues to hold documents. A company brain connects their operational meaning, making it easier to understand where information belongs and how it supports work.</p>
+      <p>It is not another dashboard. A dashboard may show a result; a company brain helps explain the responsibilities, relationships and systems behind it.</p>
+      <p>The value comes from those connections and their evidence. A sophisticated visual presentation cannot compensate for unclear ownership or unreliable records.</p>
+    </div>
+  </section>
+
+  <section class="section cb-sec">
+    <div class="wrap">
+      <h2 class="cb-h2">Where the approach can help</h2>
+      <p class="cb-lead">The following examples are illustrative, not descriptions of our internal records.</p>
+      <div class="cb-grid cb-grid-4">
+        {industries.map((x) => (
+          <div class="cb-card">
+            <h3>{x.h}</h3>
+            <p>{x.p}</p>
+          </div>
+        ))}
+      </div>
+      <figure class="cb-fig"><img src="/images/company-brain/same-shape-any-industry.webp" width="1600" height="900" loading="lazy" decoding="async" alt="Illustrative applications across four types of business." /></figure>
+    </div>
+  </section>
+
+  <section class="section cb-sec">
+    <div class="wrap">
+      <h2 class="cb-h2">How we help</h2>
+      <div class="cb-grid cb-grid-4">
+        {help.map((x) => (
+          <div class="cb-card">
+            <h3>{x.h}</h3>
+            <p>{x.p}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section cb-sec">
+    <div class="prose">
+      <h2>Frequently asked questions</h2>
+      <div class="faq">
+        {faqs.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section cb-final">
+    <div class="wrap cb-final-inner">
+      <h2>Want a brain for your business? Tell us how your company runs.</h2>
+      <p>Start with the questions your team struggles to answer, the handovers that take too long or the knowledge that depends on one person.</p>
+      <p><a class="btn b1" href="/contact-us/">Tell us about your business</a></p>
+      <p class="cb-note">Begin your message with <strong>Company Brain</strong>, then briefly describe your business and what you would like to make easier.</p>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+.cb-head-cta{padding:0 0 36px;background:var(--navy)}
+.cb-video{padding:0 0 56px;background:var(--navy)}
+.cb-video-frame{margin:0;border-radius:10px;overflow:hidden;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);background:#000}
+.cb-video-frame video{display:block;width:100%;height:auto;aspect-ratio:16/9}
+.cb-video-frame video a{color:var(--pale)}
+.cb-transcript{margin-top:18px;border-top:1px solid rgba(185,203,224,.16);border-bottom:1px solid rgba(185,203,224,.16);padding:16px 0;color:var(--pale)}
+.cb-transcript summary{cursor:pointer;font-family:var(--geo);font-size:15px;font-weight:600;color:#fff;letter-spacing:.01em}
+.cb-transcript ol{margin:14px 0 0;padding-left:22px;line-height:1.6;font-size:15.5px}
+.cb-transcript li{margin:0 0 8px}
+.cb-transcript-note{margin:14px 0 0;color:var(--muted);font-size:14px}
+.cb-credit{margin:18px 0 0;font-size:14px;color:var(--pale)}
+.cb-credit a{color:var(--pale);text-underline-offset:2px}
+.cb-sec{padding:36px 0 44px}
+.cb-sec .prose h2{margin-top:0}
+.cb-h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 24px}
+.cb-lead{color:var(--pale);font-size:17px;line-height:1.6;margin:-8px 0 24px;max-width:70ch}
+.cb-fig{margin:32px 0 0}
+.cb-fig img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent)}
+.cb-grid{list-style:none;margin:0;padding:0;display:grid;gap:18px}
+.cb-grid-5{grid-template-columns:repeat(3,1fr)}
+.cb-grid-4{grid-template-columns:repeat(2,1fr)}
+.cb-card{display:flex;flex-direction:column;padding:26px 24px;border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05)}
+.cb-card h3{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(17px,1.6vw,19px);line-height:1.25;margin:0 0 12px}
+.cb-card p{font-family:var(--sans);color:#fff;font-size:15px;line-height:1.6;margin:0}
+.cb-final{padding:80px 0 110px;text-align:center;background:radial-gradient(120% 130% at 12% 0%,#0b4a86 0%,rgba(11,74,134,0) 55%),linear-gradient(160deg,var(--navy2) 0%,var(--navy) 78%)}
+.cb-final-inner h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(28px,4.2vw,46px);line-height:1.1;margin:0 auto;max-width:22ch}
+.cb-final-inner p{color:var(--pale);max-width:60ch;margin:20px auto 0;line-height:1.6}
+.cb-final-inner .btn{margin-top:10px}
+.cb-final-inner .cb-note strong{color:#fff}
+@media(max-width:900px){.cb-grid-5,.cb-grid-4{grid-template-columns:1fr}}
+@media(min-width:901px) and (max-width:1100px){.cb-grid-5{grid-template-columns:repeat(2,1fr)}}
+</style>
