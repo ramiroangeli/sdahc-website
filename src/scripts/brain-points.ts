@@ -175,7 +175,7 @@ export function createBrainPoints(canvas: HTMLCanvasElement, host: HTMLElement, 
   world.position.y = 0.08;
   const fit = () => {
     camera.aspect = w / h;
-    const R = 1.95, vHalf = MathUtils.degToRad(camera.fov / 2), hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
+    const R = 1.7, vHalf = MathUtils.degToRad(camera.fov / 2), hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
     camera.position.set(0, 0, R / Math.sin(Math.min(vHalf, hHalf))); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
   };
   const resize = (nw: number, nh: number) => { w = Math.max(1, nw); h = Math.max(1, nh); renderer.setSize(w, h, false); uniforms.uRes.value.set(w, h); fit(); };

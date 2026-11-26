@@ -4,7 +4,7 @@
 // With prefers-reduced-motion or no WebGL, the brain is a static image of the same render and the background is still.
 // ?hero=a (default, SDAHC blue) or ?hero=b (light blue) chooses the BRAIN colour, for comparing the two.
 ---
-<link rel="preload" href="/fonts/space-grotesk-700.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/frick-condensed.woff2" as="font" type="font/woff2" crossorigin />
 <section class="hero" data-hero-root aria-labelledby="hero-title">
   <script is:inline>
     (function () { var s = document.currentScript; if (new URLSearchParams(location.search).get('hero') === 'b') s.parentElement.setAttribute('data-variant', 'b'); })();
@@ -86,12 +86,13 @@
 <style>
 .hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;background:var(--navy);padding:calc(var(--nav-clearance) + 8px) 0 48px;overflow:hidden}
 .bg{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:55fr 45fr;gap:24px;align-items:center;width:100%}
-.hero-copy{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0}
+.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:55fr 45fr;gap:32px;align-items:center;width:100%}
+.hero-copy{container-type:inline-size;display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0}
 .kicker{font-family:var(--geo);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--pale);margin:0 0 18px}
 .hero-title{margin:0;display:flex;flex-direction:column;align-items:flex-start;font-weight:inherit}
 .l1{font-family:var(--cond);font-weight:700;text-transform:uppercase;color:var(--paper);font-size:clamp(34px,5.3vw,96px);line-height:1;letter-spacing:.01em;white-space:nowrap}
-.l2{display:block;white-space:nowrap;font-family:var(--grotesk-local);font-weight:700;text-transform:uppercase;color:var(--blue);font-size:clamp(110px,18vw,320px);letter-spacing:-.04em;line-height:.85;margin-top:-.085em}
+/* BRAIN: Frick Condensed, never wider than its column (the 2.2 is the word's width in em), so its box cannot touch the brain */
+.l2{display:block;white-space:nowrap;font-family:var(--frick-local);font-weight:400;text-transform:uppercase;color:var(--blue);font-size:min(clamp(120px,20vw,360px),calc(100cqw / 2.2));letter-spacing:-.02em;line-height:.85;margin-top:-.125em}
 [data-variant="b"] .l2{color:var(--sky)}
 .sub{font-family:var(--sans);font-size:20px;line-height:1.55;color:rgba(246,241,236,.8);max-width:52ch;margin:26px 0 0}
 .actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}

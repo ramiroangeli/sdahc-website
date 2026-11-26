@@ -21,6 +21,7 @@
     "listings:withdraw": "node scripts/listings-sync.mjs --withdraw",
     "check:withdrawal": "node scripts/check-withdrawal.mjs",
     "check:order": "node scripts/check-display-order.mjs",
+    "test:hero": "node --experimental-strip-types --no-warnings scripts/test-neural-graph.mjs",
     "check:readiness": "node scripts/check-readiness.mjs",
     "listings:manifest": "node scripts/print-schema-manifest.mjs",
     "listings:doctor": "node --env-file-if-exists=.env.listings scripts/listings-sync.mjs --doctor",
@@ -33,6 +34,7 @@
     "@astrojs/vercel": "^11.0.11",
     "@vercel/analytics": "^2.0.1",
     "astro": "^7.3.5",
+    "delaunator": "5.0.1",
     "resend": "^6.29.0",
     "three": "0.170.0"
   },
@@ -40,6 +42,7 @@
     "esbuild": true
   },
   "devDependencies": {
+    "@types/delaunator": "5.0.3",
     "@types/three": "0.170.0"
   }
 }

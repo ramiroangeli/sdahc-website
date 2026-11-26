@@ -1,6 +1,6 @@
 @import './tokens.css';
-/* Space Grotesk 700 (SIL Open Font License 1.1, see public/fonts/space-grotesk-OFL.txt), hosted here for the Company Brain wordmark. */
-@font-face{font-family:'Space Grotesk Local';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/space-grotesk-700.woff2') format('woff2')}
+/* Frick Condensed (Dennis Grauel, SIL Open Font License 1.1, see public/fonts/frick-OFL.txt), hosted here for the Company Brain wordmark. The Regular cut is 33px too wide for the text column at 1440px, so the Condensed cut is used. */
+@font-face{font-family:'Frick Local';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/frick-condensed.woff2') format('woff2')}
 *,*::before,*::after{box-sizing:border-box}
 :root{padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}
 html{scroll-behavior:smooth;scroll-padding-top:var(--nav-clearance)}
