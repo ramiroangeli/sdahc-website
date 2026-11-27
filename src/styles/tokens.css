@@ -6,7 +6,7 @@
   /* Company Brain: colours of the 3D scene's node types, and a deeper amber for amber text on paper (the brand amber is 3:1 on paper, so too faint for text). */
   --brain-violet:#8B7CF0; --brain-orange:#E08A52; --brain-steel:#7F95B0; --amber-ink:#8F5206;
   /* Company Brain hero: the BRAIN gradient stops, the pulse colour, and the locally hosted Climate Crisis (YEAR 1979) used for the BRAIN wordmark. */
-  --sky:#4FB3FF; --blue-mid:#2F9BFF; --ice:#7FDCFF; --navy-mid:#031F3D; --paper-rgb:246,241,236; --error-on-dark:#FFA3A3; --climate-local:'Climate Crisis Local',Impact,'Arial Black',sans-serif;
+  --sky:#4FB3FF; --blue-mid:#2F9BFF; --ice:#7FDCFF; --navy-mid:#031F3D; --paper-rgb:246,241,236; --error-on-dark:#FFA3A3; --label-blue-ink:#0568C4; --label-violet-ink:#6552D6; --label-teal-ink:#1F7A82; --climate-local:'Climate Crisis Local',Impact,'Arial Black',sans-serif;
   --accent-msq:#E43024; --accent-guardian:#008BAD; --accent-sdaservices:#909030;
   /* RGB components of --blue, for rgba()/alpha-compositing contexts (e.g. a filter:drop-shadow()
      glow) where color-mix() with the `transparent` keyword renders unreliably across browsers. */
@@ -21,8 +21,8 @@
   --nav-radius:16px;
   --z-nav:60; --z-click-effects:70;
   /* type */
-  --serif:'Playfair Display',Georgia,serif;
-  --sans:'Source Sans 3',system-ui,-apple-system,sans-serif;
-  --cond:'Barlow Condensed','Arial Narrow',sans-serif;
-  --geo:'Space Grotesk',system-ui,sans-serif;
+  --serif:'Playfair Display','Playfair Fallback',Georgia,serif;
+  --sans:'Source Sans 3','Source Sans Fallback',system-ui,-apple-system,sans-serif;
+  --cond:'Barlow Condensed','Barlow Fallback','Arial Narrow',sans-serif;
+  --geo:'Space Grotesk','Space Grotesk Fallback',system-ui,sans-serif;
 }

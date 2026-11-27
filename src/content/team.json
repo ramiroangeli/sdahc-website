@@ -1,0 +1,36 @@
+{
+  "publishTeam": false,
+  "heading": "Our team",
+  "members": [
+    {
+      "name": "Steve Dawson",
+      "role": "Managing Director",
+      "label": "Leadership",
+      "color": "blue",
+      "photo": "steve-dawson",
+      "bio": "Steve Dawson has over 25 years of commercial real estate experience and 9 years in Specialist Disability Accommodation. He is a trusted board advisor to organisations such as Multiple Sclerosis Queensland, has sold SDA properties for multiple organisations, and has built a reputation for achieving results with discretion.",
+      "bioFull": [
+        "Steve Dawson has over 25 years of commercial real estate experience and 9 years in Specialist Disability Accommodation. He is a trusted board advisor to organisations such as Multiple Sclerosis Queensland, has sold SDA properties for multiple organisations, and has built a reputation for achieving results with discretion. Steve is passionate about the sector and works collaboratively with all stakeholders, including the major SDA funds invested in the space."
+      ]
+    },
+    {
+      "name": "Ali Forbes",
+      "role": "Business Development Manager",
+      "label": "Business Development",
+      "color": "violet",
+      "photo": "",
+      "bio": "Leads business development at SDA Home Choices, building relationships and identifying opportunities for the business. She supports the progression of new opportunities from initial conversations through to transaction."
+    },
+    {
+      "name": "Ramiro Angeli",
+      "role": "Head of Strategy & Operations",
+      "label": "Strategy & Operations",
+      "color": "teal",
+      "photo": "ramiro-angeli",
+      "bio": "Ramiro leads strategic planning and the systems and data that support the business. His work includes market research and intelligence, CRM and the development of SDAHC's internal platforms.",
+      "bioFull": [
+        "Ramiro leads strategic planning and the systems and data that support the business. His work includes market research and intelligence, CRM and the development of SDAHC's internal platforms. An Industrial Engineer with a degree from the National University of Córdoba (UNC) in Argentina and a master's degree in Engineering and Management from the Politecnico di Torino in Italy, Ramiro has worked across technology, real estate, agriculture and consumer industries in the Americas and Europe, leading teams and working across systems, processes and people."
+      ]
+    }
+  ]
+}

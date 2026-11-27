@@ -1,0 +1,37 @@
+---
+// Opening block of a main page: a navy block with a quiet NeuralField behind an eyebrow, the page's one <h1> set in GradientDisplay (Climate Crisis 1979),
+// and an optional subtitle and intro. `plain` drops the block's own background and NeuralField, for a page that wraps the header and the content below it in one navy stage with a single field. Spacing and alignment match the /contact-us/ header so the pages read as one family.
+// The title is the default slot. Put `<br class="sm-br" />` where a line should also break below 640 px, and a plain `<br />` where it breaks at every width.
+// ratio / ratioMobile: the width in em of the longest title line (desktop / below 640 px), so the title can be capped to its container.
+//   Measured in Climate Crisis at YEAR 1979 with -.02em letter-spacing, e.g. "ABOUT US" 7.3, "SERVICES AND" 10.65, "EXPERTISE" 8.05.
+import NeuralField from './NeuralField.astro';
+import GradientDisplay from './GradientDisplay.astro';
+interface Props { eyebrow?: string; subtitle?: string; intro?: string; ratio: number; ratioMobile?: number; plain?: boolean }
+const { eyebrow, subtitle, intro, ratio, ratioMobile = ratio, plain = false } = Astro.props;
+---
+<link rel="preload" href="/fonts/climate-crisis/climate-crisis-1979.woff2" as="font" type="font/woff2" crossorigin />
+<header class:list={['display-header', { plain }]} style={`--dh-r:${ratio};--dh-rm:${ratioMobile}`}>
+  {!plain && <NeuralField desktop={30} mobile={16} text=".dh-text" />}
+  <div class="wrap dh-inner">
+    {eyebrow && <p class="eyebrow dh-eyebrow dh-text">{eyebrow}</p>}
+    <div class="dh-title-box">
+      <h1 class="dh-title"><GradientDisplay size="var(--dh-size)"><slot /></GradientDisplay></h1>
+    </div>
+    {subtitle && <p class="dh-sub dh-text">{subtitle}</p>}
+    {intro && <p class="dh-intro dh-text">{intro}</p>}
+  </div>
+</header>
+
+<style>
+.display-header{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--navy) 0%,var(--navy-mid) 50%,var(--navy) 100%);color:var(--paper)}
+.display-header.plain{background:none;overflow:visible}
+.dh-inner{position:relative;z-index:1;padding-top:calc(150px + var(--nav-top));padding-bottom:72px}
+.dh-eyebrow{color:rgba(var(--paper-rgb),.85);margin-bottom:22px}
+.dh-title-box{container-type:inline-size}
+.dh-title{margin:0;font-weight:inherit;--dh-size:min(clamp(48px,8.5vw,130px),calc(100cqw / var(--dh-r)))}
+:global(.display-header .sm-br){display:none}
+@media(max-width:639px){:global(.display-header .sm-br){display:inline}.dh-title{--dh-size:min(clamp(48px,8.5vw,130px),calc(100cqw / var(--dh-rm)))}}
+.dh-sub{font-family:var(--serif);font-weight:600;color:var(--paper);font-size:clamp(21px,2.6vw,30px);line-height:1.25;max-width:32ch;margin:26px 0 0}
+.dh-sub + .dh-intro{margin-top:16px}
+.dh-intro{font-family:var(--sans);color:rgba(var(--paper-rgb),.85);font-size:clamp(17px,2.1vw,21px);line-height:1.5;max-width:60ch;margin:26px 0 0}
+</style>
