@@ -96,3 +96,25 @@ a{color:inherit}
 .bg-grain>*{position:relative;z-index:1}
 
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.rv{opacity:1;transform:none;transition:none}.mqa div,.mqb div{animation:none}.faq summary::after{transition:none}}
+
+/* ===== page transition: a signal travelling along a connection =====
+   Native cross-document View Transitions (Chromium, Safari 18.2+; elsewhere navigation is unchanged). The opt-in rule itself is an inline <style> in BaseLayout's <head>:
+   in this stylesheet Chrome intermittently missed it and skipped the transition. The header stays put, the arriving page fades in with a small
+   drift from the left, and a thin blue-to-ice pulse crosses just below the header from left to right. Only opacity and transform animate. Off under reduced motion.
+   To switch the whole effect off, delete the inline @view-transition style in BaseLayout (everything else is then inert). */
+.route-pulse{display:none}
+@media(prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+@media(prefers-reduced-motion:no-preference){
+  body>header{view-transition-name:site-nav}
+  ::view-transition-group(site-nav){animation-duration:0s}
+  ::view-transition-old(root),::view-transition-new(root){mix-blend-mode:normal}
+  ::view-transition-old(root){animation:none}
+  ::view-transition-new(root){animation:rt-in .26s cubic-bezier(.2,.7,.2,1) both}
+  .vt-go .route-pulse{display:block;position:fixed;z-index:var(--z-route-pulse);left:0;right:0;top:calc(var(--nav-top) + var(--nav-height) + 10px);height:2px;overflow:clip;pointer-events:none}
+  .route-pulse i{position:absolute;left:0;top:0;width:34vw;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--blue) 55%,var(--ice));opacity:0;animation:rp-run .32s cubic-bezier(.4,0,.6,1) both}
+  .route-pulse i::after{content:"";position:absolute;right:0;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--ice);box-shadow:0 0 8px 2px rgba(var(--blue-rgb),.8)}
+  /* the arriving hero must not run its own entrance on top of the transition */
+  html.vt .oh-h1,html.vt .oh-sub{animation:none}
+}
+@keyframes rt-in{from{opacity:0;transform:translateX(-10px)}}
+@keyframes rp-run{0%{opacity:0;transform:translateX(-34vw)}15%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateX(100vw)}}

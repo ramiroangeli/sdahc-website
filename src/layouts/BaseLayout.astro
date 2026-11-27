@@ -57,6 +57,7 @@ const graph = {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <style is:inline>@view-transition{navigation:auto}</style>
   <title>{title}</title>
   <meta name="description" content={description} />
   {noindex && <meta name="robots" content="noindex, follow" />}
@@ -88,9 +89,12 @@ const graph = {
   <link rel="preload" href="/fonts/source-sans-3/SourceSans3-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/playfair-display/PlayfairDisplay-600-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/barlow-condensed/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin />
+  {/* Page transition: rules in global.css. This marks a page reached through a View Transition (vt, kept so a hero's own entrance does not replay afterwards) and the moment it plays (vt-go). Allow-listed in vercel.json by sha256: editing the script means recomputing the hash. */}
+  <script is:inline>addEventListener('pagereveal',function(e){var t=e.viewTransition,d=document.documentElement,n=function(){},g=function(){d.classList.remove('vt-go')};if(!t)return;t.updateCallbackDone.catch(n);d.classList.add('vt');t.ready.then(function(){d.classList.add('vt-go')},n);t.finished.then(g,g)})</script>
 </head>
 <body>
   <Nav />
+  <div class="route-pulse" aria-hidden="true"><i></i></div>
   <main><slot /></main>
   <Footer />
   <div class="click-effects" aria-hidden="true"></div>
