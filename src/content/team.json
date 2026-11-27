@@ -1,0 +1,21 @@
+{
+  "heading": "Our team",
+  "members": [
+    {
+      "name": "Ali Forbes",
+      "role": "Role to come",
+      "photo": "",
+      "photoAlt": "",
+      "bio": "Bio to come",
+      "areas": ["Specialty to come", "Specialty to come", "Specialty to come"]
+    },
+    {
+      "name": "Ramiro Angeli",
+      "role": "Role to come",
+      "photo": "",
+      "photoAlt": "",
+      "bio": "Bio to come",
+      "areas": ["Specialty to come", "Specialty to come", "Specialty to come"]
+    }
+  ]
+}

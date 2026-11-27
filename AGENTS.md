@@ -6,6 +6,7 @@ Rules for every change in this repo.
 - NEVER use the em-dash "—" anywhere: not in page copy, headings, comments, alt text, or commit messages. Use commas, colons, parentheses, or rewrite the sentence. The en-dash "–" is allowed only inside numeric ranges (e.g. 2019–26).
 - Design tokens in `src/styles/tokens.css` are the single source of truth. Never hardcode colours or font names in components; always use `var(--navy)`, `var(--blue)`, `var(--serif)`, etc. If a new token is genuinely needed, add it to `tokens.css`.
 - Preserve URLs exactly. Each existing site URL maps to one file under `src/pages` with the identical path and a trailing slash. Do not rename or invent routes.
+- Toda página principal abre con un bloque navy + NeuralField + título GradientDisplay (Climate Crisis 1979). El contenido de lectura va en fondo claro. Excepción: /contact-us/, que es navy completo salvo Our Offices.
 - All site content is in English (Australian English spelling: organise, colour, specialise).
 - Accessibility: semantic HTML; every image needs alt text; never set `maximum-scale` or `user-scalable=0` on the viewport; aim for WCAG AA contrast.
 - No secrets in code. API keys go in Vercel environment variables, never committed.
