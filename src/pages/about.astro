@@ -5,13 +5,12 @@ import { Image, getImage } from 'astro:assets';
 import steveDawson from '../assets/steve-dawson.jpg';
 import { SITE, ORG_ID, STEVE_ID } from '../data/seo';
 import team from '../content/team.json';
+import TeamSection from '../components/TeamSection.astro';
 
 // Same size and format as the visible portrait below, so the build reuses one file.
-// Team section: the texts come from src/content/team.json (name, role, photo path under /public, bio, three areas). A member without a photo shows a monogram.
-// Placeholder text ("to come") never reaches production: on a Vercel production build the section is left out until the file is filled in. Previews and local builds show it.
-const hasPlaceholders = team.members.some((m) => /to come/i.test(JSON.stringify(m)));
-const showTeam = !(hasPlaceholders && process.env.VERCEL_ENV === 'production');
-const initials = (name: string) => name.split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+// Team section (src/content/team.json): one section of three cards, Steve first. While "publishTeam" is false, a Vercel production build keeps the
+// previous standalone Steve section, so nothing is lost on the live site; previews and local builds always show the team.
+const showTeam = team.publishTeam || process.env.VERCEL_ENV !== 'production';
 const portrait = await getImage({ src: steveDawson, width: 400, height: 400 });
 const schema = [
   {
@@ -74,6 +73,9 @@ const schema = [
     </div>
   </section>
 
+  {showTeam ? (
+    <TeamSection team={team} />
+  ) : (
   <section class="section about-paper about-steve-section"><div class="wrap about-grid">
     <div class="about-portrait-frame">
       <Image src={steveDawson} alt="Portrait of Steve Dawson, Managing Director of SDA Home Choices" class="portrait" width={400} height={400} />
@@ -81,28 +83,6 @@ const schema = [
     <div class="prose about-prose">
       <h2>Steve Dawson, Managing Director</h2>
       <p>Steve Dawson has over 25 years of commercial real estate experience and 9 years in Specialist Disability Accommodation. He is a trusted board advisor to organisations such as Multiple Sclerosis Queensland, has sold SDA properties for multiple organisations, and has built a reputation for achieving results with discretion. Steve is passionate about the sector and works collaboratively with all stakeholders, including the major SDA funds invested in the space.</p>
-    </div>
-  </div></section>
-
-  {showTeam && (
-  <section class="section about-paper about-team" aria-labelledby="team-h"><div class="wrap">
-    <h2 class="team-h" id="team-h">{team.heading}</h2>
-    <div class="team-grid">
-      {team.members.map((m) => (
-        <article class="team-card">
-          {m.photo ? (
-            <div class="team-photo-frame"><img src={m.photo} alt={m.photoAlt || `Portrait of ${m.name}`} class="team-photo" width="96" height="96" loading="lazy" decoding="async" /></div>
-          ) : (
-            <div class="team-monogram" aria-hidden="true">{initials(m.name)}</div>
-          )}
-          <h3 class="team-name">{m.name}</h3>
-          <p class="team-role">{m.role}</p>
-          <p class="team-bio">{m.bio}</p>
-          <ul class="team-areas" aria-label={`Areas of specialty, ${m.name}`}>
-            {m.areas.slice(0, 3).map((a) => <li>{a}</li>)}
-          </ul>
-        </article>
-      ))}
     </div>
   </div></section>
   )}
@@ -159,18 +139,4 @@ const schema = [
 .about-prose h2{margin-top:0}
 @media(max-width:700px){.about-grid{grid-template-columns:1fr}.about-portrait-frame{max-width:280px;margin:0 auto}}
 
-/* Our team: same paper surface as the Steve feature, in card size */
-.about-team{padding-top:0}
-.team-h{font-family:var(--serif);font-weight:600;color:var(--navy);font-size:clamp(24px,3.2vw,34px);line-height:1.15;margin:0 0 28px}
-.team-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px}
-@media(max-width:700px){.team-grid{grid-template-columns:1fr}}
-.team-card{display:flex;flex-direction:column;align-items:flex-start;padding:30px 28px 32px;border:1px solid color-mix(in srgb,var(--navy) 12%,transparent);border-radius:10px;background:var(--white);box-shadow:0 10px 26px color-mix(in srgb,var(--navy) 6%,transparent)}
-.team-photo-frame{background:var(--white);padding:8px;border-radius:12px;box-shadow:0 14px 34px rgba(0,10,25,.22);margin-bottom:18px}
-.team-photo{display:block;width:96px;height:96px;object-fit:cover;border-radius:6px}
-.team-monogram{display:flex;align-items:center;justify-content:center;width:96px;height:96px;border-radius:50%;background:var(--navy);border:2px solid var(--blue-mid);color:var(--paper);font-family:var(--cond);font-weight:700;font-size:34px;letter-spacing:.04em;margin-bottom:18px}
-.team-name{font-family:var(--serif);font-weight:600;font-size:22px;line-height:1.2;color:var(--navy);margin:0 0 4px}
-.team-role{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin:0 0 14px}
-.team-bio{font-family:var(--sans);font-size:16px;line-height:1.6;color:var(--slate);margin:0 0 18px}
-.team-areas{list-style:none;margin:auto 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
-.team-areas li{font-family:var(--geo);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);border:1px solid color-mix(in srgb,var(--navy) 22%,transparent);border-radius:999px;padding:6px 12px}
 </style>

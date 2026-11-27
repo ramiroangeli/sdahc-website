@@ -1,21 +1,33 @@
 {
+  "publishTeam": false,
   "heading": "Our team",
   "members": [
     {
+      "name": "Steve Dawson",
+      "role": "Managing Director",
+      "label": "Leadership",
+      "color": "blue",
+      "photo": "steve-dawson",
+      "bio": "Steve Dawson has over 25 years of commercial real estate experience and 9 years in Specialist Disability Accommodation. He is a trusted board advisor to organisations such as Multiple Sclerosis Queensland, has sold SDA properties for multiple organisations, and has built a reputation for achieving results with discretion.",
+      "bioFull": [
+        "Steve Dawson has over 25 years of commercial real estate experience and 9 years in Specialist Disability Accommodation. He is a trusted board advisor to organisations such as Multiple Sclerosis Queensland, has sold SDA properties for multiple organisations, and has built a reputation for achieving results with discretion. Steve is passionate about the sector and works collaboratively with all stakeholders, including the major SDA funds invested in the space."
+      ]
+    },
+    {
       "name": "Ali Forbes",
-      "role": "Role to come",
+      "role": "Business Development Manager",
+      "label": "Business Development",
+      "color": "violet",
       "photo": "",
-      "photoAlt": "",
-      "bio": "Bio to come",
-      "areas": ["Specialty to come", "Specialty to come", "Specialty to come"]
+      "bio": "Leads business development at SDA Home Choices, building relationships and identifying opportunities for the business. She supports the progression of new opportunities from initial conversations through to transaction."
     },
     {
       "name": "Ramiro Angeli",
-      "role": "Role to come",
+      "role": "Head of Strategy & Operations",
+      "label": "Strategy & Operations",
+      "color": "teal",
       "photo": "",
-      "photoAlt": "",
-      "bio": "Bio to come",
-      "areas": ["Specialty to come", "Specialty to come", "Specialty to come"]
+      "bio": "Leads strategy and operations across SDA Home Choices. He oversees market intelligence, data and the systems that support the business, connecting strategic priorities with day-to-day execution."
     }
   ]
 }
