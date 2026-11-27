@@ -63,6 +63,8 @@ const ICONS: Record<string, string> = {
 const flow = [
   { i: 'sources', l: 'Sources' }, { i: 'sync', l: 'Nightly sync' }, { i: 'db', l: 'Database' }, { i: 'graph', l: 'Relationship graph' }, { i: 'views', l: 'Views by role' },
 ];
+// Flag: the "Watch the 2-minute tour" section is hidden until the new video is supplied. Set to true to show it again (the markup and files are kept).
+const SHOW_TOUR = false;
 const toc = [
   ['s01', 'The problem'], ['s02', 'What it is'], ['s03', 'Five views'], ['s04', 'How it works'],
   ['s05', 'What it is not'], ['s06', 'Where it helps'], ['s07', 'How we help'], ['s08', 'FAQ'],
@@ -101,6 +103,7 @@ const schema = [
 <BaseLayout title={TITLE} description={DESC} ogImage="/images/og-company-brain.jpg" ogImageAlt="The Company Brain guide: Give your business a brain, with a glowing network of roles, systems and processes." extraFontsHref="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&display=swap" breadcrumbs={[{ name: 'Company Brain', path: PATH }]} schema={schema}>
   <BrainHero />
 
+  {SHOW_TOUR && (
   <section class="cb-video" aria-labelledby="tour-title"><div class="wrap">
     <h2 id="tour-title" class="cb-tour-title">Watch the 2-minute tour</h2>
     <figure class="cb-video-frame">
@@ -118,6 +121,7 @@ const schema = [
       <p class="cb-credit">Music: “Ethereal Relaxation” by Kevin MacLeod (<a href="https://incompetech.com" rel="noopener">incompetech.com</a>). Licensed under Creative Commons: By Attribution 4.0 License, <a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">creativecommons.org/licenses/by/4.0</a>.</p>
     </details>
   </div></section>
+  )}
 
   <div class="guide" data-guide>
     <nav class="rail" aria-label="Guide contents">
