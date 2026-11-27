@@ -4,6 +4,8 @@
 import { axonPoint, buildNet, mulberry, pickRegrow, type Axon, type Net } from './neuron-net';
 
 export interface BgColors { blue: string; ice: string }
+/** desktop / mobile: neuron counts (mobile below 700 px wide). dim: how much of the network is hidden behind text rectangles, 0 to 1. */
+export interface BgOptions { desktop?: number; mobile?: number; dim?: number }
 const rgb = (hex: string) => { const h = hex.replace('#', ''); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); };
 
 const RADIUS = 180, PUSH = 14, SPEED = 120, TRAIL = 40, MAX_ACTIVE = 30, STRONG_GENERATIONS = 6;
@@ -12,11 +14,12 @@ type Pulse = { ax: Axon; d: number; gen: number; strong: boolean };
 type Fire = { at: number; n: number; strong: boolean; gen: number };
 type Rect = { x: number; y: number; w: number; h: number };
 
-export function createNeuralBg(canvas: HTMLCanvasElement, hero: HTMLElement, colors: BgColors, animate: boolean) {
+export function createNeuralBg(canvas: HTMLCanvasElement, hero: HTMLElement, colors: BgColors, animate: boolean, opts: BgOptions = {}) {
+  const { desktop = 45, mobile = 22, dim = 0.5 } = opts;
   const rand = mulberry(20261201);
   const ctx = canvas.getContext('2d')!;
   const [br, bg, bb] = rgb(colors.blue), [ir, ig, ib] = rgb(colors.ice);
-  let w = 1, h = 1, dpr = 1, net: Net | null = null, text: Rect | null = null;
+  let w = 1, h = 1, dpr = 1, net: Net | null = null, text: Rect[] = [];
   // dynamic state of every dendrite segment (flat arrays, parents always before their children)
   let S = 0, ox = new Float32Array(0), oy = ox, vx = ox, vy = ox, ax_ = ox, ay_ = ox, p0x = ox, p0y = ox, p1x = ox, p1y = ox, pcx = ox, pcy = ox;
   let buckets: number[][] = [];
@@ -32,7 +35,7 @@ export function createNeuralBg(canvas: HTMLCanvasElement, hero: HTMLElement, col
   });
 
   const build = () => {
-    net = buildNet(Math.max(w, 2), Math.max(h, 2), w < 700 ? 22 : 45, 11); S = net.segs.length;
+    net = buildNet(Math.max(w, 2), Math.max(h, 2), w < 700 ? mobile : desktop, 11); S = net.segs.length;
     const f = () => new Float32Array(S); [ox, oy, vx, vy, ax_, ay_, p0x, p0y, p1x, p1y, pcx, pcy] = [f(), f(), f(), f(), f(), f(), f(), f(), f(), f(), f(), f()];
     buckets = Array.from({ length: 8 }, () => []); net.segs.forEach((s, i) => buckets[s.depth * 2 + (net!.neurons[s.n].alpha >= 0.23 ? 1 : 0)].push(i));
     flash.length = 0; net.neurons.forEach(() => flash.push(0)); pulses = []; queue = []; nextSpont = clock + 0.4 + rand() * 0.8; nextRegrow = clock + 20 + rand() * 20;
@@ -101,9 +104,9 @@ export function createNeuralBg(canvas: HTMLCanvasElement, hero: HTMLElement, col
       }
       ctx.globalCompositeOperation = 'source-over';
     }
-    // legibility: behind the text column the network is at half strength
-    if (text) {
-      const a = 0.5, f = 56, { x, y, w: rw, h: rh } = text; ctx.globalCompositeOperation = 'destination-out';
+    // legibility: behind each text rectangle the network is dimmed (half strength by default), with a feathered edge
+    for (const { x, y, w: rw, h: rh } of text) {
+      const a = dim, f = 56; if (x + rw + f < 0 || y + rh + f < 0 || x - f > w || y - f > h) continue; ctx.globalCompositeOperation = 'destination-out';
       const strip = (x0: number, y0: number, x1: number, y1: number, gx0: number, gy0: number, gx1: number, gy1: number) => { const gr = ctx.createLinearGradient(gx0, gy0, gx1, gy1); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, `rgba(0,0,0,${a})`); ctx.fillStyle = gr; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); };
       ctx.fillStyle = `rgba(0,0,0,${a})`; ctx.fillRect(x, y, rw, rh);
       strip(x - f, y, x, y + rh, x - f, 0, x, 0); strip(x + rw, y, x + rw + f, y + rh, x + rw + f, 0, x + rw, 0);
@@ -146,10 +149,10 @@ export function createNeuralBg(canvas: HTMLCanvasElement, hero: HTMLElement, col
     if (!net) build(); else if (changed) { clearTimeout(pending); pending = window.setTimeout(() => { build(); if (!running) draw(0); }, 120); }
     if (!running) draw(0);
   };
-  const rel = (e: PointerEvent) => { const r = hero.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const rel = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   const onMove = (e: PointerEvent) => { if (e.pointerType !== 'mouse') return; [mx, my] = rel(e); mouseOn = true; lastMove = performance.now(); };
   const onLeave = () => { mouseOn = false; };
-  const onDown = (e: PointerEvent) => { if (!running || !net || (e.target as Element | null)?.closest?.('[data-brain]')) return; const [x, y] = rel(e); fire(nearest(x, y), true, 0); }; // a click or touch: a strong chain from the neuron nearest that point
+  const onDown = (e: PointerEvent) => { if (!running || !net || (e.target as Element | null)?.closest?.('[data-brain],a,button,input,textarea,select,label')) return; const [x, y] = rel(e); fire(nearest(x, y), true, 0); }; // a click or touch: a strong chain from the neuron nearest that point
   const tick = (now: number) => {
     if (!running) return;
     raf = requestAnimationFrame(tick);
@@ -159,7 +162,7 @@ export function createNeuralBg(canvas: HTMLCanvasElement, hero: HTMLElement, col
   if (animate) { hero.addEventListener('pointermove', onMove); hero.addEventListener('pointerleave', onLeave); hero.addEventListener('pointerdown', onDown); }
   return {
     resize,
-    setTextRect(r: Rect | null) { text = r; if (!running && net) draw(0); },
+    setTextRects(r: Rect[]) { text = r; if (!running && net) draw(0); },
     start() { if (running || !animate) return; running = true; last = performance.now(); raf = requestAnimationFrame(tick); },
     stop() { running = false; cancelAnimationFrame(raf); },
   };

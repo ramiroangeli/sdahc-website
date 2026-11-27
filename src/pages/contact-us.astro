@@ -1,18 +1,25 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PageHeader from '../components/PageHeader.astro';
+import NeuralField from '../components/NeuralField.astro';
+import GradientDisplay from '../components/GradientDisplay.astro';
 import { SITE, ORG_ID } from '../data/seo';
 const schema = [{ '@type': 'ContactPage', '@id': `${SITE}/contact-us/#page`, url: `${SITE}/contact-us/`, name: 'Contact SDA Home Choices', about: { '@id': ORG_ID } }];
 ---
 <BaseLayout title="Contact us | SDA Home Choices" description="Talk to SDA Home Choices about buying, selling or understanding the SDA market across Australia." breadcrumbs={[{ name: 'Contact us', path: '/contact-us/' }]} schema={schema}>
-  <PageHeader
-    eyebrow="Get in touch"
-    title="Contact us"
-    standfirst="Whether you are considering a sale, weighing your options, or simply want to understand the SDA market, we are glad to hear from you."
-  />
+  <!-- One continuous navy stage: the title, the contact details and the form. The neural field is fixed to the viewport behind it and is clipped to the stage, so it stops at Our Offices. -->
+  <div class="stage">
+    <NeuralField fixed text=".stage-text" />
+    <div class="stage-body">
+      <header class="contact-head"><div class="wrap">
+        <p class="eyebrow stage-text">Get in touch</p>
+        <div class="title-box">
+          <h1 class="contact-title"><GradientDisplay size="var(--cu-size)">Contact<br class="sm-br" /> us</GradientDisplay></h1>
+        </div>
+        <p class="standfirst stage-text">Whether you are considering a sale, weighing your options, or simply want to understand the SDA market, we are glad to hear from you.</p>
+      </div></header>
 
   <section class="section contact-flow"><div class="wrap contact-grid">
-    <div class="contact-info">
+    <div class="contact-info stage-text">
       <p class="contact-intro">Tell us about your property, portfolio or question, and the right person at SDA Home Choices will get back to you. Whether you are buying, selling or exploring SDA, or you would like to build a Company Brain for your business, tell us what you need.</p>
 
       <ul class="contact-items">
@@ -34,7 +41,7 @@ const schema = [{ '@type': 'ContactPage', '@id': `${SITE}/contact-us/#page`, url
       </div>
     </div>
 
-    <div class="contact-form-card">
+    <div class="contact-form-card stage-text">
       <form class="form" data-endpoint="/api/contact/" data-success="/thank-you/">
         <input type="text" name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true" />
         <div>
@@ -58,6 +65,8 @@ const schema = [{ '@type': 'ContactPage', '@id': `${SITE}/contact-us/#page`, url
       </form>
     </div>
   </div></section>
+    </div>
+  </div>
   <section class="section contact-offices" id="offices" aria-labelledby="offices-h"><div class="wrap">
     <h2 class="offices-h" id="offices-h">Our Offices</h2>
     <p class="offices-lead">Supporting SDA property owners, investors and organisations across Australia.</p>
@@ -100,44 +109,50 @@ const schema = [{ '@type': 'ContactPage', '@id': `${SITE}/contact-us/#page`, url
   });
 </script>
 <style>
-:root{
-  --contact-depth:.85;
-}
+/* The navy stage: title, contact details and form on one continuous vertical gradient, no bands between them. Our Offices (below) is outside it.
+   clip-path keeps the fixed neural canvas inside the stage and gives the stage its own stacking context. */
+.stage{position:relative;background:linear-gradient(180deg,var(--navy) 0%,var(--navy-mid) 50%,var(--navy) 100%);color:var(--paper)}
+.stage-body{position:relative;z-index:1}
 
-/* intro: a warm light neutral (paper) with dark type, so it reads clearly apart from the blue form band
-   below. This page only; the shared PageHeader keeps its dark default everywhere else. The intro fades
-   into navy over its own bottom padding, the same outgoing-edge seam the Opportunities page uses. */
-:global(section.pagehead.pagehead){background:var(--paper);overflow:hidden}
-:global(section.pagehead)::after{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--paper) calc(100% - 56px),var(--navy) 100%)}
-:global(section.pagehead .wrap){position:relative;z-index:1}
-:global(section.pagehead .eyebrow){color:var(--slate)}
-:global(section.pagehead .ph-title){color:var(--navy)}
-:global(section.pagehead .ph-standfirst){color:var(--slate)}
+.contact-head{padding:calc(150px + var(--nav-top)) 0 24px}
+.contact-head .eyebrow{color:rgba(var(--paper-rgb),.85);margin-bottom:22px}
+.title-box{container-type:inline-size}
+.contact-title{margin:0;font-weight:inherit;--cu-size:min(clamp(48px,8.5vw,130px),calc(100cqw / 9.3))}
+.sm-br{display:none}
+@media(max-width:639px){.sm-br{display:inline}.contact-title{--cu-size:min(clamp(48px,8.5vw,130px),calc(100cqw / 7.05))}}
+.standfirst{font-family:var(--sans);color:rgba(var(--paper-rgb),.85);font-size:clamp(17px,2.1vw,21px);line-height:1.5;max-width:60ch;margin:26px 0 0}
 
-/* single navy band carrying the hero's depth down into the footer, which is also navy so the handoff is seamless */
-.contact-flow{position:relative;overflow:hidden;padding:88px 0 96px}
-.contact-flow::before{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 45%,var(--navy) 84%,var(--paper) 100%)}
-.contact-flow::after{content:"";position:absolute;inset:0;z-index:0;opacity:var(--contact-depth);background:radial-gradient(900px 560px at 50% 18%,rgba(4,118,217,.32) 0%,rgba(4,118,217,0) 62%)}
-.contact-flow>*{position:relative;z-index:1}
+.contact-flow{position:relative;padding:56px 0 96px}
+.contact-flow .wrap{position:relative}
 
 .contact-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:start}
 @media(max-width:860px){.contact-grid{grid-template-columns:1fr;gap:40px}}
 
-.contact-info{color:var(--pale)}
-.contact-intro{font-family:var(--sans);color:var(--pale);font-size:17px;line-height:1.65;margin:0 0 36px;max-width:42ch}
+.contact-info{color:rgba(var(--paper-rgb),.85)}
+.contact-intro{font-family:var(--sans);color:rgba(var(--paper-rgb),.85);font-size:17px;line-height:1.65;margin:0 0 36px;max-width:42ch}
 
 .contact-items{list-style:none;margin:0 0 32px;padding:0;display:flex;flex-direction:column;gap:26px}
-.contact-item .card-mark{display:block;width:28px;height:3px;background:var(--blue);margin-bottom:14px;border-radius:2px}
-.ci-label{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
-.contact-item a{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2vw,22px);color:#fff;text-decoration:none}
-.contact-item a:hover,.contact-item a:focus-visible{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.contact-item .card-mark{display:block;width:28px;height:3px;background:var(--blue-mid);margin-bottom:14px;border-radius:2px}
+.ci-label{font-family:var(--geo);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:rgba(var(--paper-rgb),.7);margin:0 0 6px}
+.contact-item a{font-family:var(--serif);font-weight:600;font-size:clamp(19px,2vw,22px);color:var(--ice);text-decoration:none}
+.contact-item a:hover,.contact-item a:focus-visible{color:var(--white);text-decoration:underline;text-underline-offset:3px}
 
 .contact-chips{display:flex;flex-wrap:wrap;gap:10px}
-.chip{display:inline-flex;align-items:center;font-family:var(--geo);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--pale);border:1px solid color-mix(in srgb,var(--pale) 24%,transparent);background:rgba(255,255,255,.05);border-radius:999px;padding:8px 16px}
+.chip{display:inline-flex;align-items:center;font-family:var(--geo);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:rgba(var(--paper-rgb),.85);border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);border-radius:999px;padding:8px 16px}
 
-.contact-form-card{border:1px solid color-mix(in srgb,var(--pale) 18%,transparent);border-radius:10px;background:rgba(255,255,255,.05);padding:36px 34px}
+/* the form (style only): translucent fields on the navy stage, a 2px sky ring on focus, errors that stay readable on dark */
+.contact-form-card{border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.04);padding:36px 34px}
 .contact-form-card .form{max-width:none;margin:0;padding:0}
 .contact-form-card .form button{justify-self:start}
+.contact-form-card .form label{color:rgba(var(--paper-rgb),.85)}
+.contact-form-card .form input,.contact-form-card .form textarea{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:var(--paper)}
+.contact-form-card .form input::placeholder,.contact-form-card .form textarea::placeholder{color:rgba(var(--paper-rgb),.5);opacity:1}
+.contact-form-card .form input:focus,.contact-form-card .form textarea:focus{outline:2px solid var(--blue-mid);outline-offset:0;border-color:var(--blue-mid)}
+.contact-form-card .form input:user-invalid,.contact-form-card .form textarea:user-invalid{border-color:var(--error-on-dark)}
+.contact-form-card .form input[type="checkbox"]{width:auto;accent-color:var(--blue-mid)}
+.contact-form-card .form .form-status{min-height:0;color:rgba(var(--paper-rgb),.85);font-size:14px;line-height:1.45}
+.contact-form-card .form .form-status:not(:empty){border-left:3px solid var(--error-on-dark);background:rgba(255,163,163,.1);color:var(--paper);padding:9px 12px;border-radius:0 4px 4px 0}
+.contact-form-card .form .btn:disabled{opacity:.65;cursor:default}
 @media(max-width:520px){.contact-form-card{padding:28px 22px}}
 
 /* our offices: calm neutral band, fading into the navy footer over its own bottom padding */
