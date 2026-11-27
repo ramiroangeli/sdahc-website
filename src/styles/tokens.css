@@ -21,8 +21,8 @@
   --nav-radius:16px;
   --z-nav:60; --z-click-effects:70;
   /* type */
-  --serif:'Playfair Display',Georgia,serif;
-  --sans:'Source Sans 3',system-ui,-apple-system,sans-serif;
-  --cond:'Barlow Condensed','Arial Narrow',sans-serif;
-  --geo:'Space Grotesk',system-ui,sans-serif;
+  --serif:'Playfair Display','Playfair Fallback',Georgia,serif;
+  --sans:'Source Sans 3','Source Sans Fallback',system-ui,-apple-system,sans-serif;
+  --cond:'Barlow Condensed','Barlow Fallback','Arial Narrow',sans-serif;
+  --geo:'Space Grotesk','Space Grotesk Fallback',system-ui,sans-serif;
 }

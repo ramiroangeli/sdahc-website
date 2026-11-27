@@ -100,7 +100,7 @@ const schema = [
   faqPage(faqs),
 ];
 ---
-<BaseLayout title={TITLE} description={DESC} ogImage="/images/og-company-brain.jpg" ogImageAlt="The Company Brain guide: Give your business a brain, with a glowing network of roles, systems and processes." extraFontsHref="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&display=swap" breadcrumbs={[{ name: 'Company Brain', path: PATH }]} schema={schema}>
+<BaseLayout title={TITLE} description={DESC} ogImage="/images/og-company-brain.jpg" ogImageAlt="The Company Brain guide: Give your business a brain, with a glowing network of roles, systems and processes." breadcrumbs={[{ name: 'Company Brain', path: PATH }]} schema={schema}>
   <BrainHero />
 
   {SHOW_TOUR && (

@@ -7,16 +7,12 @@ import ResearchStateGrid from '../../components/ResearchStateGrid.astro';
 import ResearchDwellerRibbon from '../../components/ResearchDwellerRibbon.astro';
 import { REPORTS } from '../../data/research-reports';
 import '../../styles/research-tokens.css';
+import '../../styles/research-fonts.css';
 
 const title = 'SDA Research Hub: Market Reports & Sector Analysis | SDA Home Choices';
 const description = "SDAHC Research publishes market analysis, transaction intelligence and evidence-based insight into Australia's Specialist Disability Accommodation sector, including the SDA Market Report 2026 and state-by-state data.";
 
-// Set C (interface) fonts plus the Set A (editorial) and metadata faces this page needs beyond
-// the corporate set already loaded by BaseLayout. Opt-in via extraFontsHref so no other page
-// requests these. Query params copied directly from the approved Stage 2 v2 source document's
-// own (working) Google Fonts link, so the variable axes requested (Bricolage Grotesque's wdth,
-// Source Serif 4's italic-only opsz range) match what those fonts actually expose.
-const researchFontsHref = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Source+Serif+4:ital,opsz,wght@1,8..60,400&family=Plus+Jakarta+Sans:wght@800&family=IBM+Plex+Mono:wght@400;500&display=swap";
+// Set C (interface) fonts plus the Set A (editorial) and metadata faces this page needs beyond the corporate set: self-hosted, imported here so no other page carries them.
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const absolute = (path: string) => new URL(path, Astro.site).href;
@@ -52,7 +48,7 @@ const breadcrumbs = {
   ],
 };
 ---
-<BaseLayout title={title} description={description} extraFontsHref={researchFontsHref}>
+<BaseLayout title={title} description={description}>
   <!-- Compact hero: headline only. No standfirst/tagline and no graphic, so the floating report
        covers in the Publications section below are the first screen's primary visual focus. -->
   <section class="rhub-hero r-grain-dark">

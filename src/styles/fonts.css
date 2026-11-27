@@ -1,0 +1,17 @@
+/* Self-hosted fonts (SIL Open Font License 1.1; see public/fonts/LICENSES.md). Latin + Latin-1 Supplement + typographic punctuation subsets, woff2, from github.com/google/fonts.
+   Variable files serve their whole weight range. Each family has a metric-matched fallback (size-adjust and the vertical overrides, calibrated with the average
+   English letter width against Georgia, Arial and Arial Narrow) so the swap to the web font does not move the layout. */
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 900;font-display:swap;src:url('/fonts/playfair-display/PlayfairDisplay.woff2') format('woff2')}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:400 900;font-display:swap;src:url('/fonts/playfair-display/PlayfairDisplay-Italic.woff2') format('woff2')}
+@font-face{font-family:'Source Sans 3';font-style:normal;font-weight:200 900;font-display:swap;src:url('/fonts/source-sans-3/SourceSans3.woff2') format('woff2')}
+@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:300 700;font-display:swap;src:url('/fonts/space-grotesk/SpaceGrotesk.woff2') format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/barlow-condensed/BarlowCondensed-Medium.woff2') format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/barlow-condensed/BarlowCondensed-SemiBold.woff2') format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/barlow-condensed/BarlowCondensed-Bold.woff2') format('woff2')}
+/* Climate Crisis (Eino Korkala and Daniel Coull), fixed at its 1979 style, for the display titles */
+@font-face{font-family:'Climate Crisis Local';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/climate-crisis/climate-crisis-1979.woff2') format('woff2')}
+
+@font-face{font-family:'Playfair Fallback';src:local('Georgia');size-adjust:103.85%;ascent-override:104.19%;descent-override:24.17%;line-gap-override:0%}
+@font-face{font-family:'Source Sans Fallback';src:local('Arial');size-adjust:94.72%;ascent-override:108.1%;descent-override:42.23%;line-gap-override:0%}
+@font-face{font-family:'Barlow Fallback';src:local('Arial Narrow'),local('ArialNarrow');size-adjust:98.58%;ascent-override:101.44%;descent-override:20.29%;line-gap-override:0%}
+@font-face{font-family:'Space Grotesk Fallback';src:local('Arial');size-adjust:111.29%;ascent-override:88.42%;descent-override:26.24%;line-gap-override:0%}
