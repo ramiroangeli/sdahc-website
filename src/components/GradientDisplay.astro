@@ -1,0 +1,21 @@
+---
+// Display wordmark of the Company Brain guide and the Contact page: Climate Crisis at its 1979 style, uppercase, filled with a blue gradient clipped to the
+// letters, and a faint white band that crosses it every 9 s. No glow, no shadow. Without background-clip support the text is the gradient's middle colour;
+// under prefers-reduced-motion the gradient is still.
+// `size` is the whole font-size value, so each page can cap it to its own container (for example min(clamp(...), 100cqw / 4.55) inside a
+// container-type:inline-size block). Spacing around it is the caller's job: pass a class.
+interface Props { size?: string; as?: 'span' | 'div' | 'p'; class?: string }
+const { size = 'clamp(48px, 8.5vw, 130px)', as: Tag = 'span', class: className = '' } = Astro.props;
+---
+<Tag class:list={['gradient-display', className]} style={`--gd-size:${size}`}><slot /></Tag>
+
+<style>
+.gradient-display{display:block;white-space:nowrap;font-family:var(--climate-local);font-weight:400;font-variation-settings:'YEAR' 1979;text-transform:uppercase;font-size:var(--gd-size);letter-spacing:-.02em;line-height:.85;color:var(--blue-mid)}
+@supports (background-clip:text) or (-webkit-background-clip:text){
+  .gradient-display{color:transparent;-webkit-text-fill-color:transparent;-webkit-background-clip:text;background-clip:text;
+    background-image:linear-gradient(105deg,transparent 0 41%,color-mix(in srgb,var(--white) 18%,transparent) 50%,transparent 59% 100%),linear-gradient(120deg,var(--blue) 0%,var(--blue-mid) 45%,var(--ice) 100%);
+    background-size:250% 100%,100% 100%;background-repeat:no-repeat;background-position:100% 0,0 0;animation:gd-shine 9s linear infinite}
+}
+@keyframes gd-shine{0%{background-position:100% 0,0 0}22%{background-position:0% 0,0 0}100%{background-position:0% 0,0 0}}
+@media(prefers-reduced-motion:reduce){.gradient-display{animation:none;background-image:linear-gradient(120deg,var(--blue) 0%,var(--blue-mid) 45%,var(--ice) 100%);background-size:100% 100%}}
+</style>

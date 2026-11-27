@@ -1,0 +1,67 @@
+---
+// The organic neural background shared by /company-brain/ and /contact-us/ (geometry in src/scripts/neuron-net.ts, drawing in src/scripts/neural-bg.ts).
+// Decorative and aria-hidden. It starts when the browser is idle after load, pauses while its host is off screen, and is a still frame under
+// prefers-reduced-motion or without WebGL.
+//
+// Two placements:
+//   default  the canvas fills its host (a positioned element), like the Company Brain hero.
+//   fixed    the canvas is fixed to the viewport and the host (a tall block) shows it only where the host is on screen: the host is clipped, so
+//            the network stays still while the content scrolls over it, and it never paints outside the host.
+// desktop / mobile  neuron counts (mobile below 700 px wide); the Company Brain hero uses 45 and 22.
+// dim               how much of the network is hidden behind the text (0 to 1); 0.5 means half strength.
+// text              a CSS selector for the text blocks the network should sit behind at that strength (resolved inside the host).
+interface Props { desktop?: number; mobile?: number; dim?: number; fixed?: boolean; text?: string }
+const { desktop = 45, mobile = 22, dim = 0.5, fixed = false, text = '' } = Astro.props;
+---
+<canvas class:list={['neural-field', { fixed }]} aria-hidden="true" data-neural-field data-desktop={desktop} data-mobile={mobile} data-dim={dim} data-fixed={fixed ? '1' : '0'} data-text={text}></canvas>
+
+<script>
+  const css = getComputedStyle(document.documentElement);
+  const v = (n: string) => css.getPropertyValue(n).trim();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const webgl = (() => { try { const c = document.createElement('canvas'); const g = (c.getContext('webgl2') || c.getContext('webgl')) as WebGLRenderingContext | null; g?.getExtension('WEBGL_lose_context')?.loseContext(); return !!g; } catch { return false; } })();
+  const animate = !reduce && webgl;
+  const idle = (fn: () => void) => ('requestIdleCallback' in window ? (window as any).requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500));
+  const afterLoad = (fn: () => void) => (document.readyState === 'complete' ? fn() : addEventListener('load', fn, { once: true }));
+
+  const setup = async (canvas: HTMLCanvasElement) => {
+    const host = canvas.parentElement as HTMLElement | null;
+    if (!host) return;
+    const fixed = canvas.dataset.fixed === '1';
+    const { createNeuralBg } = await import('../scripts/neural-bg');
+    const bg = createNeuralBg(canvas, host, { blue: v('--blue'), ice: v('--ice') }, animate, {
+      desktop: Number(canvas.dataset.desktop) || undefined, mobile: Number(canvas.dataset.mobile) || undefined, dim: Number(canvas.dataset.dim) || undefined,
+    });
+    if (fixed) host.style.clipPath = 'inset(0)';
+    // the canvas takes the size of the box it is measured on: the host's content box (as the Company Brain hero has always done), or the fixed canvas itself
+    new ResizeObserver(([e]) => bg.resize(Math.round(e.contentRect.width), Math.round(e.contentRect.height))).observe(fixed ? canvas : host);
+
+    // text rectangles, in canvas coordinates; a fixed canvas must follow the scroll
+    const sel = canvas.dataset.text || '';
+    const blocks = sel ? Array.from(host.querySelectorAll<HTMLElement>(sel)) : [];
+    let queued = false;
+    const place = () => {
+      queued = false; const c = canvas.getBoundingClientRect();
+      bg.setTextRects(blocks.map((b) => { const r = b.getBoundingClientRect(); return { x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height }; }));
+    };
+    const later = () => { if (!queued) { queued = true; requestAnimationFrame(place); } };
+    if (blocks.length) {
+      const ro = new ResizeObserver(later); blocks.forEach((b) => ro.observe(b)); ro.observe(canvas);
+      if (fixed) addEventListener('scroll', later, { passive: true });
+      place();
+    }
+
+    let seen = true;
+    const sync = () => (seen && !document.hidden ? bg.start() : bg.stop());
+    new IntersectionObserver(([e]) => { seen = e.isIntersecting; sync(); }).observe(host);
+    document.addEventListener('visibilitychange', sync); sync();
+  };
+
+  afterLoad(() => idle(() => document.querySelectorAll<HTMLCanvasElement>('canvas[data-neural-field]').forEach((c) => { void setup(c); })));
+</script>
+
+<style>
+.neural-field{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+/* lvh, not vh or the visual viewport: the canvas must not resize (and rebuild the network) when a phone's address bar slides away */
+.neural-field.fixed{position:fixed;top:0;left:0;width:100%;height:100vh;height:100lvh}
+</style>
