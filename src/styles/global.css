@@ -96,3 +96,27 @@ a{color:inherit}
 .bg-grain>*{position:relative;z-index:1}
 
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.rv{opacity:1;transform:none;transition:none}.mqa div,.mqb div{animation:none}.faq summary::after{transition:none}}
+
+/* ===== page transition: a signal travelling along a connection =====
+   Native cross-document View Transitions (Chromium, Safari 18.2+; elsewhere navigation is unchanged). The opt-in rule itself is an inline <style> in BaseLayout's <head>:
+   in this stylesheet Chrome intermittently missed it and skipped the transition. The header stays put, the arriving page fades in with a small
+   drift from the left, and a thin blue-to-ice pulse crosses just below the header from left to right. Only opacity and transform animate. Off under reduced motion.
+   To switch the whole effect off, delete the inline @view-transition style in BaseLayout (everything else is then inert). */
+.route-pulse{display:none}
+@media(prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+@media(prefers-reduced-motion:no-preference){
+  body>header{view-transition-name:site-nav}
+  ::view-transition-group(site-nav){animation-duration:0s}
+  ::view-transition-old(root),::view-transition-new(root){mix-blend-mode:normal}
+  ::view-transition-old(root){animation:none}
+  ::view-transition-new(root){animation:rt-in .26s cubic-bezier(.2,.7,.2,1) both}
+  .vt-go .route-pulse{display:block;position:fixed;z-index:var(--z-route-pulse);left:0;right:0;top:calc(var(--nav-top) + var(--nav-height) + 4px);height:16px;overflow:clip;pointer-events:none}
+  /* i: the trail (4px core, long tail fading to nothing); ::before: a soft halo band; ::after: the head with a static glow. All static paint, only translate and opacity animate. */
+  .route-pulse i{position:absolute;left:0;top:6px;width:52vw;height:4px;border-radius:4px;background:linear-gradient(90deg,transparent,rgba(var(--blue-rgb),.55) 40%,var(--blue) 75%,var(--ice));opacity:0;animation:rp-run .4s cubic-bezier(.35,0,.5,1) both}
+  .route-pulse i::before{content:"";position:absolute;inset:-6px 0;border-radius:10px;background:linear-gradient(90deg,transparent,rgba(var(--blue-rgb),.28) 70%,rgba(var(--blue-rgb),.5))}
+  .route-pulse i::after{content:"";position:absolute;right:-2px;top:-4px;width:12px;height:12px;border-radius:50%;background:var(--white);box-shadow:0 0 0 3px var(--ice),0 0 14px 6px rgba(var(--blue-rgb),.85)}
+  /* the arriving hero must not run its own entrance on top of the transition */
+  html.vt .oh-h1,html.vt .oh-sub{animation:none}
+}
+@keyframes rt-in{from{opacity:0;transform:translateX(-10px)}}
+@keyframes rp-run{0%{opacity:0;transform:translateX(-52vw)}12%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateX(100vw)}}
